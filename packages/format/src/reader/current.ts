@@ -38,7 +38,6 @@ import type {
   Ekikibo,
   SenStyle,
   StopMarkDrawType,
-  TrackType,
 } from '../model/enums.js';
 import type { PtDirectory, PtNode } from '../node/types.js';
 import { NodeCursor } from '../node/cursor.js';
@@ -63,6 +62,7 @@ import {
   EKIKIBO_FROM_FILE,
   SENSTYLE_FROM_FILE,
   STOPMARK_FROM_FILE,
+  TRACKTYPE_BY_CODE,
 } from './enumMaps.js';
 import {
   readBool,
@@ -144,13 +144,6 @@ function readStopMark(cur: NodeCursor): StopMarkDrawType {
 }
 
 // ---- TrackContent(平面交差の番線集合)----
-
-const TRACKTYPE_BY_CODE: Record<number, TrackType> = {
-  0: 'track',
-  1: 'origin',
-  2: 'terminal',
-  3: 'outer',
-};
 
 /** "type$index" を `;` で連結した値を TrackContent[] に(analysis §03 §5.7)。 */
 function decodeTrackContentCont(value: string | undefined): TrackContent[] {

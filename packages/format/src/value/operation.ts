@@ -41,10 +41,14 @@ function readJikoku(s: string): Jikoku {
   return isJikokuDecodeError(r) ? null : r;
 }
 
-/** `;` 区切りの運用番号配列。空文字列は空配列。 */
+/**
+ * `;` 区切りの運用番号配列。空トークンは捨てる(原典 splitc(';', ..., bDropEmpty=true))。
+ * これによりライターの joinOperationNumbers が厳密な逆写像になる(空文字列を含まない
+ * カンマ連結のみが正準表現)。
+ */
 function splitOperationNumbers(s: string): string[] {
   if (s === '') return [];
-  return s.split(';');
+  return s.split(';').filter((tok) => tok !== '');
 }
 
 function joinOperationNumbers(nums: string[]): string {
