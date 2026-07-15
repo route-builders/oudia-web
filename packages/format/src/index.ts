@@ -35,6 +35,25 @@ export type { PtNode, PtProperty, PtDirectory } from './node/types.js';
 export { ErrorCode } from './errors.js';
 export type { ErrorDetail, ReadWarning, GrammarErrorReason } from './errors.js';
 
+// ---- ファイル同型モデル(型宣言。domain が re-export)----
+export * from './model/index.js';
+
+// ---- 値ミニフォーマットのスキャナ ----
+export { decodeJikoku, encodeJikoku, isJikokuDecodeError } from './value/jikoku.js';
+export type { JikokuDecodeError } from './value/jikoku.js';
+export { decodeColor, encodeColor, colorrefToRgb, rgbToColorref } from './value/color.js';
+export { decodeFont, encodeFont, makeFontProp } from './value/font.js';
+export { decodeInt, decodeBool, encodeInt, encodeBool } from './value/number.js';
+export { decodeEkiJikoku, encodeEkiJikoku, splitEkiJikokuList } from './value/ekiJikoku.js';
+export type { DecodedEkiJikoku } from './value/ekiJikoku.js';
+export {
+  decodeBeforeOperationCont,
+  decodeAfterOperationCont,
+  encodeBeforeOperationCont,
+  encodeAfterOperationCont,
+} from './value/operation.js';
+export type { OperationKeyStore, OperationEntry } from './value/operation.js';
+
 /** bytes → ノードツリー(decode + parse)。デコード情報も返す。 */
 export type ParseNodeTreeResult =
   | {
