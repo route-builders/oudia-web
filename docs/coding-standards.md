@@ -12,11 +12,11 @@
 
 ## 2. フォーマッタ・リンタ
 
-| ツール | 用途 | 実行 |
-|---|---|---|
-| **Prettier** | フォーマット(設定は既定 + `printWidth: 100`) | `pnpm format` / `pnpm format:check` |
-| **ESLint**(typescript-eslint の type-checked 推奨セット + react-hooks) | 静的検査 | `pnpm lint` |
-| **dependency-cruiser** | パッケージ間の依存方向の強制(§3) | `pnpm lint:deps`(`pnpm lint` に含める) |
+| ツール                                                                 | 用途                                         | 実行                                   |
+| ---------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------- |
+| **Prettier**                                                           | フォーマット(設定は既定 + `printWidth: 100`) | `pnpm format` / `pnpm format:check`    |
+| **ESLint**(typescript-eslint の type-checked 推奨セット + react-hooks) | 静的検査                                     | `pnpm lint`                            |
+| **dependency-cruiser**                                                 | パッケージ間の依存方向の強制(§3)             | `pnpm lint:deps`(`pnpm lint` に含める) |
 
 フォーマットに関する議論はしない(Prettier の出力が正)。ESLint ルールの無効化コメント(`eslint-disable`)は行単位のみ許可し、理由を併記する。
 
@@ -24,13 +24,13 @@
 
 依存方向は **`format ← domain ← derive ← render ← app` の一方向のみ**(設計 §3.2)。逆依存・循環は dependency-cruiser で CI エラーにする。
 
-| パッケージ | 責務 | 禁止事項 |
-|---|---|---|
-| `packages/format` | oud2/oud のパース・シリアライズ・CSV | DOM API、Zustand、ドメインロジックの混入 |
-| `packages/domain` | エンティティ型、時刻演算、コマンドレデューサ、整合カスケード | DOM API、描画・UI の知識 |
-| `packages/derive` | 導出計算(ダイヤレイアウト、cellSpec、運用探索) | DOM API(Worker 内実行を想定した純関数のみ) |
-| `packages/render` | Canvas 描画(ダイヤグラム、グリッド) | ストアへの直接依存(描画入力は引数で受ける) |
-| `apps/web` | React シェル UI、ストア、ファイルアクセス、PWA | ドメインロジックの実装(domain へ寄せる) |
+| パッケージ        | 責務                                                         | 禁止事項                                   |
+| ----------------- | ------------------------------------------------------------ | ------------------------------------------ |
+| `packages/format` | oud2/oud のパース・シリアライズ・CSV                         | DOM API、Zustand、ドメインロジックの混入   |
+| `packages/domain` | エンティティ型、時刻演算、コマンドレデューサ、整合カスケード | DOM API、描画・UI の知識                   |
+| `packages/derive` | 導出計算(ダイヤレイアウト、cellSpec、運用探索)               | DOM API(Worker 内実行を想定した純関数のみ) |
+| `packages/render` | Canvas 描画(ダイヤグラム、グリッド)                          | ストアへの直接依存(描画入力は引数で受ける) |
+| `apps/web`        | React シェル UI、ストア、ファイルアクセス、PWA               | ドメインロジックの実装(domain へ寄せる)    |
 
 **format / domain / derive は「Node だけで動く」ことを守る**(Vitest を Node 実行するため)。`window`・`document`・`navigator` への参照をこの 3 パッケージに書いたら設計違反。
 
@@ -44,14 +44,14 @@
 
 ### 一般
 
-| 対象 | 規則 | 例 |
-|---|---|---|
-| 型・インターフェース・クラス | PascalCase | `RosenFileData`、`EkiJikoku` |
-| 変数・関数 | camelCase | `computeDiagramLayout` |
-| 定数(モジュールレベルの不変値) | UPPER_SNAKE_CASE | `SECONDS_PER_DAY` |
-| ファイル | 内容が単一の型/クラス中心なら PascalCase、それ以外は camelCase | `parse.ts`、`RosenFileData.ts` |
-| React コンポーネント | PascalCase(ファイル名も一致) | `JikokuhyouView.tsx` |
-| CSS Modules | `<Component>.module.css` | `JikokuhyouView.module.css` |
+| 対象                           | 規則                                                           | 例                             |
+| ------------------------------ | -------------------------------------------------------------- | ------------------------------ |
+| 型・インターフェース・クラス   | PascalCase                                                     | `RosenFileData`、`EkiJikoku`   |
+| 変数・関数                     | camelCase                                                      | `computeDiagramLayout`         |
+| 定数(モジュールレベルの不変値) | UPPER_SNAKE_CASE                                               | `SECONDS_PER_DAY`              |
+| ファイル                       | 内容が単一の型/クラス中心なら PascalCase、それ以外は camelCase | `parse.ts`、`RosenFileData.ts` |
+| React コンポーネント           | PascalCase(ファイル名も一致)                                   | `JikokuhyouView.tsx`           |
+| CSS Modules                    | `<Component>.module.css`                                       | `JikokuhyouView.module.css`    |
 
 ## 5. コメント
 
@@ -117,6 +117,6 @@
 
 ## 変更履歴
 
-| 日付 | 変更内容 |
-|------|---------|
+| 日付       | 変更内容 |
+| ---------- | -------- |
 | 2026-07-15 | 初版作成 |

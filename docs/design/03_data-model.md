@@ -12,16 +12,16 @@
 
 原典のエンティティツリー(CentDedRosen をルートとする値コピー包含ツリー)を、**プレーンなオブジェクトツリー(POJO)にそのまま写像する**。正規化(ID テーブル化)はしない。
 
-| 原典の機構 | Web 版での写像 |
-|---|---|
-| `CMuiCopiedParent<T>`(値コピー格納コンテナ) | プレーンな `T[]`(配列)。出現順 = index |
-| 子 → 親の逆参照(`getParent()` / `getRosen()` 等) | **持たない**。走査は常にルート `RosenFileData` からのパス(index の組)で行う |
-| `setable()` 事前検査 + `LException` | コマンドレデューサ内の事前検証(違反コマンドは実行前に拒否) |
-| `adjust()` 連鎖(setParent 時の自己修正) | domain の整合カスケード関数(§8)。draft に対する明示的な関数呼び出し |
-| クラスのメソッド(`getSihatsuEki()` 等) | domain の純関数(`getSihatsuEkiOrder(ressya)` 等)。データとロジックを分離 |
-| 汎用データスロット(BoolData1/IntData1/JikokuData1…) | 判別可能ユニオン(§2.7)。format 層がスロット列 ↔ ユニオンの変換を担う |
-| `INT_MIN` = Null、`-1` = 無効 | いずれも `null`(§1.3) |
-| 導出値スロット(※印)・Dia の導出コンテナ | **ストアに持たない**。`@oudia/derive` の導出キャッシュ(§2.10) |
+| 原典の機構                                          | Web 版での写像                                                              |
+| --------------------------------------------------- | --------------------------------------------------------------------------- |
+| `CMuiCopiedParent<T>`(値コピー格納コンテナ)         | プレーンな `T[]`(配列)。出現順 = index                                      |
+| 子 → 親の逆参照(`getParent()` / `getRosen()` 等)    | **持たない**。走査は常にルート `RosenFileData` からのパス(index の組)で行う |
+| `setable()` 事前検査 + `LException`                 | コマンドレデューサ内の事前検証(違反コマンドは実行前に拒否)                  |
+| `adjust()` 連鎖(setParent 時の自己修正)             | domain の整合カスケード関数(§8)。draft に対する明示的な関数呼び出し         |
+| クラスのメソッド(`getSihatsuEki()` 等)              | domain の純関数(`getSihatsuEkiOrder(ressya)` 等)。データとロジックを分離    |
+| 汎用データスロット(BoolData1/IntData1/JikokuData1…) | 判別可能ユニオン(§2.7)。format 層がスロット列 ↔ ユニオンの変換を担う        |
+| `INT_MIN` = Null、`-1` = 無効                       | いずれも `null`(§1.3)                                                       |
+| 導出値スロット(※印)・Dia の導出コンテナ             | **ストアに持たない**。`@oudia/derive` の導出キャッシュ(§2.10)               |
 
 親逆参照を捨てられるのは、原典で親参照が必要だった局面(番線数の取得・種別の解決・起点時刻の参照)がすべて「ルートからの走査」で代替でき、かつ Web 版では変更が単一チョークポイント `executeCommand()` を通るため、部分木単独で整合を保つ必要がないからである。
 
@@ -47,15 +47,15 @@
 
 `RosenFileData` は「**ファイルに書かれる手入力値のみ**」を持つ。次は入れない。
 
-| 原典でエンティティが持っていたが除外するもの | 行き先 |
-|---|---|
-| 運用探索の導出値(作業の※印スロット: 割当運番・前列車接続時刻/方向・接続種別) | derive の `OperationCache`(§2.10) |
-| `CentDedDia` の導出コンテナ(`m_contOperationTableContent` / `m_contCustomizeRessyaIndexKudari,Nobori` / `m_contInOutLinkCodeContent`) | 同上 |
-| 分岐・環状の派生マップ(`m_iBrunchLoopPosition` / `m_iEkiIndexLoop` 等。ファイル非出力、駅編集の度に再計算) | domain の純関数 `deriveBrunchLoopMap()` の戻り値。構造共有により `ekiCont` の参照同一性をキーに memoize(§2.10) |
-| `CentDedDia::m_bWaitOperationUpdate`(運用更新保留。ファイル非出力 — CconvCentDed.cpp で確認) | UI 状態ストア(ダイヤ名をキー) |
-| `m_iPatternDiagramPreviewRange`(ファイル非出力 — 同上。出力されるのは Enable / CycleSecond のみ) | UI 状態ストア |
-| `m_bKyoukaisen`(境界線。FileType 1.01 以降は分岐設定から導出、旧形式読込専用) | 持たない。S00 リーダーが読込時に分岐推定へ変換、.oud 書き出し時は隣接駅の駅時刻形式から自動生成(format 層) |
-| entDgr 一式(描画座標) | derive の `computeDiagramLayout()` の戻り値 |
+| 原典でエンティティが持っていたが除外するもの                                                                                          | 行き先                                                                                                         |
+| ------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| 運用探索の導出値(作業の※印スロット: 割当運番・前列車接続時刻/方向・接続種別)                                                          | derive の `OperationCache`(§2.10)                                                                              |
+| `CentDedDia` の導出コンテナ(`m_contOperationTableContent` / `m_contCustomizeRessyaIndexKudari,Nobori` / `m_contInOutLinkCodeContent`) | 同上                                                                                                           |
+| 分岐・環状の派生マップ(`m_iBrunchLoopPosition` / `m_iEkiIndexLoop` 等。ファイル非出力、駅編集の度に再計算)                            | domain の純関数 `deriveBrunchLoopMap()` の戻り値。構造共有により `ekiCont` の参照同一性をキーに memoize(§2.10) |
+| `CentDedDia::m_bWaitOperationUpdate`(運用更新保留。ファイル非出力 — CconvCentDed.cpp で確認)                                          | UI 状態ストア(ダイヤ名をキー)                                                                                  |
+| `m_iPatternDiagramPreviewRange`(ファイル非出力 — 同上。出力されるのは Enable / CycleSecond のみ)                                      | UI 状態ストア                                                                                                  |
+| `m_bKyoukaisen`(境界線。FileType 1.01 以降は分岐設定から導出、旧形式読込専用)                                                         | 持たない。S00 リーダーが読込時に分岐推定へ変換、.oud 書き出し時は隣接駅の駅時刻形式から自動生成(format 層)     |
+| entDgr 一式(描画座標)                                                                                                                 | derive の `computeDiagramLayout()` の戻り値                                                                    |
 
 例外として **駅 ID(`CentDedEki::m_iID`)はストアに残す**。ファイルには出力されないが(CconvCentDed.cpp に ID キーなし)、同名駅の区別という編集セッション内で安定であるべき識別子であり、Undo/Redo(patch)と一緒に巻き戻る必要があるため、導出キャッシュには置けない。読込時・駅挿入時に domain が空き番号を自動採番する(原典と同じ規則)。
 
@@ -98,15 +98,15 @@ export const RESSYAHOUKOU_NOBORI = 1 as const; // Ressyahoukou_Nobori
 
 /** フォント(原典 CdConnectedString2 形式のフォント指定。分析 §03 §6.5) */
 export interface FontProp {
-  pointTextHeight: number;             // PointTextHeight
+  pointTextHeight: number; // PointTextHeight
   logicalunitTextHeight: number | null; // LogicalunitTextHeight(通常未使用)
   logicalunitCellHeight: number | null; // LogicalunitCellHeight(通常未使用)
-  facename: string;                    // Facename
-  bold: boolean;                       // Bold("1" のときのみ出力)
-  italic: boolean;                     // Itaric(ファイルキーは原文ママの綴り)
-  underline: boolean;                  // Underline
-  strikeOut: boolean;                  // StrikeOut
-  escapement: number;                  // Escapement(回転。GDI lfEscapement 相当。既定 0)
+  facename: string; // Facename
+  bold: boolean; // Bold("1" のときのみ出力)
+  italic: boolean; // Itaric(ファイルキーは原文ママの綴り)
+  underline: boolean; // Underline
+  strikeOut: boolean; // StrikeOut
+  escapement: number; // Escapement(回転。GDI lfEscapement 相当。既定 0)
 }
 
 /** 未知キー・未知ノードの透過保持(§1.5、アーキテクチャ §6.1) */
@@ -119,7 +119,7 @@ export interface UnknownEntry {
    *  設定時、index はその中間ディレクトリ内での出現位置 */
   container?: string;
   name: string;
-  value?: string;        // プロパティ行(エスケープ解除済み)。ディレクトリなら省略
+  value?: string; // プロパティ行(エスケープ解除済み)。ディレクトリなら省略
   children?: RawEntry[]; // ディレクトリ(未解釈サブツリー)。プロパティなら省略
 }
 
@@ -139,8 +139,8 @@ export interface RosenFileData {
   /** 読込元の FileType 文字列(例 "OuDiaSecond.1.17"、"OuDia.1.02")。
    *  表示・診断用。書き出しは常に "OuDiaSecond.1.17" 固定で、この値は使わない */
   sourceFileType: string;
-  rosen: Rosen;                        // Rosen. ノード
-  dispProp: DispProp;                  // DispProp. ノード
+  rosen: Rosen; // Rosen. ノード
+  dispProp: DispProp; // DispProp. ノード
   /** WindowPlacement. ノード(1.12〜、任意)。Web 版では解釈せず透過保持し、
    *  書き出し時に同内容を書き戻す(アーキテクチャ §4.5) */
   windowPlacement: RawEntry[] | null;
@@ -156,12 +156,12 @@ export interface RosenFileData {
 ```typescript
 /** 路線(原典 CentDedRosen) */
 export interface Rosen {
-  rosenmei: string;                    // m_strName / キー Rosenmei
-  kudariDiaAlias: string;              // m_strKudariDiaAlias(空 = 「下り」)
-  noboriDiaAlias: string;              // m_strNoboriDiaAlias(空 = 「上り」)
-  ekiCont: Eki[];                      // m_CentDedEkiCont。添字 = 駅Index(下り始発 = 0)
+  rosenmei: string; // m_strName / キー Rosenmei
+  kudariDiaAlias: string; // m_strKudariDiaAlias(空 = 「下り」)
+  noboriDiaAlias: string; // m_strNoboriDiaAlias(空 = 「上り」)
+  ekiCont: Eki[]; // m_CentDedEkiCont。添字 = 駅Index(下り始発 = 0)
   ressyasyubetsuCont: Ressyasyubetsu[]; // m_CentDedRessyasyubetsuCont。1 要素以上
-  diaCont: Dia[];                      // m_CentDedDiaCont。name が路線内一意
+  diaCont: Dia[]; // m_CentDedDiaCont。name が路線内一意
   /** ダイヤグラム起点時刻(m_jikokuKitenJikoku)。クラスコメント上は「Null 不可」だが、
    *  ファイル読込経路では空の KitenJikoku= が Null のまま setKitenJikoku され
    *  (CconvCentDed.cpp:4947-4966。setter は無修正代入 — CentDedRosen.h:545)、
@@ -170,15 +170,15 @@ export interface Rosen {
    *  演算では null を 0(00:00:00)相当として扱う(§4.2) */
   kitenJikoku: Jikoku;
   diagramDgrYZahyouKyoriDefault: number; // m_iDiagramDgrYZahyouKyoriDefault(既定 60、秒)
-  enableOperation: 0 | 1 | 2;          // m_iEnableOperation(0=無効/1=簡易/2=通常)
-  operationNumberReverse: boolean;     // m_bOperationNumberReverse
+  enableOperation: 0 | 1 | 2; // m_iEnableOperation(0=無効/1=簡易/2=通常)
+  operationNumberReverse: boolean; // m_bOperationNumberReverse
   /** m_bOperationCrossKitenJikoku。注意: 原典コンストラクタ既定は true だが、
    *  読込は ==="1" 判定のためキー省略時は false になる(CconvCentDed.cpp:5019)。
    *  新規作成時は true、読込時はファイルの値(省略 = false)に従う */
   operationCrossKitenJikoku: boolean;
-  kijunDiaIndex: number;               // m_iKijunDiaIndex(diaCont への index。既定 0)
-  disableHiddenSyubetsu: boolean;      // m_bDisableHiddenSyubetsu
-  comment: string;                     // m_strComment(複数行可。ファイルでは \n エスケープ)
+  kijunDiaIndex: number; // m_iKijunDiaIndex(diaCont への index。既定 0)
+  disableHiddenSyubetsu: boolean; // m_bDisableHiddenSyubetsu
+  comment: string; // m_strComment(複数行可。ファイルでは \n エスケープ)
   unknownEntries?: UnknownEntry[];
 }
 ```
@@ -191,33 +191,33 @@ export interface Eki {
   /** 駅 ID(m_iID)。同名駅の区別用。ファイル非出力。読込・挿入時に domain が
    *  空き番号を自動採番する(§1.4) */
   id: number;
-  ekimei: string;                      // m_strEkimei
-  ekimeiJikokuRyaku: string;           // m_strEkimeiJikokuhyouRyaku / キー EkimeiJikokuRyaku(空 = 駅名を使用)
-  ekimeiDiaRyaku: string;              // m_strEkimeiDiagramRyaku / キー EkimeiDiaRyaku
-  ekijikokukeisiki: Ekijikokukeisiki;  // m_eEkijikokukeisiki
-  ekikibo: Ekikibo;                    // m_eEkikibo
+  ekimei: string; // m_strEkimei
+  ekimeiJikokuRyaku: string; // m_strEkimeiJikokuhyouRyaku / キー EkimeiJikokuRyaku(空 = 駅名を使用)
+  ekimeiDiaRyaku: string; // m_strEkimeiDiagramRyaku / キー EkimeiDiaRyaku
+  ekijikokukeisiki: Ekijikokukeisiki; // m_eEkijikokukeisiki
+  ekikibo: Ekikibo; // m_eEkikibo
   diagramRessyajouhouHyoujiKudari: DiagramRessyajouhouHyouji; // m_eDiagramRessyajouhouHyoujiKudari
   diagramRessyajouhouHyoujiNobori: DiagramRessyajouhouHyouji;
-  downMain: number;                    // m_iDownMain(下り主本線。ekiTrack2Cont への index)
-  upMain: number;                      // m_iUpMain(上り主本線)
-  ekiTrack2Cont: EkiTrack2[];          // m_CentDedEkiTrack2Cont(既定 2 番線)
-  brunchCoreEkiIndex: number | null;   // m_iBrunchCoreEkiIndex(-1 → null。基幹駅の駅Index)
-  brunchOpposite: boolean;             // m_bBrunchOpposite
-  loopOriginEkiIndex: number | null;   // m_iLoopOriginEkiIndex(-1 → null。起点駅の駅Index)
-  loopOpposite: boolean;               // m_bLoopOpposite
-  outerTerminalCont: OuterTerminal[];  // m_OuterTerminalCont(路線外発着駅)
-  nextEkiDistance: number;             // m_iNextEkiDistance(秒。0 = 路線既定を使用)
+  downMain: number; // m_iDownMain(下り主本線。ekiTrack2Cont への index)
+  upMain: number; // m_iUpMain(上り主本線)
+  ekiTrack2Cont: EkiTrack2[]; // m_CentDedEkiTrack2Cont(既定 2 番線)
+  brunchCoreEkiIndex: number | null; // m_iBrunchCoreEkiIndex(-1 → null。基幹駅の駅Index)
+  brunchOpposite: boolean; // m_bBrunchOpposite
+  loopOriginEkiIndex: number | null; // m_iLoopOriginEkiIndex(-1 → null。起点駅の駅Index)
+  loopOpposite: boolean; // m_bLoopOpposite
+  outerTerminalCont: OuterTerminal[]; // m_OuterTerminalCont(路線外発着駅)
+  nextEkiDistance: number; // m_iNextEkiDistance(秒。0 = 路線既定を使用)
   crossingCheckRuleCont: CrossingCheckRule[]; // m_CrossingCheckRuleCont
 
   // ---- 時刻表・ダイヤグラム表示設定 ----
   jikokuhyouTrackDisplayKudari: boolean; // m_bJikokuhyouTrackDisplayKudari(発番線表示)
   jikokuhyouTrackDisplayNobori: boolean;
-  diagramTrackDisplay: boolean;        // m_bDiagramTrackDisplay(在線表表示)
-  diagramTrackOmit: boolean[];         // m_bDiagramTrackOmit(番線数と同数。在線表での省略)
-  jikokuhyouTrackOmit: boolean;        // m_bJikokuhyouTrackOmit(番線編集モードの欄省略)
-  jikokuhyouOperationOrigin: 0 | 1 | 2 | 3;   // m_iJikokuhyouOperationOrigin(始発側作業欄数)
+  diagramTrackDisplay: boolean; // m_bDiagramTrackDisplay(在線表表示)
+  diagramTrackOmit: boolean[]; // m_bDiagramTrackOmit(番線数と同数。在線表での省略)
+  jikokuhyouTrackOmit: boolean; // m_bJikokuhyouTrackOmit(番線編集モードの欄省略)
+  jikokuhyouOperationOrigin: 0 | 1 | 2 | 3; // m_iJikokuhyouOperationOrigin(始発側作業欄数)
   jikokuhyouOperationTerminal: 0 | 1 | 2 | 3; // m_iJikokuhyouOperationTerminal(終着側)
-  jikokuhyouOperationOriginDownBeforeUpAfter: boolean;   // 作業欄の前後配置 4 種
+  jikokuhyouOperationOriginDownBeforeUpAfter: boolean; // 作業欄の前後配置 4 種
   jikokuhyouOperationOriginDownAfterUpBefore: boolean;
   jikokuhyouOperationTerminalDownBeforeUpAfter: boolean;
   jikokuhyouOperationTerminalDownAfterUpBefore: boolean;
@@ -229,7 +229,7 @@ export interface Eki {
   jikokuhyouPrevSyubetsuChangeDisplayNobori: SyubetsuChangeDisplay;
   jikokuhyouNyuusenJikokuDisplayKudari: boolean; // 入線時刻欄(1.17〜)
   jikokuhyouNyuusenJikokuDisplayNobori: boolean;
-  diagramColorNextEki: number;         // m_iDiagramColorNextEki(0–4。DiaBackColor の index)
+  diagramColorNextEki: number; // m_iDiagramColorNextEki(0–4。DiaBackColor の index)
   operationTableDisplayJikoku: boolean; // m_bOperationTableDisplayJikoku
   jikokuhyouOuterDisplayKudari: OuterDisplay; // キー JikokuhyouOuterDisplayKudari("始発,終着")
   jikokuhyouOuterDisplayNobori: OuterDisplay;
@@ -244,10 +244,10 @@ export interface JikokuDisplay {
 
 /** 種別変更/次列車・前列車情報欄の表示設定("a,b,c,d,e" の 5 値。既定 0,0,0,0,1) */
 export interface SyubetsuChangeDisplay {
-  ressyabangou: 0 | 1 | 2 | 3;         // a: 列車番号
-  operationNumber: 0 | 1 | 2 | 3 | 4;  // b: 運用番号
-  syubetsu: 0 | 1 | 2 | 3;             // c: 列車種別
-  ressyamei: 0 | 1 | 2 | 3;            // d: 列車名
+  ressyabangou: 0 | 1 | 2 | 3; // a: 列車番号
+  operationNumber: 0 | 1 | 2 | 3 | 4; // b: 運用番号
+  syubetsu: 0 | 1 | 2 | 3; // c: 列車種別
+  ressyamei: 0 | 1 | 2 | 3; // d: 列車名
   operationNumberRows: 1 | 2 | 3 | 4 | 5; // e: 運用番号段数
 }
 
@@ -259,41 +259,41 @@ export interface OuterDisplay {
 
 /** 番線(原典 CentDedEkiTrack2) */
 export interface EkiTrack2 {
-  trackName: string;                   // m_strTrackName(空文字列 = isNull)
-  trackRyakusyou: string;              // m_strTrackRyakusyou(略称。共通または下り用)
-  trackNoboriRyakusyou: string;        // m_strTrackNoboriRyakusyou(空 = 共通略称を使用)
-  unknownEntries?: UnknownEntry[];     // EkiTrack2. ノード直下の未知キー(§1.5)
+  trackName: string; // m_strTrackName(空文字列 = isNull)
+  trackRyakusyou: string; // m_strTrackRyakusyou(略称。共通または下り用)
+  trackNoboriRyakusyou: string; // m_strTrackNoboriRyakusyou(空 = 共通略称を使用)
+  unknownEntries?: UnknownEntry[]; // EkiTrack2. ノード直下の未知キー(§1.5)
 }
 
 /** 路線外発着駅(原典 CentDedEki.h の OuterTerminal 構造体) */
 export interface OuterTerminal {
-  ekimei: string;                      // OuterTerminalEkimei
-  jikokuRyaku: string;                 // OuterTerminalJikokuRyaku(空 = 頭文字)
-  diaRyaku: string;                    // OuterTerminalDiaRyaku
-  unknownEntries?: UnknownEntry[];     // OuterTerminal. ノード直下の未知キー(§1.5)
+  ekimei: string; // OuterTerminalEkimei
+  jikokuRyaku: string; // OuterTerminalJikokuRyaku(空 = 頭文字)
+  diaRyaku: string; // OuterTerminalDiaRyaku
+  unknownEntries?: UnknownEntry[]; // OuterTerminal. ノード直下の未知キー(§1.5)
 }
 
 /** 交差チェックの番線指定(原典 TrackContent) */
 export interface TrackContent {
-  trackType: TrackType;                // eTrackType
-  index: number;                       // iTrackIndex(意味は trackType 依存 — §5)
+  trackType: TrackType; // eTrackType
+  index: number; // iTrackIndex(意味は trackType 依存 — §5)
 }
 
 /** 平面交差支障チェックルール(原典 CrossingCheckRule。1.11〜) */
 export interface CrossingCheckRule {
-  caption: string;                     // strCaption(必須・空不可)
-  enable: boolean;                     // bEnable(ファイル省略時 true)
-  headwaySecond: number;               // iHeadwaySecond(時隔上限秒。既定 60。これ未満で支障)
-  headwaySecondMinimum: number;        // iHeadwaySecondMinimum(下限秒。1.13〜。既定 0)
+  caption: string; // strCaption(必須・空不可)
+  enable: boolean; // bEnable(ファイル省略時 true)
+  headwaySecond: number; // iHeadwaySecond(時隔上限秒。既定 60。これ未満で支障)
+  headwaySecondMinimum: number; // iHeadwaySecondMinimum(下限秒。1.13〜。既定 0)
   beforeFromTrackContentCont: TrackContent[]; // BeforeFromTrackContentCont(";" 連結)
   beforeToTrackContentCont: TrackContent[];
   afterFromTrackContentCont: TrackContent[];
   afterToTrackContentCont: TrackContent[];
-  beforeIsArrival: boolean;            // bBeforeIsArrival(着基準か)
-  beforeIsTsuuka: boolean;             // bBeforeIsTsuuka(通過対象か)
+  beforeIsArrival: boolean; // bBeforeIsArrival(着基準か)
+  beforeIsTsuuka: boolean; // bBeforeIsTsuuka(通過対象か)
   afterIsArrival: boolean;
   afterIsTsuuka: boolean;
-  unknownEntries?: UnknownEntry[];     // CrossingCheckRule. ノード直下の未知キー(§1.5)
+  unknownEntries?: UnknownEntry[]; // CrossingCheckRule. ノード直下の未知キー(§1.5)
 }
 ```
 
@@ -302,22 +302,22 @@ export interface CrossingCheckRule {
 ```typescript
 /** 列車線スタイル(原典 CdDiagramLineStyle) */
 export interface DiagramLineStyle {
-  senColor: Colorref;                  // m_colorDiagramSenColor / キー DiagramSenColor
-  senStyle: SenStyle;                  // m_eDiagramSenStyle / キー DiagramSenStyle
-  isBold: boolean;                     // m_bDiagramSenIsBold / キー DiagramSenIsBold
+  senColor: Colorref; // m_colorDiagramSenColor / キー DiagramSenColor
+  senStyle: SenStyle; // m_eDiagramSenStyle / キー DiagramSenStyle
+  isBold: boolean; // m_bDiagramSenIsBold / キー DiagramSenIsBold
 }
 
 /** 列車種別(原典 CentDedRessyasyubetsu) */
 export interface Ressyasyubetsu {
-  syubetsumei: string;                 // m_strSyubetsumei(コンテナ所属中は空不可)
-  ryakusyou: string;                   // m_strRyakusyou
-  jikokuhyouMojiColor: Colorref;       // m_colorJikokuhyouMojiColor(既定 黒)
-  jikokuhyouFontIndex: number;         // m_iJikokuhyouFontIndex(0–7。DispProp.jikokuhyouFont の index)
-  jikokuhyouBackColor: Colorref;       // m_colorJikokuhyouBackColor(既定 白)
-  diagramLineStyle: DiagramLineStyle;  // m_CdDiagramLineStyle
-  stopMarkDrawType: StopMarkDrawType;  // m_eStopMarkDrawType
-  parentSyubetsuIndex: number | null;  // m_iParentSyubetsuIndex(-1 → null。ressyasyubetsuCont への index)
-  hidden: boolean;                     // m_bHidden(隠し種別。1.15〜)
+  syubetsumei: string; // m_strSyubetsumei(コンテナ所属中は空不可)
+  ryakusyou: string; // m_strRyakusyou
+  jikokuhyouMojiColor: Colorref; // m_colorJikokuhyouMojiColor(既定 黒)
+  jikokuhyouFontIndex: number; // m_iJikokuhyouFontIndex(0–7。DispProp.jikokuhyouFont の index)
+  jikokuhyouBackColor: Colorref; // m_colorJikokuhyouBackColor(既定 白)
+  diagramLineStyle: DiagramLineStyle; // m_CdDiagramLineStyle
+  stopMarkDrawType: StopMarkDrawType; // m_eStopMarkDrawType
+  parentSyubetsuIndex: number | null; // m_iParentSyubetsuIndex(-1 → null。ressyasyubetsuCont への index)
+  hidden: boolean; // m_bHidden(隠し種別。1.15〜)
   unknownEntries?: UnknownEntry[];
 }
 ```
@@ -329,10 +329,10 @@ export interface Ressyasyubetsu {
  *  ランタイムフラグ(m_bWaitOperationUpdate / m_iPatternDiagramPreviewRange)は
  *  持たない(§1.4) */
 export interface Dia {
-  name: string;                        // m_strName(路線内一意・空不可)
-  mainBackColorIndex: number;          // m_iJikokuhyouMainBackColorIndex(DispProp.jikokuhyouBackColor の index)
-  subBackColorIndex: number;           // m_iJikokuhyouSubBackColorIndex
-  backPatternIndex: number;            // m_iJikokuhyouBackPatternIndex
+  name: string; // m_strName(路線内一意・空不可)
+  mainBackColorIndex: number; // m_iJikokuhyouMainBackColorIndex(DispProp.jikokuhyouBackColor の index)
+  subBackColorIndex: number; // m_iJikokuhyouSubBackColorIndex
+  backPatternIndex: number; // m_iJikokuhyouBackPatternIndex
   patternDiagramPreviewEnable: boolean; // m_bPatternDiagramPreviewEnable(1.16〜)
   patternDiagramPreviewCycleSecond: number; // m_iPatternDiagramPreviewCycleSecond(60–10800。既定 600)
   /** m_CentDedRessyaCont[2]。[0] = 下り、[1] = 上り(Ressyahoukou と一致) */
@@ -345,13 +345,13 @@ export interface Ressya {
   /** m_bIsNull: 時刻表ビューの空行。true でも ekiJikokuCont は駅数分持つ。
    *  方向以外のフィールド変更で false へ落とすのはコマンドレデューサの責務 */
   isNull: boolean;
-  houkou: Ressyahoukou;                // m_eRessyahoukou(所属コンテナと常に一致 — 不変条件 §8)
-  syubetsuIndex: number;               // m_iRessyasyubetsuIndex(ressyasyubetsuCont への index。既定 0)
-  ressyabangou: string;                // m_strRessyabangou
-  ressyamei: string;                   // m_strRessyamei
-  gousuu: string;                      // m_strGousuu
-  bikou: string;                       // m_strBikou
-  isCanceled: boolean;                 // m_bIsCanceled(運休。1.15〜)
+  houkou: Ressyahoukou; // m_eRessyahoukou(所属コンテナと常に一致 — 不変条件 §8)
+  syubetsuIndex: number; // m_iRessyasyubetsuIndex(ressyasyubetsuCont への index。既定 0)
+  ressyabangou: string; // m_strRessyabangou
+  ressyamei: string; // m_strRessyamei
+  gousuu: string; // m_strGousuu
+  bikou: string; // m_strBikou
+  isCanceled: boolean; // m_bIsCanceled(運休。1.15〜)
   /** m_CentDedEkiJikokuCont: 常に路線の駅数と同数。添字 = 駅Order(方向基準) */
   ekiJikokuCont: EkiJikoku[];
   unknownEntries?: UnknownEntry[];
@@ -360,14 +360,14 @@ export interface Ressya {
 /** 駅時刻(原典 CentDedEkiJikoku)。最もインスタンス数が多い型
  *  (列車数 × 駅数。500 列車 × 50 駅で 25,000 個) */
 export interface EkiJikoku {
-  ekiatsukai: Ekiatsukai;              // m_eEkiatsukai
-  chakuJikoku: Jikoku;                 // m_jikokuChakujikoku
-  hatsuJikoku: Jikoku;                 // m_jikokuHatsujikoku
+  ekiatsukai: Ekiatsukai; // m_eEkiatsukai
+  chakuJikoku: Jikoku; // m_jikokuChakujikoku
+  hatsuJikoku: Jikoku; // m_jikokuHatsujikoku
   /** m_iRessyaTrackIndex: その駅の ekiTrack2Cont への index。
    *  null = 未設定(原典 INT_MIN)。ekiatsukai を 'none' にすると 0 にリセット(§8) */
   ressyaTrackIndex: number | null;
   beforeOperationCont: BeforeOperation[]; // m_CentDedBeforeOperationCont(時系列順)
-  afterOperationCont: AfterOperation[];   // m_CentDedAfterOperationCont(時系列順)
+  afterOperationCont: AfterOperation[]; // m_CentDedAfterOperationCont(時系列順)
 }
 ```
 
@@ -392,18 +392,18 @@ export type BeforeOperation =
  *  ファイル書式: 0/入換元番線idx$入換発時刻/[入換着時刻]$着時刻表示(0|1) */
 export interface BOperationShunt {
   kind: 'shunt';
-  shuntTrackIndex: number;   // m_iIntData1: 入換元番線(当駅 ekiTrack2Cont への index)
-  shuntHatsuJikoku: Jikoku;  // m_JikokuData1: 入換発時刻
-  shuntChakuJikoku: Jikoku;  // m_JikokuData2: 入換着時刻(null = 発と同時)
-  displayJikoku: boolean;    // m_bBoolData1: 入換着時刻を当駅着時刻とみなして表示
+  shuntTrackIndex: number; // m_iIntData1: 入換元番線(当駅 ekiTrack2Cont への index)
+  shuntHatsuJikoku: Jikoku; // m_JikokuData1: 入換発時刻
+  shuntChakuJikoku: Jikoku; // m_JikokuData2: 入換着時刻(null = 発と同時)
+  displayJikoku: boolean; // m_bBoolData1: 入換着時刻を当駅着時刻とみなして表示
 }
 
 /** 増結(BOperation_Connect = 1)。相手編成の前作業列を入れ子で保持
  *  ファイル書式: 1/前方に連結(0|1)$連結時刻 + 子キー "{親パス}.{作業idx}B" */
 export interface BOperationConnect {
   kind: 'connect';
-  connectToFront: boolean;   // m_bBoolData1: 増結編成を親編成の前方に連結するか
-  connectJikoku: Jikoku;     // m_JikokuData1: 増結時刻(null = 着時刻等から補完)
+  connectToFront: boolean; // m_bBoolData1: 増結編成を親編成の前方に連結するか
+  connectJikoku: Jikoku; // m_JikokuData1: 増結時刻(null = 着時刻等から補完)
   formationBeforeOperationCont: BeforeOperation[]; // m_CentDedBeforeOperationCont(入れ子・再帰)
 }
 
@@ -412,8 +412,8 @@ export interface BOperationConnect {
 export interface BOperationRelease {
   kind: 'release';
   releasePosition: 0 | 1 | 2; // m_iIntData1: 0=後方 / 1=前方 / 2=前方以外
-  releaseCount: number;       // m_iIntData2: 解結編成数
-  releaseJikoku: Jikoku;      // m_JikokuData1: 解結時刻
+  releaseCount: number; // m_iIntData2: 解結編成数
+  releaseJikoku: Jikoku; // m_JikokuData1: 解結時刻
   formationAfterOperationCont: AfterOperation[]; // m_CentDedAfterOperationCont(入れ子・再帰)
 }
 
@@ -421,8 +421,8 @@ export interface BOperationRelease {
  *  ファイル書式: 3/出区時刻$入出区連携コード/元運用番号(;連結) */
 export interface BOperationOut {
   kind: 'out';
-  outJikoku: Jikoku;          // m_JikokuData1: 出区時刻(ダイヤグラム丸印位置)
-  inOutLinkCode: string;      // m_strInOutLinkCode(1.10〜。空 = 連携なし)
+  outJikoku: Jikoku; // m_JikokuData1: 出区時刻(ダイヤグラム丸印位置)
+  inOutLinkCode: string; // m_strInOutLinkCode(1.10〜。空 = 連携なし)
   operationNumbers: string[]; // m_strOperationNumber1: 連結編成 1 本につき運番 1 個
 }
 
@@ -431,9 +431,9 @@ export interface BOperationOut {
 export interface BOperationOuter {
   kind: 'outer';
   outerTerminalIndex: number; // m_iIntData1: 当駅 outerTerminalCont への index
-  outerHatsuJikoku: Jikoku;   // m_JikokuData1: 路線外駅の発車時刻
-  chakuJikoku: Jikoku;        // m_JikokuData2: 当駅の着時刻(Ver2 で駅時刻から作業側へ移動)
-  inOutLinkCode: string;      // m_strInOutLinkCode
+  outerHatsuJikoku: Jikoku; // m_JikokuData1: 路線外駅の発車時刻
+  chakuJikoku: Jikoku; // m_JikokuData2: 当駅の着時刻(Ver2 で駅時刻から作業側へ移動)
+  inOutLinkCode: string; // m_strInOutLinkCode
   operationNumbers: string[]; // m_strOperationNumber1
 }
 
@@ -442,7 +442,7 @@ export interface BOperationOuter {
  *  OperationCache へ)。ファイル書式: 5/起点時刻$仮運用番号(;連結) */
 export interface BOperationJunction {
   kind: 'junction';
-  kitenJikoku: Jikoku;            // m_JikokuData1: 探索起点時刻
+  kitenJikoku: Jikoku; // m_JikokuData1: 探索起点時刻
   kariOperationNumbers: string[]; // 仮運用番号(運用番号スロット)
 }
 
@@ -468,10 +468,10 @@ export type AfterOperation =
  *  ファイル書式: 0/入換先番線idx$入換発時刻/[入換着時刻]$発時刻表示(0|1) */
 export interface AOperationShunt {
   kind: 'shunt';
-  shuntTrackIndex: number;   // m_iIntData1: 入換先番線
-  shuntHatsuJikoku: Jikoku;  // m_JikokuData1
-  shuntChakuJikoku: Jikoku;  // m_JikokuData2
-  displayJikoku: boolean;    // m_bBoolData1: 入換発時刻を当駅発時刻とみなして表示
+  shuntTrackIndex: number; // m_iIntData1: 入換先番線
+  shuntHatsuJikoku: Jikoku; // m_JikokuData1
+  shuntChakuJikoku: Jikoku; // m_JikokuData2
+  displayJikoku: boolean; // m_bBoolData1: 入換発時刻を当駅発時刻とみなして表示
 }
 
 /** 増結(AOperation_Connect = 1)。子は相手編成の前作業列(前作業の増結と同じ) */
@@ -494,8 +494,8 @@ export interface AOperationRelease {
 /** 入区(AOperation_In = 3)。ファイル書式: 3/入区時刻$入出区連携コード */
 export interface AOperationIn {
   kind: 'in';
-  inJikoku: Jikoku;          // m_JikokuData1: 入区時刻
-  inOutLinkCode: string;     // m_strInOutLinkCode
+  inJikoku: Jikoku; // m_JikokuData1: 入区時刻
+  inOutLinkCode: string; // m_strInOutLinkCode
 }
 
 /** 路線外終着(AOperation_Outer = 4)
@@ -503,8 +503,8 @@ export interface AOperationIn {
 export interface AOperationOuter {
   kind: 'outer';
   outerTerminalIndex: number; // m_iIntData1
-  hatsuJikoku: Jikoku;        // 当駅の発時刻
-  outerChakuJikoku: Jikoku;   // 路線外駅への終着時刻
+  hatsuJikoku: Jikoku; // 当駅の発時刻
+  outerChakuJikoku: Jikoku; // 路線外駅への終着時刻
   inOutLinkCode: string;
 }
 
@@ -512,8 +512,8 @@ export interface AOperationOuter {
  *  ファイル書式: 5/終点時刻$次列車接続タイプ(0–3) */
 export interface AOperationJunction {
   kind: 'junction';
-  syuutenJikoku: Jikoku;               // m_JikokuData1: 探索終点時刻
-  junctionType: AfterJunctionType;     // m_iIntData1: 次列車接続タイプ(§5)
+  syuutenJikoku: Jikoku; // m_JikokuData1: 探索終点時刻
+  junctionType: AfterJunctionType; // m_iIntData1: 次列車接続タイプ(§5)
 }
 
 /** 運用番号変更(AOperation_NumberChange = 6)。空配列 = 順反転 */
@@ -531,15 +531,15 @@ export interface AOperationNumberChange {
 /** 時刻 Order(原典 CdDedJikokuOrder)。列車内の特定の着/発時刻を指す。
  *  数値換算: jikokuOrder = ekiOrder * 2 + (item === 'hatsu' ? 1 : 0) */
 export interface JikokuOrder {
-  ekiOrder: number;              // m_iEkiOrder(方向基準。原典の負値 Null は使わず、Null はこの型自体を null に)
-  item: 'chaku' | 'hatsu';       // EEkiJikokuItem { EkiJikokuItem_Chaku = 0, EkiJikokuItem_Hatsu = 1 }
+  ekiOrder: number; // m_iEkiOrder(方向基準。原典の負値 Null は使わず、Null はこの型自体を null に)
+  item: 'chaku' | 'hatsu'; // EEkiJikokuItem { EkiJikokuItem_Chaku = 0, EkiJikokuItem_Hatsu = 1 }
 }
 
 /** 列車参照キー(原典 CdDedRessyaProperty)。運用探索・導出キャッシュのキー */
 export interface RessyaProperty {
-  houkou: Ressyahoukou;          // m_eRessyahoukou
-  ressyaIndex: number | null;    // m_iRessyaIndex(-1 → null)
-  jikoku: Jikoku;                // m_aCdDedJikoku(出区時刻等。区別用)
+  houkou: Ressyahoukou; // m_eRessyahoukou
+  ressyaIndex: number | null; // m_iRessyaIndex(-1 → null)
+  jikoku: Jikoku; // m_aCdDedJikoku(出区時刻等。区別用)
 }
 ```
 
@@ -548,38 +548,38 @@ export interface RessyaProperty {
 ```typescript
 /** 表示プロパティ(原典 CdDedDispProp / DispProp. ノード)。全キー常時出力(分析 §03 §5.8) */
 export interface DispProp {
-  jikokuhyouFont: FontProp[];          // JikokuhyouFont × 8(idx1=Bold, idx2=Itaric, idx3=Bold+Itaric が既定)
-  jikokuhyouVFont: FontProp;           // JikokuhyouVFont(縦書き。既定 9pt @メイリオ)
-  diaEkimeiFont: FontProp;             // DiaEkimeiFont
-  diaJikokuFont: FontProp;             // DiaJikokuFont
-  diaRessyaFont: FontProp;             // DiaRessyaFont
-  operationTableFont: FontProp;        // OperationTableFont(1.09〜)
+  jikokuhyouFont: FontProp[]; // JikokuhyouFont × 8(idx1=Bold, idx2=Itaric, idx3=Bold+Itaric が既定)
+  jikokuhyouVFont: FontProp; // JikokuhyouVFont(縦書き。既定 9pt @メイリオ)
+  diaEkimeiFont: FontProp; // DiaEkimeiFont
+  diaJikokuFont: FontProp; // DiaJikokuFont
+  diaRessyaFont: FontProp; // DiaRessyaFont
+  operationTableFont: FontProp; // OperationTableFont(1.09〜)
   allOperationTableJikokuFont: FontProp; // AllOperationTableJikokuFont(1.09〜)
-  commentFont: FontProp;               // CommentFont
-  diaMojiColor: Colorref;              // DiaMojiColor(既定 黒)
-  diaBackColor: Colorref[];            // DiaBackColor × 5(1.09〜。既定 白 × 5)
-  diaRessyaColor: Colorref;            // DiaRessyaColor(原典に廃止予定注記)
-  diaJikuColor: Colorref;              // DiaJikuColor(既定 C0C0C0)
-  jikokuhyouBackColor: Colorref[];     // JikokuhyouBackColor × 4(既定 白/F0F0F0/白/白)
-  stdOpeTimeLowerColor: Colorref;      // StdOpeTimeLowerColor(基準運転時分比較。既定 FFE0E0)
-  stdOpeTimeHigherColor: Colorref;     // StdOpeTimeHigherColor(既定 E0FFFF)
-  stdOpeTimeUndefColor: Colorref;      // StdOpeTimeUndefColor(既定 FFFF80)
-  stdOpeTimeIllegalColor: Colorref;    // StdOpeTimeIllegalColor(既定 A0A0A0)
-  operationStringColor: Colorref;      // OperationStringColor(既定 黒)
-  operationGridColor: Colorref;        // OperationGridColor(既定 黒)
-  ekimeiLength: number;                // EkimeiLength(駅名欄幅・全角数。既定 6)
-  jikokuhyouRessyaWidth: number;       // JikokuhyouRessyaWidth(列車欄幅。既定 5)
-  anySecondIncDec1: number;            // AnySecondIncDec1(任意秒送り 1。既定 5)
-  anySecondIncDec2: number;            // AnySecondIncDec2(既定 15)
-  displayRessyamei: boolean;           // DisplayRessyamei(既定 true。"0" のときのみ false)
-  displayOuterTerminalEkimeiOriginSide: boolean;   // DisplayOuterTerminalEkimeiOriginSide
+  commentFont: FontProp; // CommentFont
+  diaMojiColor: Colorref; // DiaMojiColor(既定 黒)
+  diaBackColor: Colorref[]; // DiaBackColor × 5(1.09〜。既定 白 × 5)
+  diaRessyaColor: Colorref; // DiaRessyaColor(原典に廃止予定注記)
+  diaJikuColor: Colorref; // DiaJikuColor(既定 C0C0C0)
+  jikokuhyouBackColor: Colorref[]; // JikokuhyouBackColor × 4(既定 白/F0F0F0/白/白)
+  stdOpeTimeLowerColor: Colorref; // StdOpeTimeLowerColor(基準運転時分比較。既定 FFE0E0)
+  stdOpeTimeHigherColor: Colorref; // StdOpeTimeHigherColor(既定 E0FFFF)
+  stdOpeTimeUndefColor: Colorref; // StdOpeTimeUndefColor(既定 FFFF80)
+  stdOpeTimeIllegalColor: Colorref; // StdOpeTimeIllegalColor(既定 A0A0A0)
+  operationStringColor: Colorref; // OperationStringColor(既定 黒)
+  operationGridColor: Colorref; // OperationGridColor(既定 黒)
+  ekimeiLength: number; // EkimeiLength(駅名欄幅・全角数。既定 6)
+  jikokuhyouRessyaWidth: number; // JikokuhyouRessyaWidth(列車欄幅。既定 5)
+  anySecondIncDec1: number; // AnySecondIncDec1(任意秒送り 1。既定 5)
+  anySecondIncDec2: number; // AnySecondIncDec2(既定 15)
+  displayRessyamei: boolean; // DisplayRessyamei(既定 true。"0" のときのみ false)
+  displayOuterTerminalEkimeiOriginSide: boolean; // DisplayOuterTerminalEkimeiOriginSide
   displayOuterTerminalEkimeiTerminalSide: boolean; // DisplayOuterTerminalEkimeiTerminalSide
   diagramDisplayOuterTerminal: number; // DiagramDisplayOuterTerminal(既定 0)
-  secondRoundChaku: SecondRound;       // SecondRoundChaku(1.08〜)
-  secondRoundHatsu: SecondRound;       // SecondRoundHatsu
-  display2400: boolean;                // Display2400(0:00 着を 24:00 表記。1.08〜)
-  operationNumberRows: number;         // OperationNumberRows(運用番号段数。1.10〜。既定 1)
-  displayInOutLinkCode: boolean;       // DisplayInOutLinkCode(1.10〜)
+  secondRoundChaku: SecondRound; // SecondRoundChaku(1.08〜)
+  secondRoundHatsu: SecondRound; // SecondRoundHatsu
+  display2400: boolean; // Display2400(0:00 着を 24:00 表記。1.08〜)
+  operationNumberRows: number; // OperationNumberRows(運用番号段数。1.10〜。既定 1)
+  displayInOutLinkCode: boolean; // DisplayInOutLinkCode(1.10〜)
   unknownEntries?: UnknownEntry[];
 }
 
@@ -607,7 +607,9 @@ export interface OperationDeriveResult {
 
 /** 作業の導出スロット(原典※印: 割当運番・前列車接続時刻(在線表有/無)・
  *  前列車方向・前列車終着駅 Order・種別変更接続・割当運番有効 等) */
-export interface DerivedOperationSlot { /* v0.7 で確定 */ }
+export interface DerivedOperationSlot {
+  /* v0.7 で確定 */
+}
 
 /** 分岐・環状の派生マップ(原典 m_iBrunchLoopPosition / m_iEkiIndexBrunchOriginSide /
  *  m_iEkiIndexLoop / m_iEkiIndexBrunchTerminalSide)。
@@ -623,47 +625,49 @@ export interface BrunchLoopMap {
 
 /** ダイヤグラムレイアウト(entDgr 相当)は computeDiagramLayout() の出力。
  *  X = 秒(起点相対、86400 超・負を許容)、Y = 秒単位駅間幅。詳細は描画設計へ */
-export interface DiagramLayout { /* アーキテクチャ §5.1 */ }
+export interface DiagramLayout {
+  /* アーキテクチャ §5.1 */
+}
 ```
 
 ---
 
 ## 3. C++ クラス ⇄ TS 型の対応表
 
-| C++(entDed) | TS 型 | 備考 |
-|---|---|---|
-| `CDedRosenFileData` | `RosenFileData` | ルート。WindowPlacement は `RawEntry[]` で透過保持 |
-| `CentDedRosen` | `Rosen` | |
-| `CentDedEkiCont` / `CXCentDedEkiCont` | `Eki[]` | 整合カスケードは domain 関数へ(§8) |
-| `CentDedEki` | `Eki` | 派生マップ(BrunchLoop)と `m_bKyoukaisen` は除外 |
-| `CentDedEkiTrack2Cont` | `EkiTrack2[]` | |
-| `CentDedEkiTrack2` | `EkiTrack2` | |
-| `OuterTerminal`(構造体) | `OuterTerminal` | |
-| `TrackContent` / `ETrackType` | `TrackContent` / `TrackType` | |
-| `CrossingCheckRule`(構造体) | `CrossingCheckRule` | |
-| `CentDedRessyasyubetsuCont` | `Ressyasyubetsu[]` | 種別 Index シフトは domain 関数へ |
-| `CentDedRessyasyubetsu` | `Ressyasyubetsu` | |
-| `CdDiagramLineStyle` | `DiagramLineStyle` | |
-| `CentDedDiaCont` | `Dia[]` | 名前一意はコマンド事前検証で強制 |
-| `CentDedDia` | `Dia` | 導出コンテナ 3 種・ランタイムフラグ 2 種は除外(§1.4) |
-| `CXRessyaCont m_CentDedRessyaCont[2]` | `[Ressya[], Ressya[]]` | タプル添字 = `Ressyahoukou` |
-| `CentDedRessya` | `Ressya` | |
-| `CentDedEkiJikokuCont` | `EkiJikoku[]` | 駅数一致の不変条件は §8 |
-| `CentDedEkiJikoku` | `EkiJikoku` | |
-| `CentDedBeforeOperation` | `BeforeOperation`(union 7 種) | スロット → 名前付きフィールド |
-| `CentDedAfterOperation` | `AfterOperation`(union 7 種) | 同上 |
-| `CdDedJikoku` | `Jikoku`(`Seconds \| null`) | INT_MIN → null |
-| `CdDedJikan` | `Jikan` | |
-| `CdDedJikokuOrder` | `JikokuOrder` | |
-| `CdDedRessyaProperty` | `RessyaProperty` | |
-| `CdColorProp` | `Colorref` | COLORREF 数値のまま |
-| `CdDedDispProp` | `DispProp` | |
-| (フォント: CdConnectedString2) | `FontProp` | |
-| `CDedRessyaSoater` 派生 8 種 | domain の比較関数群 `ressyaComparators.*` | 「index ソート → 実体並べ替え」は不要(配列の `toSorted`) |
-| `CRessyaContUnifier` | domain 関数 `unifyRessyaCont()` | |
-| `CentDedRessya_EkijikokuModifyOperation2` | `EditCommand` の `ekiJikoku/modify` 系コマンド | |
-| `CDedOperationConnecter` | derive 関数(Worker 実行)→ `OperationDeriveResult` | v0.7 |
-| entDgr 群(`CentDedDgrDia` ほか) | derive `computeDiagramLayout()` → `DiagramLayout` | ストア外 |
+| C++(entDed)                               | TS 型                                             | 備考                                                     |
+| ----------------------------------------- | ------------------------------------------------- | -------------------------------------------------------- |
+| `CDedRosenFileData`                       | `RosenFileData`                                   | ルート。WindowPlacement は `RawEntry[]` で透過保持       |
+| `CentDedRosen`                            | `Rosen`                                           |                                                          |
+| `CentDedEkiCont` / `CXCentDedEkiCont`     | `Eki[]`                                           | 整合カスケードは domain 関数へ(§8)                       |
+| `CentDedEki`                              | `Eki`                                             | 派生マップ(BrunchLoop)と `m_bKyoukaisen` は除外          |
+| `CentDedEkiTrack2Cont`                    | `EkiTrack2[]`                                     |                                                          |
+| `CentDedEkiTrack2`                        | `EkiTrack2`                                       |                                                          |
+| `OuterTerminal`(構造体)                   | `OuterTerminal`                                   |                                                          |
+| `TrackContent` / `ETrackType`             | `TrackContent` / `TrackType`                      |                                                          |
+| `CrossingCheckRule`(構造体)               | `CrossingCheckRule`                               |                                                          |
+| `CentDedRessyasyubetsuCont`               | `Ressyasyubetsu[]`                                | 種別 Index シフトは domain 関数へ                        |
+| `CentDedRessyasyubetsu`                   | `Ressyasyubetsu`                                  |                                                          |
+| `CdDiagramLineStyle`                      | `DiagramLineStyle`                                |                                                          |
+| `CentDedDiaCont`                          | `Dia[]`                                           | 名前一意はコマンド事前検証で強制                         |
+| `CentDedDia`                              | `Dia`                                             | 導出コンテナ 3 種・ランタイムフラグ 2 種は除外(§1.4)     |
+| `CXRessyaCont m_CentDedRessyaCont[2]`     | `[Ressya[], Ressya[]]`                            | タプル添字 = `Ressyahoukou`                              |
+| `CentDedRessya`                           | `Ressya`                                          |                                                          |
+| `CentDedEkiJikokuCont`                    | `EkiJikoku[]`                                     | 駅数一致の不変条件は §8                                  |
+| `CentDedEkiJikoku`                        | `EkiJikoku`                                       |                                                          |
+| `CentDedBeforeOperation`                  | `BeforeOperation`(union 7 種)                     | スロット → 名前付きフィールド                            |
+| `CentDedAfterOperation`                   | `AfterOperation`(union 7 種)                      | 同上                                                     |
+| `CdDedJikoku`                             | `Jikoku`(`Seconds \| null`)                       | INT_MIN → null                                           |
+| `CdDedJikan`                              | `Jikan`                                           |                                                          |
+| `CdDedJikokuOrder`                        | `JikokuOrder`                                     |                                                          |
+| `CdDedRessyaProperty`                     | `RessyaProperty`                                  |                                                          |
+| `CdColorProp`                             | `Colorref`                                        | COLORREF 数値のまま                                      |
+| `CdDedDispProp`                           | `DispProp`                                        |                                                          |
+| (フォント: CdConnectedString2)            | `FontProp`                                        |                                                          |
+| `CDedRessyaSoater` 派生 8 種              | domain の比較関数群 `ressyaComparators.*`         | 「index ソート → 実体並べ替え」は不要(配列の `toSorted`) |
+| `CRessyaContUnifier`                      | domain 関数 `unifyRessyaCont()`                   |                                                          |
+| `CentDedRessya_EkijikokuModifyOperation2` | `EditCommand` の `ekiJikoku/modify` 系コマンド    |                                                          |
+| `CDedOperationConnecter`                  | derive 関数(Worker 実行)→ `OperationDeriveResult` | v0.7                                                     |
+| entDgr 群(`CentDedDgrDia` ほか)           | derive `computeDiagramLayout()` → `DiagramLayout` | ストア外                                                 |
 
 ---
 
@@ -703,11 +707,11 @@ domain では文字列リテラルユニオン、ファイル上の表現(数値
 export type Ekiatsukai = 'none' | 'teisya' | 'tsuuka';
 ```
 
-| TS | 原典 | ファイル(EkiJikoku 内) | 意味 |
-|---|---|---|---|
-| `'none'` | `Ekiatsukai_None` | 空 / `0` | 運行なし(規定値)。着発時刻は null |
-| `'teisya'` | `Ekiatsukai_Teisya` | `1` | 停車 |
-| `'tsuuka'` | `Ekiatsukai_Tsuuka` | `2` | 通過 |
+| TS         | 原典                | ファイル(EkiJikoku 内) | 意味                              |
+| ---------- | ------------------- | ---------------------- | --------------------------------- |
+| `'none'`   | `Ekiatsukai_None`   | 空 / `0`               | 運行なし(規定値)。着発時刻は null |
+| `'teisya'` | `Ekiatsukai_Teisya` | `1`                    | 停車                              |
+| `'tsuuka'` | `Ekiatsukai_Tsuuka` | `2`                    | 通過                              |
 
 旧 OuDia の `3`(経由なし、`Ekiatsukai_Keiyunasi`)は enum に**含めない**。読込時に `'none'` へ変換する(S00 リーダー。範囲外値も `'none'`)。経由なしは分岐・環状設定で表現される(原典 Ver2.00 の仕様変更に追随)。
 
@@ -715,18 +719,17 @@ export type Ekiatsukai = 'none' | 'teisya' | 'tsuuka';
 
 ```typescript
 export type Ekijikokukeisiki =
-  | 'hatsu' | 'hatsuchaku' | 'kudariChaku' | 'noboriChaku'
-  | 'kudariHatsuchaku' | 'noboriHatsuchaku';
+  'hatsu' | 'hatsuchaku' | 'kudariChaku' | 'noboriChaku' | 'kudariHatsuchaku' | 'noboriHatsuchaku';
 ```
 
-| TS | 原典 / ファイル識別子 | 意味 |
-|---|---|---|
-| `'hatsu'` | `Jikokukeisiki_Hatsu` | 発のみ(規定値)。終着駅では着のみ |
-| `'hatsuchaku'` | `Jikokukeisiki_Hatsuchaku` | 発着両方 |
-| `'kudariChaku'` | `Jikokukeisiki_KudariChaku` | 下り着のみ・上り発のみ |
-| `'noboriChaku'` | `Jikokukeisiki_NoboriChaku` | 下り発のみ・上り着のみ |
-| `'kudariHatsuchaku'` | `Jikokukeisiki_KudariHatsuchaku` | 下り発着・上り発のみ |
-| `'noboriHatsuchaku'` | `Jikokukeisiki_NoboriHatsuchaku` | 下り発のみ・上り発着 |
+| TS                   | 原典 / ファイル識別子            | 意味                             |
+| -------------------- | -------------------------------- | -------------------------------- |
+| `'hatsu'`            | `Jikokukeisiki_Hatsu`            | 発のみ(規定値)。終着駅では着のみ |
+| `'hatsuchaku'`       | `Jikokukeisiki_Hatsuchaku`       | 発着両方                         |
+| `'kudariChaku'`      | `Jikokukeisiki_KudariChaku`      | 下り着のみ・上り発のみ           |
+| `'noboriChaku'`      | `Jikokukeisiki_NoboriChaku`      | 下り発のみ・上り着のみ           |
+| `'kudariHatsuchaku'` | `Jikokukeisiki_KudariHatsuchaku` | 下り発着・上り発のみ             |
+| `'noboriHatsuchaku'` | `Jikokukeisiki_NoboriHatsuchaku` | 下り発のみ・上り発着             |
 
 ファイルは識別子文字列そのもの(`Ekijikokukeisiki=Jikokukeisiki_Hatsu`)。不正値は読込エラー(-22 系)。
 
@@ -768,26 +771,25 @@ export type StopMarkDrawType = 'drawOnStop' | 'nothing' | 'drawOnPass';
 export type TrackType = 'track' | 'origin' | 'terminal' | 'outer';
 ```
 
-| TS | ファイル値 | `TrackContent.index` の意味 |
-|---|---|---|
-| `'track'` | `0` | 駅の番線 index |
-| `'origin'` | `1` | 路線の起点側(index = 駅Index) |
-| `'terminal'` | `2` | 路線の終点側(index = 駅Index) |
-| `'outer'` | `3` | 路線外発着(index = outerTerminalCont の index) |
+| TS           | ファイル値 | `TrackContent.index` の意味                    |
+| ------------ | ---------- | ---------------------------------------------- |
+| `'track'`    | `0`        | 駅の番線 index                                 |
+| `'origin'`   | `1`        | 路線の起点側(index = 駅Index)                  |
+| `'terminal'` | `2`        | 路線の終点側(index = 駅Index)                  |
+| `'outer'`    | `3`        | 路線外発着(index = outerTerminalCont の index) |
 
 ### 5.8 AfterJunctionType(次列車接続タイプ)— 原典 後作業 `m_iIntData1`
 
 ```typescript
-export type AfterJunctionType =
-  | 'unrelated' | 'classChange' | 'propertyChange' | 'propertySame';
+export type AfterJunctionType = 'unrelated' | 'classChange' | 'propertyChange' | 'propertySame';
 ```
 
-| TS | ファイル値 | 原典(EBeforeAfterType 対応) | 意味 |
-|---|---|---|---|
-| `'unrelated'` | `0` | `BeforeAfterType_Unrelated` | 別列車 |
-| `'classChange'` | `1` | `_ClassChange` | 種別変更 |
-| `'propertyChange'` | `2` | `_PropertyChange` | 列車情報変更 |
-| `'propertySame'` | `3` | `_PropertySame` | 同一列車扱い |
+| TS                 | ファイル値 | 原典(EBeforeAfterType 対応) | 意味         |
+| ------------------ | ---------- | --------------------------- | ------------ |
+| `'unrelated'`      | `0`        | `BeforeAfterType_Unrelated` | 別列車       |
+| `'classChange'`    | `1`        | `_ClassChange`              | 種別変更     |
+| `'propertyChange'` | `2`        | `_PropertyChange`           | 列車情報変更 |
+| `'propertySame'`   | `3`        | `_PropertySame`             | 同一列車扱い |
 
 範囲外は読込時 `'unrelated'` に補正(原典の 0 補正を踏襲)。
 
@@ -805,32 +807,32 @@ export type AfterJunctionType =
 
 ### 6.2 参照フィールドの一覧(全数)
 
-| 参照元フィールド | 参照先 | 範囲外時の補正(読込時。format 層) |
-|---|---|---|
-| `Rosen.kijunDiaIndex` | `diaCont` | キー省略時: DiaName「基準運転時分」を名前検索、なければ 0 |
-| `Eki.downMain` / `upMain` | 自駅 `ekiTrack2Cont` | 非数 → 0 |
-| `Eki.brunchCoreEkiIndex` | `ekiCont`(駅Index) | -1 → null |
-| `Eki.loopOriginEkiIndex` | `ekiCont`(駅Index) | -1 → null |
-| `Eki.diagramColorNextEki` | `DispProp.diaBackColor`(0–4) | 非数 → 0 |
-| `TrackContent.index` | trackType 依存(§5.7) | 範囲外 → 0 |
-| `Ressyasyubetsu.parentSyubetsuIndex` | `ressyasyubetsuCont` | -1 → null。範囲外 → null |
-| `Ressyasyubetsu.jikokuhyouFontIndex` | `DispProp.jikokuhyouFont`(0–7) | 範囲外は読込エラー(-101) |
-| `Dia.mainBackColorIndex` ほか背景色 3 種 | `DispProp.jikokuhyouBackColor` 等 | 空 → 既定値 |
-| `Ressya.syubetsuIndex` | `ressyasyubetsuCont` | 非数 → 0 |
-| `EkiJikoku.ressyaTrackIndex` | 該当駅の `ekiTrack2Cont` | **範囲外 → 主本線(下り = downMain / 上り = upMain)** |
-| `BOperationShunt.shuntTrackIndex` 等(作業内番線) | 該当駅の `ekiTrack2Cont` | 範囲外 → 0 |
-| `BOperationOuter.outerTerminalIndex` / `AOperationOuter.outerTerminalIndex` | 該当駅の `outerTerminalCont` | 範囲外 → 0 |
-| `RessyaProperty.ressyaIndex` | `Dia.ressyaCont[houkou]` | -1 → null(ランタイム型のみ、非永続) |
+| 参照元フィールド                                                            | 参照先                            | 範囲外時の補正(読込時。format 層)                         |
+| --------------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------- |
+| `Rosen.kijunDiaIndex`                                                       | `diaCont`                         | キー省略時: DiaName「基準運転時分」を名前検索、なければ 0 |
+| `Eki.downMain` / `upMain`                                                   | 自駅 `ekiTrack2Cont`              | 非数 → 0                                                  |
+| `Eki.brunchCoreEkiIndex`                                                    | `ekiCont`(駅Index)                | -1 → null                                                 |
+| `Eki.loopOriginEkiIndex`                                                    | `ekiCont`(駅Index)                | -1 → null                                                 |
+| `Eki.diagramColorNextEki`                                                   | `DispProp.diaBackColor`(0–4)      | 非数 → 0                                                  |
+| `TrackContent.index`                                                        | trackType 依存(§5.7)              | 範囲外 → 0                                                |
+| `Ressyasyubetsu.parentSyubetsuIndex`                                        | `ressyasyubetsuCont`              | -1 → null。範囲外 → null                                  |
+| `Ressyasyubetsu.jikokuhyouFontIndex`                                        | `DispProp.jikokuhyouFont`(0–7)    | 範囲外は読込エラー(-101)                                  |
+| `Dia.mainBackColorIndex` ほか背景色 3 種                                    | `DispProp.jikokuhyouBackColor` 等 | 空 → 既定値                                               |
+| `Ressya.syubetsuIndex`                                                      | `ressyasyubetsuCont`              | 非数 → 0                                                  |
+| `EkiJikoku.ressyaTrackIndex`                                                | 該当駅の `ekiTrack2Cont`          | **範囲外 → 主本線(下り = downMain / 上り = upMain)**      |
+| `BOperationShunt.shuntTrackIndex` 等(作業内番線)                            | 該当駅の `ekiTrack2Cont`          | 範囲外 → 0                                                |
+| `BOperationOuter.outerTerminalIndex` / `AOperationOuter.outerTerminalIndex` | 該当駅の `outerTerminalCont`      | 範囲外 → 0                                                |
+| `RessyaProperty.ressyaIndex`                                                | `Dia.ressyaCont[houkou]`          | -1 → null(ランタイム型のみ、非永続)                       |
 
 ### 6.3 null 番兵の変換規則(format 層の責務)
 
-| モデル | ファイル |
-|---|---|
-| `brunchCoreEkiIndex: null` | `BrunchCoreEkiIndex` キー省略(-1 は書かない) |
-| `loopOriginEkiIndex: null` | 同上 |
-| `parentSyubetsuIndex: null` | `ParentSyubetsuIndex` キー省略 |
-| `Jikoku` の `null` | 空文字列(時刻部の省略) |
-| `ressyaTrackIndex: null` | 駅扱 `'none'` の要素は要素全体が空。それ以外では `$番線` を必ず出力するため、書き出し前に主本線で解決する。**原典との差異**: 原典は `getRessyaTrackIndex()` の生値を stringOf するため、未設定(INT_MIN)のまま停車に昇格した要素は `$-2147483648` を出力する(CconvCentDed.cpp CentDedEkiJikoku_To_string。setChakujikoku の 'none'→'teisya' 昇格は番線を設定しない — CentDedEkiJikoku.cpp)。Web 版は意図的に主本線へ解決する。読込時の範囲外補正(§6.2: 範囲外 → 主本線)と同値になるため実害はないが、同一編集後の保存バイト列が Windows 版と一致しない可能性がある差異として明示する |
+| モデル                      | ファイル                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `brunchCoreEkiIndex: null`  | `BrunchCoreEkiIndex` キー省略(-1 は書かない)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `loopOriginEkiIndex: null`  | 同上                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `parentSyubetsuIndex: null` | `ParentSyubetsuIndex` キー省略                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `Jikoku` の `null`          | 空文字列(時刻部の省略)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `ressyaTrackIndex: null`    | 駅扱 `'none'` の要素は要素全体が空。それ以外では `$番線` を必ず出力するため、書き出し前に主本線で解決する。**原典との差異**: 原典は `getRessyaTrackIndex()` の生値を stringOf するため、未設定(INT_MIN)のまま停車に昇格した要素は `$-2147483648` を出力する(CconvCentDed.cpp CentDedEkiJikoku_To_string。setChakujikoku の 'none'→'teisya' 昇格は番線を設定しない — CentDedEkiJikoku.cpp)。Web 版は意図的に主本線へ解決する。読込時の範囲外補正(§6.2: 範囲外 → 主本線)と同値になるため実害はないが、同一編集後の保存バイト列が Windows 版と一致しない可能性がある差異として明示する |
 
 ### 6.4 二重インデックス(駅Index / 駅Order)の扱い
 
@@ -841,7 +843,11 @@ export type AfterJunctionType =
 - 変換は domain の純関数で提供する(原典 `EkiIndexOfEkiOrder` / `EkiOrderOfEkiIndex` の直訳):
 
 ```typescript
-export function ekiIndexOfEkiOrder(ekiOrder: number, ekiCount: number, houkou: Ressyahoukou): number {
+export function ekiIndexOfEkiOrder(
+  ekiOrder: number,
+  ekiCount: number,
+  houkou: Ressyahoukou,
+): number {
   return houkou === RESSYAHOUKOU_KUDARI ? ekiOrder : ekiCount - 1 - ekiOrder;
 }
 // ekiOrderOfEkiIndex も同形(対合写像)
@@ -879,8 +885,7 @@ interface DocumentStore {
 }
 
 // コマンドレデューサの型
-export type CommandReducer<C extends EditCommand> =
-  (draft: Draft<RosenFileData>, cmd: C) => void;
+export type CommandReducer<C extends EditCommand> = (draft: Draft<RosenFileData>, cmd: C) => void;
 ```
 
 ### 7.3 Undo/Redo との整合
@@ -902,16 +907,16 @@ export type CommandReducer<C extends EditCommand> =
 
 ### 8.1 不変条件(プロパティテストで常設検証)
 
-| # | 不変条件 | 原典根拠 |
-|---|---|---|
-| I1 | 全ダイヤ・全方向・全列車について `ressya.ekiJikokuCont.length === rosen.ekiCont.length` | CentDedEkiJikokuCont(列車側 insert/erase 禁止) |
-| I2 | `dia.name` は `diaCont` 内で一意かつ空でない | CXCentDedDiaCont(限定子) |
-| I3 | `syubetsumei` は空でない。`ressyasyubetsuCont.length >= 1` | CentDedRessyasyubetsu |
-| I4 | `ressya.houkou === h` ⟺ その列車が `ressyaCont[h]` に属する | 列車方向の固定 |
-| I5 | `kitenJikoku` は null を許容(ファイルの空 `KitenJikoku=` をそのまま往復保持 — §2.3)。演算では null を 0(00:00:00)相当として扱う | CconvCentDed.cpp:4947-4966(空 → Null のまま setKitenJikoku)・4774-4778(encode 素通し出力) |
-| I6 | 参照 index の全域有効性: `syubetsuIndex` ∈ [0, 種別数)、`ressyaTrackIndex` は null または [0, 当駅番線数)、`downMain`/`upMain` ∈ [0, 番線数)、`brunchCoreEkiIndex`/`loopOriginEkiIndex` は null または [0, 駅数)、`kijunDiaIndex` ∈ [0, ダイヤ数)、`diagramTrackOmit.length === ekiTrack2Cont.length` ほか §6.2 の全行 | 各 adjust |
-| I7 | `ekiatsukai === 'none'` ⇒ `chakuJikoku === null && hatsuJikoku === null && beforeOperationCont.length === 0 && afterOperationCont.length === 0` | setEkiatsukai の副作用 |
-| I8 | `ekiatsukai === 'teisya'` は着発とも null を許容する(「時刻なし停車」。ファイル上 `1$番線` として合法に永続化される)。set 系ヘルパは teisya を 'none' へ降格**しない**(降格はユーザーの明示操作のみ) | CentDedEkiJikoku::setEkiatsukai / set(降格処理なし)、CconvCentDed.cpp CentDedEkiJikoku_To_string / From_string |
+| #   | 不変条件                                                                                                                                                                                                                                                                                                               | 原典根拠                                                                                                       |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| I1  | 全ダイヤ・全方向・全列車について `ressya.ekiJikokuCont.length === rosen.ekiCont.length`                                                                                                                                                                                                                                | CentDedEkiJikokuCont(列車側 insert/erase 禁止)                                                                 |
+| I2  | `dia.name` は `diaCont` 内で一意かつ空でない                                                                                                                                                                                                                                                                           | CXCentDedDiaCont(限定子)                                                                                       |
+| I3  | `syubetsumei` は空でない。`ressyasyubetsuCont.length >= 1`                                                                                                                                                                                                                                                             | CentDedRessyasyubetsu                                                                                          |
+| I4  | `ressya.houkou === h` ⟺ その列車が `ressyaCont[h]` に属する                                                                                                                                                                                                                                                            | 列車方向の固定                                                                                                 |
+| I5  | `kitenJikoku` は null を許容(ファイルの空 `KitenJikoku=` をそのまま往復保持 — §2.3)。演算では null を 0(00:00:00)相当として扱う                                                                                                                                                                                        | CconvCentDed.cpp:4947-4966(空 → Null のまま setKitenJikoku)・4774-4778(encode 素通し出力)                      |
+| I6  | 参照 index の全域有効性: `syubetsuIndex` ∈ [0, 種別数)、`ressyaTrackIndex` は null または [0, 当駅番線数)、`downMain`/`upMain` ∈ [0, 番線数)、`brunchCoreEkiIndex`/`loopOriginEkiIndex` は null または [0, 駅数)、`kijunDiaIndex` ∈ [0, ダイヤ数)、`diagramTrackOmit.length === ekiTrack2Cont.length` ほか §6.2 の全行 | 各 adjust                                                                                                      |
+| I7  | `ekiatsukai === 'none'` ⇒ `chakuJikoku === null && hatsuJikoku === null && beforeOperationCont.length === 0 && afterOperationCont.length === 0`                                                                                                                                                                        | setEkiatsukai の副作用                                                                                         |
+| I8  | `ekiatsukai === 'teisya'` は着発とも null を許容する(「時刻なし停車」。ファイル上 `1$番線` として合法に永続化される)。set 系ヘルパは teisya を 'none' へ降格**しない**(降格はユーザーの明示操作のみ)                                                                                                                   | CentDedEkiJikoku::setEkiatsukai / set(降格処理なし)、CconvCentDed.cpp CentDedEkiJikoku_To_string / From_string |
 
 これらは Vitest のプロパティベーステスト(任意の駅追加削除・種別入替・番線再マップの系列を生成して I1–I8 を検証)を CI 常設とする(アーキテクチャ §7.2 / §9.7)。
 
@@ -991,16 +996,16 @@ domain の `setEkiatsukai(draftEkiJikoku, value)` 等のヘルパに閉じ込め
 
 domain の `createDefault*()` ファクトリ関数が返す値。ファイル省略時の読込デフォルト(format 層のテーブル)とは別物である点に注意(例: `operationCrossKitenJikoku` は新規作成 true / ファイル省略時 false)。
 
-| ファクトリ | 主な既定値 |
-|---|---|
-| `createDefaultRosen()` | kitenJikoku = 0(00:00)、diagramDgrYZahyouKyoriDefault = 60、enableOperation = 0、operationCrossKitenJikoku = **true**、kijunDiaIndex = 0、種別 1 個(「普通」相当)を含む |
-| `createDefaultEki()` | ekijikokukeisiki = 'hatsu'、ekikibo = 'ippan'、番線 2 個(downMain = 0 / upMain = 1)、nextEkiDistance = 0、表示設定は全 false / 0 系、jikokuhyouJikokuDisplay = {chaku: true, hatsu: true}、SyubetsuChangeDisplay = {0,0,0,0,1} |
-| `createDefaultEkiTrack2()` | trackName = ''(Null 番線) |
-| `createDefaultRessyasyubetsu()` | 文字色 黒、フォント 0、背景 白、線 = 実線・黒・細、stopMarkDrawType = 'drawOnStop'、parentSyubetsuIndex = null |
-| `createDefaultDia()` | patternDiagramPreviewCycleSecond = 600、ressyaCont = [[], []] |
-| `createDefaultRessya(houkou, ekiCount)` | isNull = true、syubetsuIndex = 0、ekiJikokuCont = 駅数分の既定 EkiJikoku |
-| `createDefaultEkiJikoku()` | ekiatsukai = 'none'、時刻 null、ressyaTrackIndex = null、作業なし |
-| `createDefaultDispProp()` | 分析 §03 §5.8 の既定値表のとおり(9pt Meiryo UI ほか) |
+| ファクトリ                              | 主な既定値                                                                                                                                                                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `createDefaultRosen()`                  | kitenJikoku = 0(00:00)、diagramDgrYZahyouKyoriDefault = 60、enableOperation = 0、operationCrossKitenJikoku = **true**、kijunDiaIndex = 0、種別 1 個(「普通」相当)を含む                                                        |
+| `createDefaultEki()`                    | ekijikokukeisiki = 'hatsu'、ekikibo = 'ippan'、番線 2 個(downMain = 0 / upMain = 1)、nextEkiDistance = 0、表示設定は全 false / 0 系、jikokuhyouJikokuDisplay = {chaku: true, hatsu: true}、SyubetsuChangeDisplay = {0,0,0,0,1} |
+| `createDefaultEkiTrack2()`              | trackName = ''(Null 番線)                                                                                                                                                                                                      |
+| `createDefaultRessyasyubetsu()`         | 文字色 黒、フォント 0、背景 白、線 = 実線・黒・細、stopMarkDrawType = 'drawOnStop'、parentSyubetsuIndex = null                                                                                                                 |
+| `createDefaultDia()`                    | patternDiagramPreviewCycleSecond = 600、ressyaCont = [[], []]                                                                                                                                                                  |
+| `createDefaultRessya(houkou, ekiCount)` | isNull = true、syubetsuIndex = 0、ekiJikokuCont = 駅数分の既定 EkiJikoku                                                                                                                                                       |
+| `createDefaultEkiJikoku()`              | ekiatsukai = 'none'、時刻 null、ressyaTrackIndex = null、作業なし                                                                                                                                                              |
+| `createDefaultDispProp()`               | 分析 §03 §5.8 の既定値表のとおり(9pt Meiryo UI ほか)                                                                                                                                                                           |
 
 ---
 

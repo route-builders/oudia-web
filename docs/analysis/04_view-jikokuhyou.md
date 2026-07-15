@@ -26,37 +26,37 @@
 
 ### 2.1 ViewJikokuhyou (時刻表ビュー)
 
-| クラス | ファイル | 役割 |
-|---|---|---|
-| `CJikokuhyouDoc` | `CJikokuhyouDoc.h/.cpp` | サブドキュメント。ダイヤ名・`ERessyahoukou`(下り/上り)・カスタマイズ時刻表フラグ `m_bCustomizeDisplayMode` を保持。SetTitle() の文字列から決まる |
-| `CJikokuhyouView` | `CJikokuhyouView.h/.cpp` | CView。`CWndJikokuhyou`(グリッド)を1つ包含するだけの薄いラッパ。印刷対応(OnPreparePrinting 等)。外部から `setFocusToRessyaIndex(iRessyaIdx, iEkiOrder)`・`openCDlgEkijikokuProp()`・`openCDlgRessyaProp()` 等でフォーカス/ダイアログ操作可能(ダイヤグラムビュー等からの連携用) |
-| `CWndJikokuhyou` | `WndJikokuhyou/CWndJikokuhyou.h/.cpp` (1,413+3,997行) | グリッドウインドウ本体。`CWndDcdGrid` 派生。状態機械・表示オプション・コマンドハンドラ(約90個の afx_msg)を持つ |
-| `CWjkStateMachine` | `WndJikokuhyou/CWjkStateMachine.h/.cpp` | 『状態』(State パターン)のコンテナ。カレント状態 index を持ち、遷移時に onExit()/onEnter() を呼ぶ |
-| `CWjkState` | `WndJikokuhyou/CWjkState.h/.cpp` | 状態の抽象基底。すべてのビューコマンド `On..._Process(BOOL bQueryEnable)` の既定実装(ほぼ「無効」を返す)を提供 |
-| `CWjkState_Ressyahensyu` | `WndJikokuhyou/CWjkState_Ressyahensyu.h/.cpp` (14,748行) | 『列車編集モード』(通常モード)。ほぼ全編集コマンドの実装 |
-| `CWjkState_Renzoku` | `WndJikokuhyou/CWjkState_Renzoku.h/.cpp` (1,677行) | 『連続入力モード』。分2桁のみの高速時刻入力 |
-| `CCellBuilder` | `WndJikokuhyou/CCellBuilder.h/.cpp` (10,808行) | 通常モードのセル内容(テキスト・フォント・色・罫線)構築。表示書式の中心 |
-| `CCellBuilderCustomize` | `WndJikokuhyou/CCellBuilderCustomize.h/.cpp` (12,979行) | カスタマイズ時刻表モードのセル構築 |
-| `CdXColSpec` / `CdXColSpecCont` | `JikokuhyouColSpec/` | X列番号 ↔ 表示内容(駅名/着発/列車/新規列車)の対応表 |
-| `CdYColSpec` / `CdYColSpecCont` | `JikokuhyouColSpec/` | Y列番号 ↔ 表示内容(列車番号/種別/…/駅時刻/備考)の対応表。行レイアウトの生成規則を持つ |
-| `CDlgEkijikokuProp` + `CPropEditUi_EkiJikoku` | `CDlgEkijikokuProp.h/.cpp`, `CPropEditUI_Ekijikoku.h/.cpp` | 『駅時刻のプロパティ』ダイアログ。駅扱・着時刻・発時刻・発着番線の編集。時の補完・繰上げ繰下げを実装 |
-| `CDlgRessyaProp` + `CPropEditUi_Ressya` | `CDlgRessyaProp.h/.cpp`, `CPropEditUi_Ressya.h/.cpp` | 『列車のプロパティ』ダイアログ(列車番号・種別・列車名・号数・備考等) |
-| `CDlgOperationProp` + `CPropEditUI_Operation` | `CDlgOperationProp.h/.cpp` (5,160行), `CPropEditUI_Operation.h/.cpp` (4,137行) | 『作業のプロパティ』ダイアログ(運用機能の駅作業。OuDiaSecond 拡張) |
-| `CDlgJikokuhyouViewProp` | `CDlgJikokuhyouViewProp.h/.cpp` | 『時刻表ビューのプロパティ』。貼り付け移動量(分+秒)・貼り付け移動量(列車番号)・同(号数)・駅時刻ソート方式(駅扱/乗継)・末尾要素基準比較 `m_bCompareBottom` |
-| `CDlgModifyEkijikokuOperation2` | `CDlgModifyEkijikokuOperation2.cpp` | 『駅時刻変更』ダイアログ(一括変更操作の指定) |
-| `CDlgOuJikokuhyouCsvExport` | `CDlgOuJikokuhyouCsvExport.h/.cpp` | 時刻表 CSV エクスポートダイアログ(表示オプション一式を引数に取り、画面表示と同等の CSV を出力) |
+| クラス                                        | ファイル                                                                       | 役割                                                                                                                                                                                                                                                                           |
+| --------------------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CJikokuhyouDoc`                              | `CJikokuhyouDoc.h/.cpp`                                                        | サブドキュメント。ダイヤ名・`ERessyahoukou`(下り/上り)・カスタマイズ時刻表フラグ `m_bCustomizeDisplayMode` を保持。SetTitle() の文字列から決まる                                                                                                                               |
+| `CJikokuhyouView`                             | `CJikokuhyouView.h/.cpp`                                                       | CView。`CWndJikokuhyou`(グリッド)を1つ包含するだけの薄いラッパ。印刷対応(OnPreparePrinting 等)。外部から `setFocusToRessyaIndex(iRessyaIdx, iEkiOrder)`・`openCDlgEkijikokuProp()`・`openCDlgRessyaProp()` 等でフォーカス/ダイアログ操作可能(ダイヤグラムビュー等からの連携用) |
+| `CWndJikokuhyou`                              | `WndJikokuhyou/CWndJikokuhyou.h/.cpp` (1,413+3,997行)                          | グリッドウインドウ本体。`CWndDcdGrid` 派生。状態機械・表示オプション・コマンドハンドラ(約90個の afx_msg)を持つ                                                                                                                                                                 |
+| `CWjkStateMachine`                            | `WndJikokuhyou/CWjkStateMachine.h/.cpp`                                        | 『状態』(State パターン)のコンテナ。カレント状態 index を持ち、遷移時に onExit()/onEnter() を呼ぶ                                                                                                                                                                              |
+| `CWjkState`                                   | `WndJikokuhyou/CWjkState.h/.cpp`                                               | 状態の抽象基底。すべてのビューコマンド `On..._Process(BOOL bQueryEnable)` の既定実装(ほぼ「無効」を返す)を提供                                                                                                                                                                 |
+| `CWjkState_Ressyahensyu`                      | `WndJikokuhyou/CWjkState_Ressyahensyu.h/.cpp` (14,748行)                       | 『列車編集モード』(通常モード)。ほぼ全編集コマンドの実装                                                                                                                                                                                                                       |
+| `CWjkState_Renzoku`                           | `WndJikokuhyou/CWjkState_Renzoku.h/.cpp` (1,677行)                             | 『連続入力モード』。分2桁のみの高速時刻入力                                                                                                                                                                                                                                    |
+| `CCellBuilder`                                | `WndJikokuhyou/CCellBuilder.h/.cpp` (10,808行)                                 | 通常モードのセル内容(テキスト・フォント・色・罫線)構築。表示書式の中心                                                                                                                                                                                                         |
+| `CCellBuilderCustomize`                       | `WndJikokuhyou/CCellBuilderCustomize.h/.cpp` (12,979行)                        | カスタマイズ時刻表モードのセル構築                                                                                                                                                                                                                                             |
+| `CdXColSpec` / `CdXColSpecCont`               | `JikokuhyouColSpec/`                                                           | X列番号 ↔ 表示内容(駅名/着発/列車/新規列車)の対応表                                                                                                                                                                                                                            |
+| `CdYColSpec` / `CdYColSpecCont`               | `JikokuhyouColSpec/`                                                           | Y列番号 ↔ 表示内容(列車番号/種別/…/駅時刻/備考)の対応表。行レイアウトの生成規則を持つ                                                                                                                                                                                          |
+| `CDlgEkijikokuProp` + `CPropEditUi_EkiJikoku` | `CDlgEkijikokuProp.h/.cpp`, `CPropEditUI_Ekijikoku.h/.cpp`                     | 『駅時刻のプロパティ』ダイアログ。駅扱・着時刻・発時刻・発着番線の編集。時の補完・繰上げ繰下げを実装                                                                                                                                                                           |
+| `CDlgRessyaProp` + `CPropEditUi_Ressya`       | `CDlgRessyaProp.h/.cpp`, `CPropEditUi_Ressya.h/.cpp`                           | 『列車のプロパティ』ダイアログ(列車番号・種別・列車名・号数・備考等)                                                                                                                                                                                                           |
+| `CDlgOperationProp` + `CPropEditUI_Operation` | `CDlgOperationProp.h/.cpp` (5,160行), `CPropEditUI_Operation.h/.cpp` (4,137行) | 『作業のプロパティ』ダイアログ(運用機能の駅作業。OuDiaSecond 拡張)                                                                                                                                                                                                             |
+| `CDlgJikokuhyouViewProp`                      | `CDlgJikokuhyouViewProp.h/.cpp`                                                | 『時刻表ビューのプロパティ』。貼り付け移動量(分+秒)・貼り付け移動量(列車番号)・同(号数)・駅時刻ソート方式(駅扱/乗継)・末尾要素基準比較 `m_bCompareBottom`                                                                                                                      |
+| `CDlgModifyEkijikokuOperation2`               | `CDlgModifyEkijikokuOperation2.cpp`                                            | 『駅時刻変更』ダイアログ(一括変更操作の指定)                                                                                                                                                                                                                                   |
+| `CDlgOuJikokuhyouCsvExport`                   | `CDlgOuJikokuhyouCsvExport.h/.cpp`                                             | 時刻表 CSV エクスポートダイアログ(表示オプション一式を引数に取り、画面表示と同等の CSV を出力)                                                                                                                                                                                 |
 
 ### 2.2 ViewEkiJikokuhyou (駅時刻表ビュー)
 
-| クラス | ファイル | 役割 |
-|---|---|---|
-| `CEkiJikokuhyouDoc` | `CEkiJikokuhyouDoc.h/.cpp` | サブドキュメント。ダイヤ名・方向・駅ID (`m_iEkiID`) を保持(Docstr = "ダイヤ名\n列車方向\n駅Index") |
-| `CEkiJikokuhyouView` | `CEkiJikokuhyouView.h/.cpp` | CView ラッパ |
-| `CWndDcdGridEkiJikokuhyou` | `CWndDcdGridEkiJikokuhyou.h/.cpp` (3,543行) | 駅時刻表グリッド。表示専用(時刻編集なし) |
-| `CEkiJikokuhyouListDoc/View`, `CWndDcdGridEkiJikokuhyouList` | 同名ファイル | 『駅時刻表一覧』ビュー。行=駅、列=[駅名/下り/上り] の選択表。ここから各駅の駅時刻表を開く |
-| `CdEkiJikokuhyouXColSpec/YColSpec(+Cont)` | `EkiJikokuhyouColSpec/` | X列=[時表示, 列車0..n]、Y列=[ヘッダ行, (時ごとに)種別行・分行・行き先行・番線行] |
-| `EkiJikokuhyouContent` (struct) | `CWndDcdGridEkiJikokuhyou.h` | 1マス分の内容: `iMinute`(分。-1なら種別変更表示)・`iRessyaSyubetsu`・`iSyuuchakuEkiOrder`(-1=環状運転, -2=行き先「環状線」)・`iOuterShuchakuekiIndex`・`iRessyaTrackIndex`・`aRessyaProperty`(方向+列車Index)・`bIsShihatsu` |
-| `CconvEkiJikokuhyouCsv` | `CconvEkiJikokuhyouCsv.h/.cpp` | 駅時刻表 CSV エクスポート |
+| クラス                                                       | ファイル                                    | 役割                                                                                                                                                                                                                         |
+| ------------------------------------------------------------ | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CEkiJikokuhyouDoc`                                          | `CEkiJikokuhyouDoc.h/.cpp`                  | サブドキュメント。ダイヤ名・方向・駅ID (`m_iEkiID`) を保持(Docstr = "ダイヤ名\n列車方向\n駅Index")                                                                                                                           |
+| `CEkiJikokuhyouView`                                         | `CEkiJikokuhyouView.h/.cpp`                 | CView ラッパ                                                                                                                                                                                                                 |
+| `CWndDcdGridEkiJikokuhyou`                                   | `CWndDcdGridEkiJikokuhyou.h/.cpp` (3,543行) | 駅時刻表グリッド。表示専用(時刻編集なし)                                                                                                                                                                                     |
+| `CEkiJikokuhyouListDoc/View`, `CWndDcdGridEkiJikokuhyouList` | 同名ファイル                                | 『駅時刻表一覧』ビュー。行=駅、列=[駅名/下り/上り] の選択表。ここから各駅の駅時刻表を開く                                                                                                                                    |
+| `CdEkiJikokuhyouXColSpec/YColSpec(+Cont)`                    | `EkiJikokuhyouColSpec/`                     | X列=[時表示, 列車0..n]、Y列=[ヘッダ行, (時ごとに)種別行・分行・行き先行・番線行]                                                                                                                                             |
+| `EkiJikokuhyouContent` (struct)                              | `CWndDcdGridEkiJikokuhyou.h`                | 1マス分の内容: `iMinute`(分。-1なら種別変更表示)・`iRessyaSyubetsu`・`iSyuuchakuEkiOrder`(-1=環状運転, -2=行き先「環状線」)・`iOuterShuchakuekiIndex`・`iRessyaTrackIndex`・`aRessyaProperty`(方向+列車Index)・`bIsShihatsu` |
+| `CconvEkiJikokuhyouCsv`                                      | `CconvEkiJikokuhyouCsv.h/.cpp`              | 駅時刻表 CSV エクスポート                                                                                                                                                                                                    |
 
 ---
 
@@ -184,30 +184,30 @@ X=2 .. 2+列車数-1: ColumnType_Ressya (m_iRessyaIndex = X-2)
 
 アクセラレータ `IDR_DOCVIEW_Jikokuhyou ACCELERATORS`(`DiagramEdit.rc` 行1481-1534)より:
 
-| キー | コマンド |
-|---|---|
-| テンキー'-' / Ctrl+'-' | [通過](時刻を消去して通過扱い) |
-| Alt+'-' | [通過-停車](時刻維持のまま通過↔停車トグル) |
-| テンキー'/' / Ctrl+Shift+'-' | [経由なし] |
-| Ctrl+Del | [時刻消去] |
-| Del | [消去](列車1本またはセル種別に応じた消去) |
-| Ctrl+U / Ctrl+I | [当駅始発] / [当駅止り] |
-| Ctrl+Shift+U / Ctrl+Shift+I | [直通化] / [分断] |
-| Ctrl+T | [連続入力] |
-| Ctrl+R / Ctrl+E | [駅時刻を挿入] / [駅時刻を削除] |
-| Ctrl+M / Ctrl+'.' | [駅時刻変更...] / [駅時刻変更の再実行] |
-| Ctrl+J / Ctrl+Shift+J | [-1分し次へ] / [-1分] |
-| Ctrl+K / Ctrl+Shift+K | [フォーカスを次へ] / [フォーカスを前へ] |
-| Ctrl+L / Ctrl+Shift+L | [+1分し次へ] / [+1分] |
-| Ctrl+';' / Ctrl+Shift+';' | [-任意秒1] / [-任意秒2] (VK_OEM_PLUS。`EkijikokuDecAnySecNoMove`/`DecAny2SecNoMove`) |
-| Ctrl+':' / Ctrl+Shift+':' | [+任意秒1] / [+任意秒2] (VK_OEM_1。`EkijikokuIncAnySecNoMove`/`IncAny2SecNoMove`) |
-| Ctrl+Alt+J/L 等 | Rev 系(フォーカス位置**以前**の駅時刻を対象にシフト。`modifyRessyaJikokuRev`) |
-| Enter | [駅時刻のプロパティ] / Ctrl+Enter [列車のプロパティ] / Alt+Enter [作業のプロパティ] / Shift+Enter [ビューのプロパティ] |
-| Ctrl+X/C/V, Ctrl+Shift+V, Ctrl+Shift+C, Ctrl+Alt+C | 切り取り/コピー/貼り付け/時刻のみ貼り付け/作業のコピー/列車情報のコピー |
-| Ctrl+←/→ | [左へ]/[右へ](列車の並び順入替。`CRfEditCmd_RessyaSwap`) |
-| Ctrl+B / Ctrl+'\\' | [運休](Canceled トグル) |
-| F8 | [ダイヤグラムへ移動] |
-| Ctrl+',' / Ctrl+Shift+',' | [基準運転時分に合わせる] / [基準運転時分を基に始発/終着駅を変更] |
+| キー                                               | コマンド                                                                                                               |
+| -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| テンキー'-' / Ctrl+'-'                             | [通過](時刻を消去して通過扱い)                                                                                         |
+| Alt+'-'                                            | [通過-停車](時刻維持のまま通過↔停車トグル)                                                                             |
+| テンキー'/' / Ctrl+Shift+'-'                       | [経由なし]                                                                                                             |
+| Ctrl+Del                                           | [時刻消去]                                                                                                             |
+| Del                                                | [消去](列車1本またはセル種別に応じた消去)                                                                              |
+| Ctrl+U / Ctrl+I                                    | [当駅始発] / [当駅止り]                                                                                                |
+| Ctrl+Shift+U / Ctrl+Shift+I                        | [直通化] / [分断]                                                                                                      |
+| Ctrl+T                                             | [連続入力]                                                                                                             |
+| Ctrl+R / Ctrl+E                                    | [駅時刻を挿入] / [駅時刻を削除]                                                                                        |
+| Ctrl+M / Ctrl+'.'                                  | [駅時刻変更...] / [駅時刻変更の再実行]                                                                                 |
+| Ctrl+J / Ctrl+Shift+J                              | [-1分し次へ] / [-1分]                                                                                                  |
+| Ctrl+K / Ctrl+Shift+K                              | [フォーカスを次へ] / [フォーカスを前へ]                                                                                |
+| Ctrl+L / Ctrl+Shift+L                              | [+1分し次へ] / [+1分]                                                                                                  |
+| Ctrl+';' / Ctrl+Shift+';'                          | [-任意秒1] / [-任意秒2] (VK_OEM_PLUS。`EkijikokuDecAnySecNoMove`/`DecAny2SecNoMove`)                                   |
+| Ctrl+':' / Ctrl+Shift+':'                          | [+任意秒1] / [+任意秒2] (VK_OEM_1。`EkijikokuIncAnySecNoMove`/`IncAny2SecNoMove`)                                      |
+| Ctrl+Alt+J/L 等                                    | Rev 系(フォーカス位置**以前**の駅時刻を対象にシフト。`modifyRessyaJikokuRev`)                                          |
+| Enter                                              | [駅時刻のプロパティ] / Ctrl+Enter [列車のプロパティ] / Alt+Enter [作業のプロパティ] / Shift+Enter [ビューのプロパティ] |
+| Ctrl+X/C/V, Ctrl+Shift+V, Ctrl+Shift+C, Ctrl+Alt+C | 切り取り/コピー/貼り付け/時刻のみ貼り付け/作業のコピー/列車情報のコピー                                                |
+| Ctrl+←/→                                           | [左へ]/[右へ](列車の並び順入替。`CRfEditCmd_RessyaSwap`)                                                               |
+| Ctrl+B / Ctrl+'\\'                                 | [運休](Canceled トグル)                                                                                                |
+| F8                                                 | [ダイヤグラムへ移動]                                                                                                   |
+| Ctrl+',' / Ctrl+Shift+','                          | [基準運転時分に合わせる] / [基準運転時分を基に始発/終着駅を変更]                                                       |
 
 補足: ±1分系コマンド(Ctrl+J/L)はフォーカス行の種別で多態的に動作する(`OnJikokuhyouEkijikokuDec_Process` の iType 分岐、`CWjkState_Ressyahensyu.cpp` 行6046-): 駅時刻行→時刻シフト(その駅以後すべて; `modifyRessyaJikoku`)、番線行→番線を前/次へ変更、作業行→作業データ変更、列車番号行→列車番号±1、種別行→種別を前/次へ、路線外駅行→路線外駅変更。
 
@@ -234,28 +234,28 @@ X=2 .. 2+列車数-1: ColumnType_Ressya (m_iRessyaIndex = X-2)
 
 ### 6.2 編集操作一覧(列車編集モード)
 
-| 操作 | 実装 | 動作要点 |
-|---|---|---|
-| 切り取り/コピー/消去 | `OnEditCut/Copy/Clear_Process` | 列車(列)単位。複数選択可。クリップボードへ格納(独自形式)。格納時に貼り付け移動量の累積値をリセット |
-| 貼り付け | `OnEditPaste_Process` | フォーカス位置に挿入。クリップボード列車の全駅時刻に `m_jikanPasteIdouryou`(貼り付け移動量; 秒)を**累積加算**(`m_jikanPasteIdouryouPrevValue += m_jikanPasteIdouryou`)。列車番号・号数にも同様の移動量(`m_iRessyaBangouPasteIdouryou`/`m_iGouPasteIdouryou`)を累積加算 → パターンダイヤ連続入力 |
-| 時刻のみ貼り付け | `OnEditPasteEkiJikoku_Process` | クリップボード列車の運行なし以外の駅時刻をフォーカス列車に上書き。列車番号等は不変(直通化の手動方式) |
-| 作業のコピー / 列車情報のコピー | `OnEditOperationCopy/RessyaJouhouCopy_Process` | 運用作業・列車情報のみのコピー(OuDiaSecond 拡張) |
-| すべて選択 | `OnEditSelectAll_Process` | 全列車選択 |
-| 列車のプロパティ / 列車を挿入 | `execCDlgRessyaProp` | ダイアログ編集(新規位置なら末尾追加) |
-| 駅時刻のプロパティ | `execCDlgEkijikokuProp` | §5参照 |
-| 並べ替え | `OnJikokuhyouSort_Process` | フォーカス行で方式が決まる: 駅時刻行→駅扱ソート(停車→通過→経由なし→運行なし、指定なしは左、時刻順)/乗継ソート(ビューのプロパティで選択; `EEkijikokuSort_Ekiatsukai/Transfer`)。列車番号/種別/列車名/号数行→種別・列車名・号数・列車番号の辞書順。備考行→備考辞書順。選択中なら選択列車のみ。ソータは `entDed/CDedRessyaSoater_*` |
-| 列車番号で一本化 | `OnJikokuhyouUnify_Process` | 全列車を列車番号で直通化(全自動方式) |
-| 最小所要時間列車に移動 | `OnJikokuhyouEKikanSaisyouSec_Process` | フォーカス駅と次駅間の駅間最小所要秒数の列車を検索しフォーカス移動(入力ミス発見用) |
-| 駅時刻を挿入/削除 | `OnJikokuhyouEkijikokuInsert/Erase_Process` | フォーカス位置に空欄を挿入し以下の駅時刻を1駅ずつ下/上へシフト(1駅飛ばし入力ミスの修正) |
-| 駅時刻変更 / 再実行 | `OnJikokuhyouModifyEkijikokuCmd(Repeat)_Process` | ダイアログで指定した変更内容(`CentDedRessya_EkijikokuModifyOperation2` に保持: 駅扱変更/繰下げn分/他駅からのコピー+n分/設定なし化)をフォーカス位置に適用。再実行('.'キー)で同内容を別セルに連続適用 |
-| 連続1分修正 | `OnJikokuhyouEkijikokuDec/Inc(NoMove)_Process` 等 | §5.4参照。フォーカス駅**以後**を±1分(Rev系は以前)。任意秒1/2はビュー設定の秒数 |
-| 基準運転時分系 | `OnJikokuhyouEkijikokuAdjustStdOpeTime_Process` 等 | 基準運転時分(種別ごとの標準駅間所要)に当該駅時刻を合わせる(OuDiaSecond 拡張) |
-| 直通化/分断/当駅始発/当駅止り/通過/通過-停車/経由なし/時刻消去/運休 | §5.5参照 | |
-| 左へ/右へ | `OnJikokuhyouLeft/Right_Process` | 隣接列車と並び順入替(`CRfEditCmd_RessyaSwap`) |
-| 運用系(出区/前列車/後列車/入区列車に移動、運用表を開く、運用番号検索) | `OnJikokuhyouMoveTo*_Process` 等 | 運用機能有効時のナビゲーション |
-| 駅時刻表を開く / 駅のプロパティ / 交差支障チェック | `OnJikokuhyouOpen*_Process` | フォーカス駅に対応する別ビュー起動 |
-| ダイヤグラムへ移動 | `OnJikokuhyouDiagramHeIdou_Process` | フォーカスの駅・列車が見える位置でダイヤグラムビューを開く |
-| 時刻表CSV エクスポート/インポート | `OnFileExportJikokuhyoucsv_Process` | 表示設定込みの CSV 入出力 |
+| 操作                                                                  | 実装                                               | 動作要点                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------------------------------- | -------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 切り取り/コピー/消去                                                  | `OnEditCut/Copy/Clear_Process`                     | 列車(列)単位。複数選択可。クリップボードへ格納(独自形式)。格納時に貼り付け移動量の累積値をリセット                                                                                                                                                                                                                               |
+| 貼り付け                                                              | `OnEditPaste_Process`                              | フォーカス位置に挿入。クリップボード列車の全駅時刻に `m_jikanPasteIdouryou`(貼り付け移動量; 秒)を**累積加算**(`m_jikanPasteIdouryouPrevValue += m_jikanPasteIdouryou`)。列車番号・号数にも同様の移動量(`m_iRessyaBangouPasteIdouryou`/`m_iGouPasteIdouryou`)を累積加算 → パターンダイヤ連続入力                                  |
+| 時刻のみ貼り付け                                                      | `OnEditPasteEkiJikoku_Process`                     | クリップボード列車の運行なし以外の駅時刻をフォーカス列車に上書き。列車番号等は不変(直通化の手動方式)                                                                                                                                                                                                                             |
+| 作業のコピー / 列車情報のコピー                                       | `OnEditOperationCopy/RessyaJouhouCopy_Process`     | 運用作業・列車情報のみのコピー(OuDiaSecond 拡張)                                                                                                                                                                                                                                                                                 |
+| すべて選択                                                            | `OnEditSelectAll_Process`                          | 全列車選択                                                                                                                                                                                                                                                                                                                       |
+| 列車のプロパティ / 列車を挿入                                         | `execCDlgRessyaProp`                               | ダイアログ編集(新規位置なら末尾追加)                                                                                                                                                                                                                                                                                             |
+| 駅時刻のプロパティ                                                    | `execCDlgEkijikokuProp`                            | §5参照                                                                                                                                                                                                                                                                                                                           |
+| 並べ替え                                                              | `OnJikokuhyouSort_Process`                         | フォーカス行で方式が決まる: 駅時刻行→駅扱ソート(停車→通過→経由なし→運行なし、指定なしは左、時刻順)/乗継ソート(ビューのプロパティで選択; `EEkijikokuSort_Ekiatsukai/Transfer`)。列車番号/種別/列車名/号数行→種別・列車名・号数・列車番号の辞書順。備考行→備考辞書順。選択中なら選択列車のみ。ソータは `entDed/CDedRessyaSoater_*` |
+| 列車番号で一本化                                                      | `OnJikokuhyouUnify_Process`                        | 全列車を列車番号で直通化(全自動方式)                                                                                                                                                                                                                                                                                             |
+| 最小所要時間列車に移動                                                | `OnJikokuhyouEKikanSaisyouSec_Process`             | フォーカス駅と次駅間の駅間最小所要秒数の列車を検索しフォーカス移動(入力ミス発見用)                                                                                                                                                                                                                                               |
+| 駅時刻を挿入/削除                                                     | `OnJikokuhyouEkijikokuInsert/Erase_Process`        | フォーカス位置に空欄を挿入し以下の駅時刻を1駅ずつ下/上へシフト(1駅飛ばし入力ミスの修正)                                                                                                                                                                                                                                          |
+| 駅時刻変更 / 再実行                                                   | `OnJikokuhyouModifyEkijikokuCmd(Repeat)_Process`   | ダイアログで指定した変更内容(`CentDedRessya_EkijikokuModifyOperation2` に保持: 駅扱変更/繰下げn分/他駅からのコピー+n分/設定なし化)をフォーカス位置に適用。再実行('.'キー)で同内容を別セルに連続適用                                                                                                                              |
+| 連続1分修正                                                           | `OnJikokuhyouEkijikokuDec/Inc(NoMove)_Process` 等  | §5.4参照。フォーカス駅**以後**を±1分(Rev系は以前)。任意秒1/2はビュー設定の秒数                                                                                                                                                                                                                                                   |
+| 基準運転時分系                                                        | `OnJikokuhyouEkijikokuAdjustStdOpeTime_Process` 等 | 基準運転時分(種別ごとの標準駅間所要)に当該駅時刻を合わせる(OuDiaSecond 拡張)                                                                                                                                                                                                                                                     |
+| 直通化/分断/当駅始発/当駅止り/通過/通過-停車/経由なし/時刻消去/運休   | §5.5参照                                           |                                                                                                                                                                                                                                                                                                                                  |
+| 左へ/右へ                                                             | `OnJikokuhyouLeft/Right_Process`                   | 隣接列車と並び順入替(`CRfEditCmd_RessyaSwap`)                                                                                                                                                                                                                                                                                    |
+| 運用系(出区/前列車/後列車/入区列車に移動、運用表を開く、運用番号検索) | `OnJikokuhyouMoveTo*_Process` 等                   | 運用機能有効時のナビゲーション                                                                                                                                                                                                                                                                                                   |
+| 駅時刻表を開く / 駅のプロパティ / 交差支障チェック                    | `OnJikokuhyouOpen*_Process`                        | フォーカス駅に対応する別ビュー起動                                                                                                                                                                                                                                                                                               |
+| ダイヤグラムへ移動                                                    | `OnJikokuhyouDiagramHeIdou_Process`                | フォーカスの駅・列車が見える位置でダイヤグラムビューを開く                                                                                                                                                                                                                                                                       |
+| 時刻表CSV エクスポート/インポート                                     | `OnFileExportJikokuhyoucsv_Process`                | 表示設定込みの CSV 入出力                                                                                                                                                                                                                                                                                                        |
 
 ### 6.3 フォーカス移動モード
 
@@ -272,15 +272,15 @@ X=2 .. 2+列車数-1: ColumnType_Ressya (m_iRessyaIndex = X-2)
 
 ### 7.1 記号(文字列リソース、`DiagramEdit.rc` 行3366-3373)
 
-| リソース | 文字列 | 意味 |
-|---|---|---|
-| `IDS_WORD_JIKOKUHYOU_TSUUKA` | `" ﾚ"` | 通過(時刻非表示時) |
-| `IDS_WORD_JIKOKUHYOU_KEIYUNASI` | `"||"` | 経由なし |
-| `IDS_WORD_JIKOKUHYOU_UNKOUNASI_IPPAN` | `"・・"` | 運行なし(一般表記) |
-| `IDS_WORD_JIKOKUHYOU_UNKOUNASI_SYUYOU` | `"----"` | 運行なし(主要駅表記; `bIsSyuyouEkiHyouki`、発着表示駅は除く) |
-| `IDS_WORD_JIKOKUHYOU_TEISYA` | `"○"` | 停車(時刻なし停車) |
-| `IDS_WORD_JIKOKUHYOU_SYUUCHAKU` | `"===="` | 終着後の表記 |
-| `IDS_WORD_JIKOKUHYOU_CONNECT`/`RELEASE` | `"↳"`/`"↴"` | 増結/解結(運用) |
+| リソース                                | 文字列      | 意味                                                         |
+| --------------------------------------- | ----------- | ------------------------------------------------------------ |
+| `IDS_WORD_JIKOKUHYOU_TSUUKA`            | `" ﾚ"`      | 通過(時刻非表示時)                                           |
+| `IDS_WORD_JIKOKUHYOU_KEIYUNASI`         | `"          |                                                              | "`  | 経由なし |
+| `IDS_WORD_JIKOKUHYOU_UNKOUNASI_IPPAN`   | `"・・"`    | 運行なし(一般表記)                                           |
+| `IDS_WORD_JIKOKUHYOU_UNKOUNASI_SYUYOU`  | `"----"`    | 運行なし(主要駅表記; `bIsSyuyouEkiHyouki`、発着表示駅は除く) |
+| `IDS_WORD_JIKOKUHYOU_TEISYA`            | `"○"`       | 停車(時刻なし停車)                                           |
+| `IDS_WORD_JIKOKUHYOU_SYUUCHAKU`         | `"===="`    | 終着後の表記                                                 |
+| `IDS_WORD_JIKOKUHYOU_CONNECT`/`RELEASE` | `"↳"`/`"↴"` | 増結/解結(運用)                                              |
 
 ### 7.2 時刻表示 — `CCellBuilder::getCdDedJikokuConv()` (`CCellBuilder.cpp` 行185-220)
 

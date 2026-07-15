@@ -6,11 +6,11 @@
 
 ダイヤグラムビューは「横軸=時刻、縦軸=駅」の平面に列車を斜め線(スジ、原文では『列車線』=Ressyasen)として描画するビュー。実装は3層に分離されている。
 
-| 層 | 名前空間/場所 | 責務 |
-|---|---|---|
-| ドメイン | `entDed` (対象外、他エージェント担当) | 路線・駅・列車・駅時刻の生データ |
-| 描画用中間エンティティ | `entDgr` (`entDgr/`) | 時刻データから**デバイス非依存の座標**(『ダイヤグラムエンティティ座標系』、以下 Dgr座標)を計算し、折れ線(列車線)へ分解して保持する |
-| ビュー | `ViewDiagram` (`ViewDiagram/`) | Dgr座標→デバイス座標(Dcd座標=GDI論理座標)への変換、罫線・スジ・ラベル・在線表の実描画、スクロール・ズーム等のUI |
+| 層                     | 名前空間/場所                         | 責務                                                                                                                               |
+| ---------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| ドメイン               | `entDed` (対象外、他エージェント担当) | 路線・駅・列車・駅時刻の生データ                                                                                                   |
+| 描画用中間エンティティ | `entDgr` (`entDgr/`)                  | 時刻データから**デバイス非依存の座標**(『ダイヤグラムエンティティ座標系』、以下 Dgr座標)を計算し、折れ線(列車線)へ分解して保持する |
+| ビュー                 | `ViewDiagram` (`ViewDiagram/`)        | Dgr座標→デバイス座標(Dcd座標=GDI論理座標)への変換、罫線・スジ・ラベル・在線表の実描画、スクロール・ズーム等のUI                    |
 
 この分離は entDgr/entDgr.h の名前空間コメントに明記されている:「この名前空間では、ダイヤグラムの各要素の座標を、描画するデバイスに依存しない形式で保持します。これらの座標をデバイス固有の形式に変換するのは、CDcdDiagram, CDcdDiagram2 の責務です」。
 
@@ -62,31 +62,31 @@
 
 ## 3. entDgr クラスカタログ
 
-| クラス | ファイル | 役割・主要フィールド |
-|---|---|---|
-| `CentDedDgrDia` | CentDedDgrDia.h/.cpp | ルートコンテナ。`m_strName`, `m_iDgrXPosMin`, `m_iDgrYSizeEkikanDefault`, `m_iEnableOperation`, `m_iOriginExtraDisplaySpace`, `m_iTerminalExtraDisplaySpace`, `m_iPatternDiagramPreviewCycleSecond/Range`。包含: `m_CentDedDgrEkiCont`(駅Index順), `m_MuCentDedDgrRessyasyubetsu`, `m_CentDedDgrRessyaCont[2]`([0]=下り,[1]=上り)。`readCentDedRosen()` で entDed から全構築 |
-| `CentDedDgrEki` | CentDedDgrEki.h/.cpp | 駅1つ。`m_strEkimei`, `m_bIsSyuyoueki`(主要駅), `m_iEkikanSaisyouSecKudari/Nobori`(次駅までの方向別最小秒), `m_iDgrYSizeEkikanDefault`, `m_eDiagramRessyajouhouHyoujiKudari/Nobori`(列車情報表示: Origin/Anytime/Not), 分岐駅`m_iBrunchCoreEkiIndex`/`m_bBrunchOpposite`, 環状線`m_iLoopOriginEkiIndex`/`m_bLoopOpposite`, 在線表`m_iDiagramTrackDisplay`(0=なし,1=発着,2=下り着,3=上り着)・`m_iDiagramTrackIndex`(省略番線=INT_MIN)・`m_iEkiTrackDisplaySpace`, 個別背景色`m_iDiagramColorNextEki`(0=基本,1-4=個別), 路線外発着駅名`m_strOuterTerminalEkimei`, 番線`m_MuCentDedDgrEkiTrack2` |
-| `CentDedDgrEkiCont` | CentDedDgrEkiCont.h/.cpp | 駅コンテナ。`getMuPtr(ERessyahoukou)` で方向別ビュー(`CdDedDgrEki`)を提供 |
-| `CentDedDgrEkijikoku` | CentDedDgrEkijikoku.h | 列車×駅の時刻。`m_eEkiatsukai`(駅扱: 停車/通過/経由なし/運行なし), `m_iDgrXPosChaku`, `m_iDgrXPosHatsu`(着・発のDgrX。**INT_MIN=NULL**), `m_iDgrXPosRessyasen`(列車線中間駅での「列車線と駅横線の交点」X。端点ではNULL), `m_iRessyaTrackIndex`, `m_bShouldRessyajouhouDraw`(この駅位置に列車番号等を描くか)。`getDgrXPosChaku(bHatsuIfNull)`=着がNULLなら発で代用(逆も) |
-| `CentDedDgrRessya` | CentDedDgrRessya.h/.cpp | 列車1本。`m_bIsNull`, `m_eRessyahoukou`, `m_iRessyasyubetsuIndex`, `m_strRessyabangou/Ressyamei/Gousuu`, `m_DgrXZone`(全列車線を含むX範囲。始終同時刻なら例外的にサイズ1)。包含: 駅数分の `CentDedDgrEkiJikoku`, `CentDedDgrRessyasenCont`, `CentDedDgrRessyaTrackLineCont`。`readCentDedRessya()` が構築パイプライン |
-| `CentDedDgrRessyasen` | CentDedDgrRessyasen.h | 折れ線の1直線区間。`m_iRessyasenKitenEkiOrder`(起点駅Order), `m_iRessyasenSyuutenEkiOrder`(終点駅Order) の2値のみ。座標は駅時刻とDiaから導出 |
-| `CentDedDgrRessyasenCont` | CentDedDgrRessyasenCont.h/.cpp | 列車線コンテナ。**insert/set 時に自動で中間駅の `m_iDgrXPosRessyasen` を線形補間で設定**、erase 時にクリア(`setDgrXPosRessyasen()`) |
-| `CentDedDgrRessyasyubetsu` | CentDedDgrRessyasyubetsu.h | 種別の描画属性。`m_colorJikokuhyouMojiColor`(文字色=ダイヤ上のラベル色兼用), `m_CdDiagramLineStyle`(線色+線種+太線フラグ), `m_eStopMarkDrawType`, `m_iParentSyubetsuIndex`(親種別。-1=なし) |
-| `CentDedDgrEkiTrack2` | CentDedDgrEkiTrack2.h | 番線(名称・上下略称) |
-| `CentDedDgrRessyaTrackLine`(+Cont) | CentDedDgrRessyaTrackLine.h ほか | 在線表上の「在線線」。`m_iEkiOrder`, `m_iTsuukaTeisya`, `m_iChakuOperation`/`m_iHatsuOperation`(着側/発側作業コード: -5~5。-1=通常発着, -2=分岐方向発着(補助列車線描画), 3=出区○/入区△, 4=路線外始発/終着, 5=前/次列車接続 等), `m_bIsTrackDisplay`, `deque<Zaisen> m_contZaisen`(Zaisen={番線,着X,発X,運用番号}) |
-| `CEnumRessyasen` | CEnumRessyasen.h/.cpp | 指定Dgr領域に交差し得る列車線を列挙するループエンジン(仮想関数 `onCentDedDgrRessyasen()` をコールバック)。ヒットテスト等の基底 |
-| `CDedRessyaSoater_Transfer` | CDedRessyaSoater_Transfer.h/.cpp | 『乗継ソート』。推定時刻(`createEstimateRessya`)を使って時刻表ビューの列車並び順を決めるソーター(ダイヤグラム描画そのものには不使用) |
+| クラス                             | ファイル                         | 役割・主要フィールド                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------------------------- | -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CentDedDgrDia`                    | CentDedDgrDia.h/.cpp             | ルートコンテナ。`m_strName`, `m_iDgrXPosMin`, `m_iDgrYSizeEkikanDefault`, `m_iEnableOperation`, `m_iOriginExtraDisplaySpace`, `m_iTerminalExtraDisplaySpace`, `m_iPatternDiagramPreviewCycleSecond/Range`。包含: `m_CentDedDgrEkiCont`(駅Index順), `m_MuCentDedDgrRessyasyubetsu`, `m_CentDedDgrRessyaCont[2]`([0]=下り,[1]=上り)。`readCentDedRosen()` で entDed から全構築                                                                                                                                                                                                                  |
+| `CentDedDgrEki`                    | CentDedDgrEki.h/.cpp             | 駅1つ。`m_strEkimei`, `m_bIsSyuyoueki`(主要駅), `m_iEkikanSaisyouSecKudari/Nobori`(次駅までの方向別最小秒), `m_iDgrYSizeEkikanDefault`, `m_eDiagramRessyajouhouHyoujiKudari/Nobori`(列車情報表示: Origin/Anytime/Not), 分岐駅`m_iBrunchCoreEkiIndex`/`m_bBrunchOpposite`, 環状線`m_iLoopOriginEkiIndex`/`m_bLoopOpposite`, 在線表`m_iDiagramTrackDisplay`(0=なし,1=発着,2=下り着,3=上り着)・`m_iDiagramTrackIndex`(省略番線=INT_MIN)・`m_iEkiTrackDisplaySpace`, 個別背景色`m_iDiagramColorNextEki`(0=基本,1-4=個別), 路線外発着駅名`m_strOuterTerminalEkimei`, 番線`m_MuCentDedDgrEkiTrack2` |
+| `CentDedDgrEkiCont`                | CentDedDgrEkiCont.h/.cpp         | 駅コンテナ。`getMuPtr(ERessyahoukou)` で方向別ビュー(`CdDedDgrEki`)を提供                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `CentDedDgrEkijikoku`              | CentDedDgrEkijikoku.h            | 列車×駅の時刻。`m_eEkiatsukai`(駅扱: 停車/通過/経由なし/運行なし), `m_iDgrXPosChaku`, `m_iDgrXPosHatsu`(着・発のDgrX。**INT_MIN=NULL**), `m_iDgrXPosRessyasen`(列車線中間駅での「列車線と駅横線の交点」X。端点ではNULL), `m_iRessyaTrackIndex`, `m_bShouldRessyajouhouDraw`(この駅位置に列車番号等を描くか)。`getDgrXPosChaku(bHatsuIfNull)`=着がNULLなら発で代用(逆も)                                                                                                                                                                                                                       |
+| `CentDedDgrRessya`                 | CentDedDgrRessya.h/.cpp          | 列車1本。`m_bIsNull`, `m_eRessyahoukou`, `m_iRessyasyubetsuIndex`, `m_strRessyabangou/Ressyamei/Gousuu`, `m_DgrXZone`(全列車線を含むX範囲。始終同時刻なら例外的にサイズ1)。包含: 駅数分の `CentDedDgrEkiJikoku`, `CentDedDgrRessyasenCont`, `CentDedDgrRessyaTrackLineCont`。`readCentDedRessya()` が構築パイプライン                                                                                                                                                                                                                                                                         |
+| `CentDedDgrRessyasen`              | CentDedDgrRessyasen.h            | 折れ線の1直線区間。`m_iRessyasenKitenEkiOrder`(起点駅Order), `m_iRessyasenSyuutenEkiOrder`(終点駅Order) の2値のみ。座標は駅時刻とDiaから導出                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `CentDedDgrRessyasenCont`          | CentDedDgrRessyasenCont.h/.cpp   | 列車線コンテナ。**insert/set 時に自動で中間駅の `m_iDgrXPosRessyasen` を線形補間で設定**、erase 時にクリア(`setDgrXPosRessyasen()`)                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `CentDedDgrRessyasyubetsu`         | CentDedDgrRessyasyubetsu.h       | 種別の描画属性。`m_colorJikokuhyouMojiColor`(文字色=ダイヤ上のラベル色兼用), `m_CdDiagramLineStyle`(線色+線種+太線フラグ), `m_eStopMarkDrawType`, `m_iParentSyubetsuIndex`(親種別。-1=なし)                                                                                                                                                                                                                                                                                                                                                                                                   |
+| `CentDedDgrEkiTrack2`              | CentDedDgrEkiTrack2.h            | 番線(名称・上下略称)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `CentDedDgrRessyaTrackLine`(+Cont) | CentDedDgrRessyaTrackLine.h ほか | 在線表上の「在線線」。`m_iEkiOrder`, `m_iTsuukaTeisya`, `m_iChakuOperation`/`m_iHatsuOperation`(着側/発側作業コード: -5~5。-1=通常発着, -2=分岐方向発着(補助列車線描画), 3=出区○/入区△, 4=路線外始発/終着, 5=前/次列車接続 等), `m_bIsTrackDisplay`, `deque<Zaisen> m_contZaisen`(Zaisen={番線,着X,発X,運用番号})                                                                                                                                                                                                                                                                             |
+| `CEnumRessyasen`                   | CEnumRessyasen.h/.cpp            | 指定Dgr領域に交差し得る列車線を列挙するループエンジン(仮想関数 `onCentDedDgrRessyasen()` をコールバック)。ヒットテスト等の基底                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `CDedRessyaSoater_Transfer`        | CDedRessyaSoater_Transfer.h/.cpp | 『乗継ソート』。推定時刻(`createEstimateRessya`)を使って時刻表ビューの列車並び順を決めるソーター(ダイヤグラム描画そのものには不使用)                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 
 ### entDed ↔ entDgr の対応
 
-| entDed (ドメイン) | entDgr (描画用) | 変換箇所 |
-|---|---|---|
-| `CentDedRosen` + `CentDedDia` | `CentDedDgrDia` | `CentDedDgrDia::readCentDedRosen()` |
-| `CentDedEki` | `CentDedDgrEki` | `readCentDedRosen_02_updateEkiCont`(+ 全列車走査で駅間最小秒を決定) |
-| `CentDedRessyasyubetsu` | `CentDedDgrRessyasyubetsu` | `readCentDedRosen_03_updateMuRessyasyubetsu` |
-| `CentDedRessya` | `CentDedDgrRessya` | `readCentDedRosen_04_updateRessyaCont` → `CentDedDgrRessya::readCentDedRessya()` |
-| `CentDedEkiJikoku`(時:分等) | `CentDedDgrEkiJikoku`(絶対秒X座標) | `readCentDedRessya_02_CreateCentDedEkiJikoku` |
-| ― (導出) | `CentDedDgrRessyasen` / `CentDedDgrRessyaTrackLine` | `readCentDedRessya_08` / `_11` |
+| entDed (ドメイン)             | entDgr (描画用)                                     | 変換箇所                                                                         |
+| ----------------------------- | --------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `CentDedRosen` + `CentDedDia` | `CentDedDgrDia`                                     | `CentDedDgrDia::readCentDedRosen()`                                              |
+| `CentDedEki`                  | `CentDedDgrEki`                                     | `readCentDedRosen_02_updateEkiCont`(+ 全列車走査で駅間最小秒を決定)              |
+| `CentDedRessyasyubetsu`       | `CentDedDgrRessyasyubetsu`                          | `readCentDedRosen_03_updateMuRessyasyubetsu`                                     |
+| `CentDedRessya`               | `CentDedDgrRessya`                                  | `readCentDedRosen_04_updateRessyaCont` → `CentDedDgrRessya::readCentDedRessya()` |
+| `CentDedEkiJikoku`(時:分等)   | `CentDedDgrEkiJikoku`(絶対秒X座標)                  | `readCentDedRessya_02_CreateCentDedEkiJikoku`                                    |
+| ― (導出)                      | `CentDedDgrRessyasen` / `CentDedDgrRessyaTrackLine` | `readCentDedRessya_08` / `_11`                                                   |
 
 逆方向の変換として `CentDedDgrDia::createEstimateRessya()/createEstimateRessya2()` があり、列車線から**推定時刻**(中間駅=列車線と駅線の交点時刻)を書き込んだ `CentDedRessya` を生成する(時刻表ビューの通過時刻推定・乗継ソートに利用)。
 
@@ -116,6 +116,7 @@
 ### 線分の端点座標(描画時)
 
 `CentDedDgrDia::calcDgrPosRessyasenKiten/Syuuten()` (CentDedDgrDia.cpp):
+
 - 起点 = (起点駅の**発**X(なければ着) + iShiftSecond, 起点駅の `getDgrYPosOfEkiTer`(方向基準))
 - 終点 = (終点駅の**着**X(なければ発) + iShiftSecond, 終点駅の `getDgrYPosOfEkiOrg`(方向基準))
 
@@ -134,6 +135,7 @@
 ### 5.2 グラフ部分 — `CDcdDiagram::DcDraw()` (CDcdDiagram.cpp)
 
 描画順:
+
 1. ダイヤ範囲でクリップ(`CaDcdTargetClip`)。
 2. **背景**: 基本背景色で塗り、`DisplayBackColorNextEki` 有効時は駅間ごとの個別背景色(`m_colorDiaBackColor[]`、`CentDedEki::DIAGRAMBACKCOLOR_COUNT`=基本+4色)。
 3. **縦罫線**(時刻グリッド): `m_arVline[8]` テーブルから `m_idxVlineMode`(既定1=2分目)で選択。`{pitch, middlePitch, boldPitch}`(秒) =
@@ -189,41 +191,42 @@
 
 ## 6. UI・操作の挙動
 
-| 操作 | 挙動 | 根拠 |
-|---|---|---|
-| マウスホイール | **縦スクロールのみ**。移動量 = 縦罫ピッチ(VlinePitch)×ノッチ数。Ctrl/Shift 修飾なし(nFlags==0 のみ処理) | CWndDiagram.cpp `OnMouseWheel` |
-| 矢印キー/Home/End/PgUp/PgDn | H/Vスクロールと等価 | CWndDiagram.cpp `OnKeyDown` |
-| スクロールバー | X=時刻方向、Y=駅方向。Dgr座標単位 | `OnHScroll/OnVScroll` |
-| **ダブルクリック(列車線上)** | ヒットテストで列車を特定し、**時刻表ビューを開いてその列車・駅時刻セルにフォーカス**。パターンプレビュー中は複製列車を `idx % 実列車数` で本体に還元 | CWndDiagram.cpp `OnLButtonDblClk_openJikokuhyouView` |
-| ダブルクリック(駅名欄) | 駅のプロパティダイアログを開く | `OnLButtonDblClk_openDlgEkiProp` |
-| 右クリック | コンテキストメニューなし(明示的に未実装) | `OnContextMenu` |
-| シングルクリック/ドラッグ | **何もしない。ドラッグによる時刻修正・スジ引き(新規列車入力)機能は存在しない**(ビューは表示専用。編集は時刻表系ビューで行う) | メッセージマップに LButtonDown/MouseMove ハンドラなし |
-| 指定列車番号へ移動 | 列車番号を入力し該当スジ位置へスクロール(`OnDiagramRessyabangouMove`, `setZoneCenter_Dgr`) | cdeddiagramview.cpp |
-| 印刷/印刷プレビュー | 現在の表示範囲(Zone_Dgr)を1ページとして `CaDcdDiagram_PageSelector` が X×Y ページに分割して印刷 | CaDcdDiagram_PageSelector.h |
-| 初期表示 | 初回のみ .ini からスクロール位置・罫線設定を復元(`readCWndDiagramViewProp`) | CWndDiagram.cpp `onUpdateCentDedDgrDia` |
+| 操作                         | 挙動                                                                                                                                                 | 根拠                                                  |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| マウスホイール               | **縦スクロールのみ**。移動量 = 縦罫ピッチ(VlinePitch)×ノッチ数。Ctrl/Shift 修飾なし(nFlags==0 のみ処理)                                              | CWndDiagram.cpp `OnMouseWheel`                        |
+| 矢印キー/Home/End/PgUp/PgDn  | H/Vスクロールと等価                                                                                                                                  | CWndDiagram.cpp `OnKeyDown`                           |
+| スクロールバー               | X=時刻方向、Y=駅方向。Dgr座標単位                                                                                                                    | `OnHScroll/OnVScroll`                                 |
+| **ダブルクリック(列車線上)** | ヒットテストで列車を特定し、**時刻表ビューを開いてその列車・駅時刻セルにフォーカス**。パターンプレビュー中は複製列車を `idx % 実列車数` で本体に還元 | CWndDiagram.cpp `OnLButtonDblClk_openJikokuhyouView`  |
+| ダブルクリック(駅名欄)       | 駅のプロパティダイアログを開く                                                                                                                       | `OnLButtonDblClk_openDlgEkiProp`                      |
+| 右クリック                   | コンテキストメニューなし(明示的に未実装)                                                                                                             | `OnContextMenu`                                       |
+| シングルクリック/ドラッグ    | **何もしない。ドラッグによる時刻修正・スジ引き(新規列車入力)機能は存在しない**(ビューは表示専用。編集は時刻表系ビューで行う)                         | メッセージマップに LButtonDown/MouseMove ハンドラなし |
+| 指定列車番号へ移動           | 列車番号を入力し該当スジ位置へスクロール(`OnDiagramRessyabangouMove`, `setZoneCenter_Dgr`)                                                           | cdeddiagramview.cpp                                   |
+| 印刷/印刷プレビュー          | 現在の表示範囲(Zone_Dgr)を1ページとして `CaDcdDiagram_PageSelector` が X×Y ページに分割して印刷                                                      | CaDcdDiagram_PageSelector.h                           |
+| 初期表示                     | 初回のみ .ini からスクロール位置・罫線設定を復元(`readCWndDiagramViewProp`)                                                                          | CWndDiagram.cpp `onUpdateCentDedDgrDia`               |
 
 ### ヒットテスト — `CDcdDiagram::calcCentDedDgrRessyasenOfPoint()` → `CCalcCentDedDgrRessyasenOfPoint`
 
 1. クリック点を含む表示域を Dgr 座標に変換し、`CEnumRessyasen` で交差候補の列車線を列挙。
 2. 各列車線を Dcd 座標の直線にし、まずバウンディングボックス判定(垂直/水平線はサイズ0→1に補正)。
 3. X成分が長い線は `y=f(x)` で、Y成分が長い線は `x=f(y)` で点との距離を計算し、**マージン(ピクセル)以内なら命中**。最初に見つかった1本(方向・列車Index・列車線Index)を返す。
+
 - 駅Order の逆引きは `calcEkiOrderOfPoint()`(方向に応じて上/下の駅を返す)。
 
 ## 7. 表示オプション一覧
 
-| オプション | 保持場所 | 既定 |
-|---|---|---|
-| 列車番号表示 / 列車名表示 | `CDcdDiagram::m_bDisplayRessyabangou/Ressyamei` | true |
-| 下り/上り列車線表示 | `m_bDisplayRessyasenKudari/Nobori` | true |
-| 時間目盛(1/2/5/10/15/20/30/60分) | `m_idxVlineMode` | 1(2分目) |
-| 停車駅明示(○) | `m_eStopMarkDraw` | OFF |
-| 一般駅の駅名非表示 | `CDcdDiagram2::m_bHideIppanekiEkimei` | false |
-| 親種別による表示 | `m_bDisplayParentSyubetsu` | false |
-| 駅間個別背景色 | `m_bDisplayBackColorNextEki` | false |
-| 色・フォント(列車/駅名/時刻フォント、背景色、軸色、文字色、背景色1-4) | `CdDedDispProp` から `readCdDedDispProp()` で読込 | Meiryo UI 9pt、白背景、黒軸/文字 |
-| 路線外発着の表示方法 | `m_iDiagramDisplayOuterTerminal` | 0(駅名+運用番号) |
-| ウインドウサイズ変更時の表示範囲維持 | `setKeepZoneDgrOnSize` | false(範囲可変) |
-| パターンダイヤプレビュー | `CentDedDgrDia::m_iPatternDiagramPreviewCycleSecond`(60~10800秒)/`Range` | OFF |
+| オプション                                                            | 保持場所                                                                 | 既定                             |
+| --------------------------------------------------------------------- | ------------------------------------------------------------------------ | -------------------------------- |
+| 列車番号表示 / 列車名表示                                             | `CDcdDiagram::m_bDisplayRessyabangou/Ressyamei`                          | true                             |
+| 下り/上り列車線表示                                                   | `m_bDisplayRessyasenKudari/Nobori`                                       | true                             |
+| 時間目盛(1/2/5/10/15/20/30/60分)                                      | `m_idxVlineMode`                                                         | 1(2分目)                         |
+| 停車駅明示(○)                                                         | `m_eStopMarkDraw`                                                        | OFF                              |
+| 一般駅の駅名非表示                                                    | `CDcdDiagram2::m_bHideIppanekiEkimei`                                    | false                            |
+| 親種別による表示                                                      | `m_bDisplayParentSyubetsu`                                               | false                            |
+| 駅間個別背景色                                                        | `m_bDisplayBackColorNextEki`                                             | false                            |
+| 色・フォント(列車/駅名/時刻フォント、背景色、軸色、文字色、背景色1-4) | `CdDedDispProp` から `readCdDedDispProp()` で読込                        | Meiryo UI 9pt、白背景、黒軸/文字 |
+| 路線外発着の表示方法                                                  | `m_iDiagramDisplayOuterTerminal`                                         | 0(駅名+運用番号)                 |
+| ウインドウサイズ変更時の表示範囲維持                                  | `setKeepZoneDgrOnSize`                                                   | false(範囲可変)                  |
+| パターンダイヤプレビュー                                              | `CentDedDgrDia::m_iPatternDiagramPreviewCycleSecond`(60~10800秒)/`Range` | OFF                              |
 
 **存在しない機能**: 現在時刻線(リアルタイム表示)、上下ダイヤの別ウィンドウ重ね合わせ(下り/上りは同一ビューにON/OFF重畳)、ドラッグでのスジ編集。
 

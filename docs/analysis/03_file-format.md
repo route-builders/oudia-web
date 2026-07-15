@@ -5,22 +5,22 @@
 
 主な根拠ソース (origin/ からの相対パス):
 
-| 役割 | ファイル |
-|---|---|
-| ファイル全体の読み書き・FileType判定 | `DiagramEdit/DiagramEdit/DedRosenFileData/CconvCDedRosenFileData.{h,cpp}` |
-| 行文法 (パーサ/シリアライザ) | `libs/OuLib/Str/OuPropertiesText/CConvNodeContainer.cpp` (+ `CNode/CDirectory/CPropertyString/CNodeContainer`) |
-| Rosen配下の変換 (現行 1.10–1.17) | `DiagramEdit/DiagramEdit/entDed/CconvCentDed.cpp` (5083行) |
-| DispProp の変換 | `DiagramEdit/DiagramEdit/DedRosenFileData/CconvCdDedDispProp.cpp` / `CdDedDispProp.{h,cpp}` |
-| 旧版読込 (1.06–1.09) | `DiagramEdit/DiagramEdit/entDed/CconvCentDedS09.cpp` |
-| 旧版読込 (1.01–1.05) | `DiagramEdit/DiagramEdit/entDed/CconvCentDedS05.cpp` |
-| 旧版読込 (1.00 / OuDia.1.02) | `DiagramEdit/DiagramEdit/entDed/CconvCentDedS00.cpp` |
-| .oud 書き出し | `DiagramEdit/DiagramEdit/DedRosenFileData/CconvCDedRosenFileDataOud.cpp` + `entDed/CconvCentDedOud.cpp` |
-| ファイルI/O・文字コード | `libs/OuLib/Str/vectorToFile.cpp` (`stringToFile` / `stringToFileANSI` / `stringFromFile`) |
-| ドキュメント開閉 (エントリポイント) | `DiagramEdit/DiagramEdit/CDiagramEditDoc.cpp` (`OnOpenDocument` / `OnSaveDocument`) |
-| 時刻文字列 | `DiagramEdit/DiagramEdit/entDed/CdDedJikoku.{h,cpp}` |
-| 色・フォント文字列 | `libs/DcDrawLib/DcdCd/DcDrawProp/CconvDcDrawProp.cpp` |
-| バージョン履歴 | `OuDiaSecond変更箇所.txt` |
-| 実サンプル | `DiagramEdit/manual/sample2.oud2` (FileType=OuDiaSecond.1.17, UTF-8 BOM, CRLF) |
+| 役割                                 | ファイル                                                                                                       |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| ファイル全体の読み書き・FileType判定 | `DiagramEdit/DiagramEdit/DedRosenFileData/CconvCDedRosenFileData.{h,cpp}`                                      |
+| 行文法 (パーサ/シリアライザ)         | `libs/OuLib/Str/OuPropertiesText/CConvNodeContainer.cpp` (+ `CNode/CDirectory/CPropertyString/CNodeContainer`) |
+| Rosen配下の変換 (現行 1.10–1.17)     | `DiagramEdit/DiagramEdit/entDed/CconvCentDed.cpp` (5083行)                                                     |
+| DispProp の変換                      | `DiagramEdit/DiagramEdit/DedRosenFileData/CconvCdDedDispProp.cpp` / `CdDedDispProp.{h,cpp}`                    |
+| 旧版読込 (1.06–1.09)                 | `DiagramEdit/DiagramEdit/entDed/CconvCentDedS09.cpp`                                                           |
+| 旧版読込 (1.01–1.05)                 | `DiagramEdit/DiagramEdit/entDed/CconvCentDedS05.cpp`                                                           |
+| 旧版読込 (1.00 / OuDia.1.02)         | `DiagramEdit/DiagramEdit/entDed/CconvCentDedS00.cpp`                                                           |
+| .oud 書き出し                        | `DiagramEdit/DiagramEdit/DedRosenFileData/CconvCDedRosenFileDataOud.cpp` + `entDed/CconvCentDedOud.cpp`        |
+| ファイルI/O・文字コード              | `libs/OuLib/Str/vectorToFile.cpp` (`stringToFile` / `stringToFileANSI` / `stringFromFile`)                     |
+| ドキュメント開閉 (エントリポイント)  | `DiagramEdit/DiagramEdit/CDiagramEditDoc.cpp` (`OnOpenDocument` / `OnSaveDocument`)                            |
+| 時刻文字列                           | `DiagramEdit/DiagramEdit/entDed/CdDedJikoku.{h,cpp}`                                                           |
+| 色・フォント文字列                   | `libs/DcDrawLib/DcdCd/DcDrawProp/CconvDcDrawProp.cpp`                                                          |
+| バージョン履歴                       | `OuDiaSecond変更箇所.txt`                                                                                      |
+| 実サンプル                           | `DiagramEdit/manual/sample2.oud2` (FileType=OuDiaSecond.1.17, UTF-8 BOM, CRLF)                                 |
 
 ---
 
@@ -30,12 +30,14 @@
 (`CDiagramEditDoc::OnOpenDocument` / `OnSaveDocument`)。
 
 ### 書き出し
+
 - **.oud2 (および .oud2backup)**: `stringToFile()` → `_tfopen_s(..., _T("w , ccs=UTF-8"))`。
   MSVC のこのモードは **UTF-8 + BOM(EF BB BF)** で書き、テキストモードのため改行は **CRLF**。
   sample2.oud2 の実バイト列で BOM・CRLF を確認済み。
 - **.oud**: `stringToFileANSI()` → `"wt"` + `stringOf()`(ワイド→ANSI変換) = **Shift-JIS (CP932)、BOMなし、CRLF**。
 
 ### 読み込み (`stringFromFile`, vectorToFile.cpp)
+
 1. まず ANSI テキストモードで先頭を読み、**UTF-8 BOM (EF BB BF) があれば UTF-8**(`"r, ccs=UTF-8"` で読み直し)、
    **なければ Shift-JIS** として読む。拡張子では判定しない。
 2. Shift-JIS 読込時の特殊処理: 「―ソЫⅨ噂浬欺圭構蚕十申曾箪貼能表暴予禄兔喀媾彌拿杤歃濬畚秉綵臀藹觸軆鐔饅鷭偆砡纊犾」
@@ -46,6 +48,7 @@
    パーサ(`getLine`)は `\n` のみを行区切りとして扱う。**Web実装では CR を明示的に除去する必要がある**。
 
 ### FileTypeAppComment
+
 保存時、ノード変換の最後に `FileTypeAppComment=<AppName> Ver. <version>`
 (例: `FileTypeAppComment=OuDiaSecondV2 Ver. 2.06.21`) をルート直下に追加する。トップレベル挿入順の関係で
 **ファイル最終行**に現れる。読込では解釈されず、読込エラー時のメッセージ表示
@@ -59,7 +62,9 @@
 **CPropertyString**(Key=Value 行) と **CDirectory**(名前付き子コンテナ)。
 
 ### デコード規則 (`CConvNodeContainer::decodeNodeContainer`)
+
 行を上から順に処理する。
+
 1. **空行** → 読み飛ばす。
 2. **`.` のみの行** → 現在のディレクトリの終端。
 3. **`=` を含まず、末尾が `.` の行** → ディレクトリ開始。名前 = 行から末尾の `.` を除いた文字列。
@@ -75,22 +80,25 @@
    エラー -1 ("Container Aborted" / ディレクトリが途中で閉じています)。
 
 ### エンコード規則 (`CConvNodeContainer::encode`)
+
 - プロパティ: `名前=エスケープ済み値` + LF (実ファイルでは CRLF)。
 - ディレクトリ: `名前.` 行 + 子の再帰エンコード + `.` 行。
 - ノードの**出現順序は保存され、意味を持つ**(後述の同名複数キー)。
 
 ### 値のエスケープ (`encodePropertyString_escapePropertyValue` / `decode...unescape...`)
-| 元 | 書き出し | 読込 |
-|---|---|---|
-| 改行 LF | `\n` (バックスラッシュ+n) | `\n` → LF |
-| `\` | `\\` | `\\` → `\` |
-| `.` | エスケープしない(そのまま) | `\.` はそのまま `\.` の2文字として保持 |
-| その他の `\x` | ― | そのまま2文字保持(先読みで消費) |
+
+| 元            | 書き出し                   | 読込                                   |
+| ------------- | -------------------------- | -------------------------------------- |
+| 改行 LF       | `\n` (バックスラッシュ+n)  | `\n` → LF                              |
+| `\`           | `\\`                       | `\\` → `\`                             |
+| `.`           | エスケープしない(そのまま) | `\.` はそのまま `\.` の2文字として保持 |
+| その他の `\x` | ―                          | そのまま2文字保持(先読みで消費)        |
 
 - 名前側はエスケープされない。値に `=` が含まれても最初の `=` で分割するので問題ない。
 - 複数行文字列(Rosen の Comment、Bikou 等)は `\n` エスケープで1行に収まる。
 
 ### 同名キーの繰り返し
+
 同じ名前のプロパティ/ディレクトリが同一コンテナ内に複数並ぶことがあり、`getInName(name, idx)` /
 `sizeInName(name)` で n 番目を取得する。例: `Eki.`×駅数、`Ressya.`×列車数、
 `JikokuhyouFont=`×8、`DiaBackColor=`×5、`JikokuhyouBackColor=`×4、`OuterTerminal.`×n、
@@ -103,14 +111,14 @@
 ルート直下の `FileType` プロパティで判定 (`CconvCDedRosenFileData::isEncodeAbleFormat`)。
 書き出し時の現行値は **`OuDiaSecond.1.17`** (`CconvCDedRosenFileData.h getFileType()`)。
 
-| 判定グループ | FileType 値 | 読込に使う変換クラス |
-|---|---|---|
-| 5 (現行) | OuDiaSecond.1.10 〜 1.17 | `CconvCentDed` |
-| 4 | OuDiaSecond.1.06 〜 1.09 | `CconvCentDedS09` |
-| 3 | OuDiaSecond.1.01 〜 1.05 | `CconvCentDedS05` |
-| 2 | OuDiaSecond.1.00 | `CconvCentDedS00` |
-| 1 | OuDia.1.02 | `CconvCentDedS00` |
-| それ以外 | ― | エラー -1 (FileType が正しくありません) |
+| 判定グループ | FileType 値              | 読込に使う変換クラス                    |
+| ------------ | ------------------------ | --------------------------------------- |
+| 5 (現行)     | OuDiaSecond.1.10 〜 1.17 | `CconvCentDed`                          |
+| 4            | OuDiaSecond.1.06 〜 1.09 | `CconvCentDedS09`                       |
+| 3            | OuDiaSecond.1.01 〜 1.05 | `CconvCentDedS05`                       |
+| 2            | OuDiaSecond.1.00         | `CconvCentDedS00`                       |
+| 1            | OuDia.1.02               | `CconvCentDedS00`                       |
+| それ以外     | ―                        | エラー -1 (FileType が正しくありません) |
 
 すなわち**マイナー版内は前方互換読み(新キーは無視ではなく「省略時デフォルト」で吸収)**、
 グループ境界では専用リーダーで旧構造→新構造へ変換する方式。
@@ -118,24 +126,24 @@
 
 ### FileType とアプリ版の対応 (OuDiaSecond変更箇所.txt / CconvCDedRosenFileData.h の日付コメントより)
 
-| FileType | 導入アプリ版 | 主な追加(ファイル形式上) |
-|---|---|---|
-| 1.00 | 初版 (2017) | OuDia.1.02 に EkiTrack2Cont・DownMain/UpMain・Brunch/Loop 等を追加 |
-| 1.01/1.02 | Ver1.01〜 | FileType 命名変更、.oud 書き出し用 FileType 追加 |
-| 1.03 | Ver1.02.90β〜1.03 | DisplayRessyamei、JikokuhyouRessyaWidth拡大 |
-| 1.04 | Ver1.04 | 路線外発着 (OuterTerminal)、Kudari/NoboriDiaAlias、上り番線略称 |
-| 1.05 | Ver1.04.04 | NextEkiDistance、JikokuhyouTrackOmit |
-| 1.06/1.07 | Ver2.00〜2.02 | 運用機能導入(Operation・EnableOperation)、経由なし廃止、番線のEkiJikoku統合 |
-| 1.08 | Ver2.02.03 | SecondRoundChaku/Hatsu、Display2400 |
-| 1.09 | Ver2.03 | OperationTableFont等のフォント/色、駅名略称(Ekimei*Ryaku) |
-| 1.10 | Ver2.05 | 駅作業パラメータ改訂(入出区連携コード InOutLinkCode)、OperationNumberRows、OperationCrossKitenJikoku、JikokuhyouOuterDisplay* |
-| 1.11 | Ver2.06 | CrossingCheckRule (平面交差支障チェック) |
-| 1.12 | Ver2.06.02 | WindowPlacement ノード |
-| 1.13 | Ver2.06.05 | HeadwaySecondMinimum、運用番号順反転(NumberChange作業の空運番) |
-| 1.14 | Ver2.06.07 | KijunDiaIndex (基準運転時分ダイヤ) |
-| 1.15 | Ver2.06.15 | Canceled (運休)、Hidden/DisableHiddenSyubetsu (隠し種別) |
-| 1.16 | Ver2.06.18 | PatternDiagramPreviewEnable/CycleSecond |
-| 1.17 | Ver2.06.21〜(現行2.06.23) | JikokuhyouNyuusenJikokuDisplay*、JikokuhyouPrevSyubetsuChangeDisplay* (入線時刻・前列車情報欄) |
+| FileType  | 導入アプリ版              | 主な追加(ファイル形式上)                                                                                                      |
+| --------- | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1.00      | 初版 (2017)               | OuDia.1.02 に EkiTrack2Cont・DownMain/UpMain・Brunch/Loop 等を追加                                                            |
+| 1.01/1.02 | Ver1.01〜                 | FileType 命名変更、.oud 書き出し用 FileType 追加                                                                              |
+| 1.03      | Ver1.02.90β〜1.03         | DisplayRessyamei、JikokuhyouRessyaWidth拡大                                                                                   |
+| 1.04      | Ver1.04                   | 路線外発着 (OuterTerminal)、Kudari/NoboriDiaAlias、上り番線略称                                                               |
+| 1.05      | Ver1.04.04                | NextEkiDistance、JikokuhyouTrackOmit                                                                                          |
+| 1.06/1.07 | Ver2.00〜2.02             | 運用機能導入(Operation・EnableOperation)、経由なし廃止、番線のEkiJikoku統合                                                   |
+| 1.08      | Ver2.02.03                | SecondRoundChaku/Hatsu、Display2400                                                                                           |
+| 1.09      | Ver2.03                   | OperationTableFont等のフォント/色、駅名略称(Ekimei*Ryaku)                                                                     |
+| 1.10      | Ver2.05                   | 駅作業パラメータ改訂(入出区連携コード InOutLinkCode)、OperationNumberRows、OperationCrossKitenJikoku、JikokuhyouOuterDisplay* |
+| 1.11      | Ver2.06                   | CrossingCheckRule (平面交差支障チェック)                                                                                      |
+| 1.12      | Ver2.06.02                | WindowPlacement ノード                                                                                                        |
+| 1.13      | Ver2.06.05                | HeadwaySecondMinimum、運用番号順反転(NumberChange作業の空運番)                                                                |
+| 1.14      | Ver2.06.07                | KijunDiaIndex (基準運転時分ダイヤ)                                                                                            |
+| 1.15      | Ver2.06.15                | Canceled (運休)、Hidden/DisableHiddenSyubetsu (隠し種別)                                                                      |
+| 1.16      | Ver2.06.18                | PatternDiagramPreviewEnable/CycleSecond                                                                                       |
+| 1.17      | Ver2.06.21〜(現行2.06.23) | JikokuhyouNyuusenJikokuDisplay*、JikokuhyouPrevSyubetsuChangeDisplay* (入線時刻・前列車情報欄)                                |
 
 ---
 
@@ -188,74 +196,74 @@ EkiJikoku の `$番線` 等)。名前参照は使われない。
 KitenJikoku → DiagramDgrYZahyouKyoriDefault → EnableOperation → OperationNumberReverse →
 OperationCrossKitenJikoku → KijunDiaIndex → DisableHiddenSyubetsu → Comment。
 
-| キー | 型 | 意味 | 省略時 / 備考 |
-|---|---|---|---|
-| Rosenmei | 文字列 | 路線名 | 空可。常に出力 |
-| KudariDiaAlias / NoboriDiaAlias | 文字列 | 「下り」「上り」の別名 | 空可。常に出力 |
-| KitenJikoku | 時刻(§6.1) | ダイヤグラム起点時刻 | 空→Null時刻。不正なら err -352 |
-| DiagramDgrYZahyouKyoriDefault | int | 既定の駅間幅(ダイヤ表示秒) | 60。負なら err -353 |
-| EnableOperation | int | 運用機能 0=無効 / 1=簡易(接続のみ) / 2=通常 (`CentDedRosen.h` コメント) | 0。書き出しは >0 のみ |
-| OperationNumberReverse | bool | 運用番号順反転 | false。true時のみ出力 |
-| OperationCrossKitenJikoku | bool | 起点時刻跨ぎ運用接続 | false。true時のみ出力 |
-| KijunDiaIndex | int | 基準運転時分ダイヤの index | 省略時は DiaName=="基準運転時分" のダイヤを検索、なければ 0 |
-| DisableHiddenSyubetsu | bool | 隠し種別を強制表示 | false。true時のみ出力 |
-| Comment | 文字列(複数行) | 路線コメント | `\n` エスケープで1行化。常に出力 |
+| キー                            | 型             | 意味                                                                    | 省略時 / 備考                                               |
+| ------------------------------- | -------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Rosenmei                        | 文字列         | 路線名                                                                  | 空可。常に出力                                              |
+| KudariDiaAlias / NoboriDiaAlias | 文字列         | 「下り」「上り」の別名                                                  | 空可。常に出力                                              |
+| KitenJikoku                     | 時刻(§6.1)     | ダイヤグラム起点時刻                                                    | 空→Null時刻。不正なら err -352                              |
+| DiagramDgrYZahyouKyoriDefault   | int            | 既定の駅間幅(ダイヤ表示秒)                                              | 60。負なら err -353                                         |
+| EnableOperation                 | int            | 運用機能 0=無効 / 1=簡易(接続のみ) / 2=通常 (`CentDedRosen.h` コメント) | 0。書き出しは >0 のみ                                       |
+| OperationNumberReverse          | bool           | 運用番号順反転                                                          | false。true時のみ出力                                       |
+| OperationCrossKitenJikoku       | bool           | 起点時刻跨ぎ運用接続                                                    | false。true時のみ出力                                       |
+| KijunDiaIndex                   | int            | 基準運転時分ダイヤの index                                              | 省略時は DiaName=="基準運転時分" のダイヤを検索、なければ 0 |
+| DisableHiddenSyubetsu           | bool           | 隠し種別を強制表示                                                      | false。true時のみ出力                                       |
+| Comment                         | 文字列(複数行) | 路線コメント                                                            | `\n` エスケープで1行化。常に出力                            |
 
 読込後処理: `adjustBrunchLoopCont()`(分岐/環状の整合)、`adjustOperation()`、
 `adjustCrossingCheckRuleByEkiEdit()`、全ダイヤに `OperationConnect()`(運用接続の解決)。
 
 ### 5.2 Eki (CentDedEki_To/From_OuPropertiesText)
 
-| キー | 型 | 意味 | 省略時 / 出力条件 |
-|---|---|---|---|
-| Ekimei | 文字列 | 駅名 | 常に出力(空可) |
-| EkimeiJikokuRyaku | 文字列 | 時刻表用略称 | 空なら出力しない |
-| EkimeiDiaRyaku | 文字列 | ダイヤ用略称 | 空なら出力しない |
-| Ekijikokukeisiki | 列挙 | 駅時刻形式 | 必須。不正で err -22。値: `Jikokukeisiki_Hatsu` / `Jikokukeisiki_Hatsuchaku` / `Jikokukeisiki_KudariChaku` / `Jikokukeisiki_NoboriChaku` / `Jikokukeisiki_KudariHatsuchaku` / `Jikokukeisiki_NoboriHatsuchaku` |
-| Ekikibo | 列挙 | 駅規模 `Ekikibo_Ippan` / `Ekikibo_Syuyou` | 必須。不正で err -32 |
-| DiagramRessyajouhouHyoujiKudari / …Nobori | 列挙 | ダイヤ列車情報表示。`DiagramRessyajouhouHyouji_Anytime` / `_Not`。既定値(Origin)は**空文字にマップされキー自体を出力しない** | Origin。不正で err -41/-42 |
-| DownMain / UpMain | int | 下り/上り主本線の番線 index | intOf("")=0。常に出力 |
-| BrunchCoreEkiIndex | int | 分岐元駅 index | -1(分岐なし)。>=0 のみ出力 |
-| BrunchOpposite | bool | 分岐が反対方向 | false。Brunch有かつtrue時のみ `1` |
-| LoopOriginEkiIndex | int | 環状線の起点駅 index | -1。>=0 のみ出力 |
-| LoopOpposite | bool | 環状が反対方向 | false |
-| JikokuhyouTrackDisplayKudari / …Nobori | bool | 時刻表の発番線表示 | false。true時のみ `1` |
-| DiagramTrackDisplay | bool | ダイヤの番線表示 | false。true時のみ `1` |
-| DiagramTrackOmit | `0/1` のカンマ列 | 番線ごとのダイヤ省略 | 常に出力(番線数分)。不足分は false |
-| EkiTrack2Cont. | dir | 番線一覧 (§5.3) | 読込で存在しない場合: デフォルト2番線を維持し DownMain=0 / UpMain=1 に補正(テキストペースト対応) |
-| OuterTerminal. ×n | dir | 路線外発着駅 | Ekimei 空のエントリは無視 |
-| NextEkiDistance | int | 次駅までの所要距離(表示用) | 0。デフォルト(未設定)時は出力しない |
-| JikokuhyouTrackOmit | bool | 番線編集モードの番線欄省略 | false。true時のみ `1` |
-| JikokuhyouOperationOrigin / …Terminal | int 1–3 | 時刻表の始発/終着運用欄 | 0(なし)。>0のみ出力。範囲外→0 |
-| JikokuhyouOperationOriginDownBeforeUpAfter / …DownAfterUpBefore | bool | 運用欄の前後配置 | false。true時のみ `1`。対応する Origin/Terminal>0 のときのみ読込 |
-| JikokuhyouOperationTerminalDownBeforeUpAfter / …DownAfterUpBefore | bool | 同上(終着側) | 同上 |
-| JikokuhyouJikokuDisplayKudari / …Nobori | `着,発` (各0/1) | 時刻表の着/発時刻表示 | 各1。範囲外・非数→1 |
-| JikokuhyouSyubetsuChangeDisplayKudari / …Nobori | `a,b,c,d,e` | 種別変更/次列車情報欄: a=列車番号(0–3), b=運用番号(0–4), c=列車種別(0–3), d=列車名(0–3), e=運用番号段数(1–5) | 0,0,0,0,1 |
-| JikokuhyouPrevSyubetsuChangeDisplayKudari / …Nobori | 同上5値 | 前列車情報欄 (1.17〜) | 0,0,0,0,1 |
-| JikokuhyouNyuusenJikokuDisplayKudari / …Nobori | bool | 入線時刻欄 (1.17〜) | false。true時のみ `1` |
-| DiagramColorNextEki | int | 次駅間のダイヤ背景色 index (DiaBackColor 0–4) | 0。常に出力 |
-| OperationTableDisplayJikoku | bool | 運用表に時刻表示 | false。true時のみ `1` |
-| JikokuhyouOuterDisplayKudari / …Nobori | `始発,終着` (各0/1) | 路線外始発/終着欄表示 | 0,0 |
-| CrossingCheckRule. ×n | dir | 平面交差支障ルール (§5.4) | なし可 |
+| キー                                                              | 型                  | 意味                                                                                                                         | 省略時 / 出力条件                                                                                                                                                                                              |
+| ----------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ekimei                                                            | 文字列              | 駅名                                                                                                                         | 常に出力(空可)                                                                                                                                                                                                 |
+| EkimeiJikokuRyaku                                                 | 文字列              | 時刻表用略称                                                                                                                 | 空なら出力しない                                                                                                                                                                                               |
+| EkimeiDiaRyaku                                                    | 文字列              | ダイヤ用略称                                                                                                                 | 空なら出力しない                                                                                                                                                                                               |
+| Ekijikokukeisiki                                                  | 列挙                | 駅時刻形式                                                                                                                   | 必須。不正で err -22。値: `Jikokukeisiki_Hatsu` / `Jikokukeisiki_Hatsuchaku` / `Jikokukeisiki_KudariChaku` / `Jikokukeisiki_NoboriChaku` / `Jikokukeisiki_KudariHatsuchaku` / `Jikokukeisiki_NoboriHatsuchaku` |
+| Ekikibo                                                           | 列挙                | 駅規模 `Ekikibo_Ippan` / `Ekikibo_Syuyou`                                                                                    | 必須。不正で err -32                                                                                                                                                                                           |
+| DiagramRessyajouhouHyoujiKudari / …Nobori                         | 列挙                | ダイヤ列車情報表示。`DiagramRessyajouhouHyouji_Anytime` / `_Not`。既定値(Origin)は**空文字にマップされキー自体を出力しない** | Origin。不正で err -41/-42                                                                                                                                                                                     |
+| DownMain / UpMain                                                 | int                 | 下り/上り主本線の番線 index                                                                                                  | intOf("")=0。常に出力                                                                                                                                                                                          |
+| BrunchCoreEkiIndex                                                | int                 | 分岐元駅 index                                                                                                               | -1(分岐なし)。>=0 のみ出力                                                                                                                                                                                     |
+| BrunchOpposite                                                    | bool                | 分岐が反対方向                                                                                                               | false。Brunch有かつtrue時のみ `1`                                                                                                                                                                              |
+| LoopOriginEkiIndex                                                | int                 | 環状線の起点駅 index                                                                                                         | -1。>=0 のみ出力                                                                                                                                                                                               |
+| LoopOpposite                                                      | bool                | 環状が反対方向                                                                                                               | false                                                                                                                                                                                                          |
+| JikokuhyouTrackDisplayKudari / …Nobori                            | bool                | 時刻表の発番線表示                                                                                                           | false。true時のみ `1`                                                                                                                                                                                          |
+| DiagramTrackDisplay                                               | bool                | ダイヤの番線表示                                                                                                             | false。true時のみ `1`                                                                                                                                                                                          |
+| DiagramTrackOmit                                                  | `0/1` のカンマ列    | 番線ごとのダイヤ省略                                                                                                         | 常に出力(番線数分)。不足分は false                                                                                                                                                                             |
+| EkiTrack2Cont.                                                    | dir                 | 番線一覧 (§5.3)                                                                                                              | 読込で存在しない場合: デフォルト2番線を維持し DownMain=0 / UpMain=1 に補正(テキストペースト対応)                                                                                                               |
+| OuterTerminal. ×n                                                 | dir                 | 路線外発着駅                                                                                                                 | Ekimei 空のエントリは無視                                                                                                                                                                                      |
+| NextEkiDistance                                                   | int                 | 次駅までの所要距離(表示用)                                                                                                   | 0。デフォルト(未設定)時は出力しない                                                                                                                                                                            |
+| JikokuhyouTrackOmit                                               | bool                | 番線編集モードの番線欄省略                                                                                                   | false。true時のみ `1`                                                                                                                                                                                          |
+| JikokuhyouOperationOrigin / …Terminal                             | int 1–3             | 時刻表の始発/終着運用欄                                                                                                      | 0(なし)。>0のみ出力。範囲外→0                                                                                                                                                                                  |
+| JikokuhyouOperationOriginDownBeforeUpAfter / …DownAfterUpBefore   | bool                | 運用欄の前後配置                                                                                                             | false。true時のみ `1`。対応する Origin/Terminal>0 のときのみ読込                                                                                                                                               |
+| JikokuhyouOperationTerminalDownBeforeUpAfter / …DownAfterUpBefore | bool                | 同上(終着側)                                                                                                                 | 同上                                                                                                                                                                                                           |
+| JikokuhyouJikokuDisplayKudari / …Nobori                           | `着,発` (各0/1)     | 時刻表の着/発時刻表示                                                                                                        | 各1。範囲外・非数→1                                                                                                                                                                                            |
+| JikokuhyouSyubetsuChangeDisplayKudari / …Nobori                   | `a,b,c,d,e`         | 種別変更/次列車情報欄: a=列車番号(0–3), b=運用番号(0–4), c=列車種別(0–3), d=列車名(0–3), e=運用番号段数(1–5)                 | 0,0,0,0,1                                                                                                                                                                                                      |
+| JikokuhyouPrevSyubetsuChangeDisplayKudari / …Nobori               | 同上5値             | 前列車情報欄 (1.17〜)                                                                                                        | 0,0,0,0,1                                                                                                                                                                                                      |
+| JikokuhyouNyuusenJikokuDisplayKudari / …Nobori                    | bool                | 入線時刻欄 (1.17〜)                                                                                                          | false。true時のみ `1`                                                                                                                                                                                          |
+| DiagramColorNextEki                                               | int                 | 次駅間のダイヤ背景色 index (DiaBackColor 0–4)                                                                                | 0。常に出力                                                                                                                                                                                                    |
+| OperationTableDisplayJikoku                                       | bool                | 運用表に時刻表示                                                                                                             | false。true時のみ `1`                                                                                                                                                                                          |
+| JikokuhyouOuterDisplayKudari / …Nobori                            | `始発,終着` (各0/1) | 路線外始発/終着欄表示                                                                                                        | 0,0                                                                                                                                                                                                            |
+| CrossingCheckRule. ×n                                             | dir                 | 平面交差支障ルール (§5.4)                                                                                                    | なし可                                                                                                                                                                                                         |
 
 ### 5.3 EkiTrack2 (番線)
 
-| キー | 型 | 意味 | 備考 |
-|---|---|---|---|
-| TrackName | 文字列 | 番線名 | 必須(空で err -11) |
-| TrackRyakusyou | 文字列 | 略称(下り) | 必須(空で err -21) |
-| TrackNoboriRyakusyou | 文字列 | 上り略称 | 空なら出力しない。省略時は空 |
+| キー                 | 型     | 意味       | 備考                         |
+| -------------------- | ------ | ---------- | ---------------------------- |
+| TrackName            | 文字列 | 番線名     | 必須(空で err -11)           |
+| TrackRyakusyou       | 文字列 | 略称(下り) | 必須(空で err -21)           |
+| TrackNoboriRyakusyou | 文字列 | 上り略称   | 空なら出力しない。省略時は空 |
 
 ### 5.4 CrossingCheckRule (1.11〜)
 
-| キー | 型 | 意味 | 省略時 |
-|---|---|---|---|
-| Caption | 文字列 | ルール名 | 空だと内部コード -1(ただし読込失敗にはならない。下記注) |
-| Enable | bool | 有効 | `!="0"` 判定 → 省略時 true |
-| HeadwaySecond | int | 時隔秒 | 60 |
-| HeadwaySecondMinimum | int | 時隔下限秒 (1.13〜) | 0。HeadwaySecond 以上なら 0 に補正 |
-| BeforeFromTrackContentCont / BeforeToTrackContentCont / AfterFromTrackContentCont / AfterToTrackContentCont | `type$index` を `;` で連結 | 対象トラック集合。type は `ETrackType`: 0=駅番線(index=番線idx), 1=起点側(index=駅idx), 2=終点側(index=駅idx), 3=路線外(index=OuterEkiIdx) (`CentDedEki.h:162`) | 空だと内部コード -2〜-5(読込失敗にはならない。下記注) |
-| BeforeIsArrival / BeforeIsTsuuka / AfterIsArrival / AfterIsTsuuka | bool | 着基準/通過 | false |
+| キー                                                                                                        | 型                         | 意味                                                                                                                                                            | 省略時                                                  |
+| ----------------------------------------------------------------------------------------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Caption                                                                                                     | 文字列                     | ルール名                                                                                                                                                        | 空だと内部コード -1(ただし読込失敗にはならない。下記注) |
+| Enable                                                                                                      | bool                       | 有効                                                                                                                                                            | `!="0"` 判定 → 省略時 true                              |
+| HeadwaySecond                                                                                               | int                        | 時隔秒                                                                                                                                                          | 60                                                      |
+| HeadwaySecondMinimum                                                                                        | int                        | 時隔下限秒 (1.13〜)                                                                                                                                             | 0。HeadwaySecond 以上なら 0 に補正                      |
+| BeforeFromTrackContentCont / BeforeToTrackContentCont / AfterFromTrackContentCont / AfterToTrackContentCont | `type$index` を `;` で連結 | 対象トラック集合。type は `ETrackType`: 0=駅番線(index=番線idx), 1=起点側(index=駅idx), 2=終点側(index=駅idx), 3=路線外(index=OuterEkiIdx) (`CentDedEki.h:162`) | 空だと内部コード -2〜-5(読込失敗にはならない。下記注)   |
+| BeforeIsArrival / BeforeIsTsuuka / AfterIsArrival / AfterIsTsuuka                                           | bool                       | 着基準/通過                                                                                                                                                     | false                                                   |
 
 注(読込時のエラー挙動): `CrossingCheckRule_From_OuPropertiesText` (CconvCentDed.cpp) は関数末尾が
 `return 0;` 固定で、内部エラーコード -1〜-5 は呼び出し元に伝播しない(iRv<0 の場合は
@@ -268,48 +276,48 @@ TrackContentCont が空でも空値のキーが出力されるだけでエラー
 
 ### 5.5 Ressyasyubetsu (列車種別)
 
-| キー | 型 | 意味 | 省略時 / 出力条件 |
-|---|---|---|---|
-| Syubetsumei | 文字列 | 種別名 | 必須(空で err -11) |
-| Ryakusyou | 文字列 | 略称 | 空なら出力しない |
-| JikokuhyouMojiColor | 色(§6.3) | 時刻表文字色 | 常に出力 |
-| JikokuhyouFontIndex | int 0–7 | 時刻表フォント index | 常に出力。読込は範囲外で err -101 |
-| JikokuhyouBackColor | 色 | 時刻表背景色 | 常に出力。読込は空なら既定のまま |
-| DiagramSenColor | 色 | ダイヤ線色 | 常に出力 |
-| DiagramSenStyle | 列挙 | `SenStyle_Jissen`(実線) / `SenStyle_Hasen`(破線) / `SenStyle_Tensen`(点線) / `SenStyle_Ittensasen`(一点鎖線) | 必須。不正で err -52 |
-| DiagramSenIsBold | bool | 太線 | false。true時のみ `1` |
-| StopMarkDrawType | 列挙 | `EStopMarkDrawType_DrawOnStop`(既定) / `_Nothing` / `_DrawOnPass` | DrawOnStop |
-| ParentSyubetsuIndex | int | 親種別 index | -1。>=0 のみ出力 |
-| Hidden | bool | 隠し種別 (1.15〜) | false。true時のみ `1` |
+| キー                | 型       | 意味                                                                                                         | 省略時 / 出力条件                 |
+| ------------------- | -------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------- |
+| Syubetsumei         | 文字列   | 種別名                                                                                                       | 必須(空で err -11)                |
+| Ryakusyou           | 文字列   | 略称                                                                                                         | 空なら出力しない                  |
+| JikokuhyouMojiColor | 色(§6.3) | 時刻表文字色                                                                                                 | 常に出力                          |
+| JikokuhyouFontIndex | int 0–7  | 時刻表フォント index                                                                                         | 常に出力。読込は範囲外で err -101 |
+| JikokuhyouBackColor | 色       | 時刻表背景色                                                                                                 | 常に出力。読込は空なら既定のまま  |
+| DiagramSenColor     | 色       | ダイヤ線色                                                                                                   | 常に出力                          |
+| DiagramSenStyle     | 列挙     | `SenStyle_Jissen`(実線) / `SenStyle_Hasen`(破線) / `SenStyle_Tensen`(点線) / `SenStyle_Ittensasen`(一点鎖線) | 必須。不正で err -52              |
+| DiagramSenIsBold    | bool     | 太線                                                                                                         | false。true時のみ `1`             |
+| StopMarkDrawType    | 列挙     | `EStopMarkDrawType_DrawOnStop`(既定) / `_Nothing` / `_DrawOnPass`                                            | DrawOnStop                        |
+| ParentSyubetsuIndex | int      | 親種別 index                                                                                                 | -1。>=0 のみ出力                  |
+| Hidden              | bool     | 隠し種別 (1.15〜)                                                                                            | false。true時のみ `1`             |
 
 (`DiagramRessyaFont` は名前定数のみ存在し現行では未出力。)
 
 ### 5.6 Dia (ダイヤ)
 
-| キー | 型 | 意味 | 省略時 |
-|---|---|---|---|
-| DiaName | 文字列 | ダイヤ名 | 必須(空で err -11) |
-| MainBackColorIndex / SubBackColorIndex | int | 背景色 index (DispProp.DiaBackColor 0–4) | 既定値のまま(空なら未設定) |
-| BackPatternIndex | int | 背景パターン | 同上 |
-| PatternDiagramPreviewEnable | bool | パターンダイヤプレビュー (1.16〜) | false。true時のみ `1` |
-| PatternDiagramPreviewCycleSecond | int | プレビュー周期秒 | 600 |
-| Kudari. / Nobori. | dir | 各方向の列車コンテナ。**両方必須**(欠けると err -12 RessyaContが見つかりません) | ― |
+| キー                                   | 型     | 意味                                                                            | 省略時                     |
+| -------------------------------------- | ------ | ------------------------------------------------------------------------------- | -------------------------- |
+| DiaName                                | 文字列 | ダイヤ名                                                                        | 必須(空で err -11)         |
+| MainBackColorIndex / SubBackColorIndex | int    | 背景色 index (DispProp.DiaBackColor 0–4)                                        | 既定値のまま(空なら未設定) |
+| BackPatternIndex                       | int    | 背景パターン                                                                    | 同上                       |
+| PatternDiagramPreviewEnable            | bool   | パターンダイヤプレビュー (1.16〜)                                               | false。true時のみ `1`      |
+| PatternDiagramPreviewCycleSecond       | int    | プレビュー周期秒                                                                | 600                        |
+| Kudari. / Nobori.                      | dir    | 各方向の列車コンテナ。**両方必須**(欠けると err -12 RessyaContが見つかりません) | ―                          |
 
 ### 5.7 Ressya (列車)
 
 書き出し順: Houkou, Syubetsu, Ressyabangou, Ressyamei, Gousuu, EkiJikoku, Operation…, Bikou, Canceled。
 
-| キー | 型 | 意味 | 省略時 / 出力条件 |
-|---|---|---|---|
-| Houkou | `Kudari` / `Nobori` | 列車方向 | 解釈不能なら他のキーは一切読まれず、`createNullRessya()` で生成した **Null 列車(空列)としてコンテナに挿入される**(エラーにしない)。Null 列車は書き出し時に中身のない空の `Ressya.` ノードとして出力され、ラウンドトリップで保持される |
-| Syubetsu | int | 種別 index | `_ttoi` (非数→0) |
-| Ressyabangou | 文字列 | 列車番号 | 空なら出力しない |
-| Ressyamei | 文字列 | 列車名 | 同上 |
-| Gousuu | 文字列 | 号数 | 同上 |
-| EkiJikoku | §6.2 のカンマ連結 | 駅ごとの発着時刻・駅扱・番線。**駅0(方向別の先頭駅)から終着駅まで**。始発前は空要素(`,,`)、終着より後は出力しない | 空なら時刻なし |
-| Operation{path} | §6.4 | 駅作業(前作業 B / 後作業 A)。空でない作業列がある駅の分だけ出力 | なし |
-| Bikou | 文字列 | 備考 | 空なら出力しない |
-| Canceled | bool | 運休 (1.15〜) | false。true時のみ `1` |
+| キー            | 型                  | 意味                                                                                                              | 省略時 / 出力条件                                                                                                                                                                                                                     |
+| --------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Houkou          | `Kudari` / `Nobori` | 列車方向                                                                                                          | 解釈不能なら他のキーは一切読まれず、`createNullRessya()` で生成した **Null 列車(空列)としてコンテナに挿入される**(エラーにしない)。Null 列車は書き出し時に中身のない空の `Ressya.` ノードとして出力され、ラウンドトリップで保持される |
+| Syubetsu        | int                 | 種別 index                                                                                                        | `_ttoi` (非数→0)                                                                                                                                                                                                                      |
+| Ressyabangou    | 文字列              | 列車番号                                                                                                          | 空なら出力しない                                                                                                                                                                                                                      |
+| Ressyamei       | 文字列              | 列車名                                                                                                            | 同上                                                                                                                                                                                                                                  |
+| Gousuu          | 文字列              | 号数                                                                                                              | 同上                                                                                                                                                                                                                                  |
+| EkiJikoku       | §6.2 のカンマ連結   | 駅ごとの発着時刻・駅扱・番線。**駅0(方向別の先頭駅)から終着駅まで**。始発前は空要素(`,,`)、終着より後は出力しない | 空なら時刻なし                                                                                                                                                                                                                        |
+| Operation{path} | §6.4                | 駅作業(前作業 B / 後作業 A)。空でない作業列がある駅の分だけ出力                                                   | なし                                                                                                                                                                                                                                  |
+| Bikou           | 文字列              | 備考                                                                                                              | 空なら出力しない                                                                                                                                                                                                                      |
+| Canceled        | bool                | 運休 (1.15〜)                                                                                                     | false。true時のみ `1`                                                                                                                                                                                                                 |
 
 読込時、駅ごとの番線数・主本線・路線外発着数のベクタ(下り順/上り順に並べ替えた駅列)を使って
 範囲チェックする。上り列車の EkiJikoku は**上り方向の駅順**(終点→起点)で並ぶ。
@@ -320,38 +328,38 @@ TrackContentCont が空でも空値のキーが出力されるだけでエラー
 すべて常に出力される(コメントに「デフォルト値の場合は出力しません」とあるが実装は常時出力)。
 読込側は空/欠落を許容し既定値を使う。既定値は `CdDedDispProp.cpp` コンストラクタより。
 
-| キー | 型 | 意味 | 既定値 |
-|---|---|---|---|
-| JikokuhyouFont ×8 | フォント(§6.5) | 時刻表フォント8スロット(idx1=Bold, idx2=Itaric, idx3=Bold+Itaric) | 9pt Meiryo UI |
-| JikokuhyouVFont | フォント | 縦書きフォント | 9pt @メイリオ |
-| DiaEkimeiFont / DiaJikokuFont / DiaRessyaFont | フォント | ダイヤ駅名/時刻/列車 | 9pt Meiryo UI |
-| OperationTableFont / AllOperationTableJikokuFont | フォント | 運用表 (1.09〜) | 9pt / 8pt Meiryo UI |
-| CommentFont | フォント | コメント欄 | 9pt Meiryo UI |
-| DiaMojiColor | 色 | ダイヤ文字色 | 黒 |
-| DiaBackColor ×5 | 色 | ダイヤ背景色5スロット (1.09〜) | 白×5 |
-| DiaRessyaColor | 色 | (廃止予定と注記あり)ダイヤ列車色 | 黒 |
-| DiaJikuColor | 色 | ダイヤ軸色 | C0C0C0 |
-| JikokuhyouBackColor ×4 | 色 | 時刻表背景4スロット | 白/F0F0F0/白/白 |
-| StdOpeTime{Lower,Higher,Undef,Illegal}Color | 色 | 基準運転時分比較色 | FFE0E0 / E0FFFF / FFFF80 / A0A0A0 |
-| OperationStringColor / OperationGridColor | 色 | 運用表文字/罫線 | 黒 |
-| EkimeiLength | int | 駅名欄幅(全角数) | 6 (>0のみ採用) |
-| JikokuhyouRessyaWidth | int | 列車欄幅 | 5 (>0のみ採用) |
-| AnySecondIncDec1 / AnySecondIncDec2 | int | 任意秒送りボタン1/2 | 5 / 15 (>=-60のみ採用) |
-| DisplayRessyamei | bool | 列車名表示 | true (`=="0"` のみ false) |
-| DisplayOuterTerminalEkimeiOriginSide / …TerminalSide | bool | 路線外発着欄(起点/終点側) | false |
-| DiagramDisplayOuterTerminal | int | ダイヤの路線外発着表示 | 0 |
-| SecondRoundChaku / SecondRoundHatsu | int | 秒処理 0=切捨 1=丸め 2=切上 (`CdDedJikoku::CConv::ESecondRound`) | 0 / 0 |
-| Display2400 | bool | 0:00着を24:00表記 | false |
-| OperationNumberRows | int | 運用番号段数 (1.10〜) | 1 |
-| DisplayInOutLinkCode | bool | 入出区連携コード欄 (1.10〜) | false |
+| キー                                                 | 型             | 意味                                                              | 既定値                            |
+| ---------------------------------------------------- | -------------- | ----------------------------------------------------------------- | --------------------------------- |
+| JikokuhyouFont ×8                                    | フォント(§6.5) | 時刻表フォント8スロット(idx1=Bold, idx2=Itaric, idx3=Bold+Itaric) | 9pt Meiryo UI                     |
+| JikokuhyouVFont                                      | フォント       | 縦書きフォント                                                    | 9pt @メイリオ                     |
+| DiaEkimeiFont / DiaJikokuFont / DiaRessyaFont        | フォント       | ダイヤ駅名/時刻/列車                                              | 9pt Meiryo UI                     |
+| OperationTableFont / AllOperationTableJikokuFont     | フォント       | 運用表 (1.09〜)                                                   | 9pt / 8pt Meiryo UI               |
+| CommentFont                                          | フォント       | コメント欄                                                        | 9pt Meiryo UI                     |
+| DiaMojiColor                                         | 色             | ダイヤ文字色                                                      | 黒                                |
+| DiaBackColor ×5                                      | 色             | ダイヤ背景色5スロット (1.09〜)                                    | 白×5                              |
+| DiaRessyaColor                                       | 色             | (廃止予定と注記あり)ダイヤ列車色                                  | 黒                                |
+| DiaJikuColor                                         | 色             | ダイヤ軸色                                                        | C0C0C0                            |
+| JikokuhyouBackColor ×4                               | 色             | 時刻表背景4スロット                                               | 白/F0F0F0/白/白                   |
+| StdOpeTime{Lower,Higher,Undef,Illegal}Color          | 色             | 基準運転時分比較色                                                | FFE0E0 / E0FFFF / FFFF80 / A0A0A0 |
+| OperationStringColor / OperationGridColor            | 色             | 運用表文字/罫線                                                   | 黒                                |
+| EkimeiLength                                         | int            | 駅名欄幅(全角数)                                                  | 6 (>0のみ採用)                    |
+| JikokuhyouRessyaWidth                                | int            | 列車欄幅                                                          | 5 (>0のみ採用)                    |
+| AnySecondIncDec1 / AnySecondIncDec2                  | int            | 任意秒送りボタン1/2                                               | 5 / 15 (>=-60のみ採用)            |
+| DisplayRessyamei                                     | bool           | 列車名表示                                                        | true (`=="0"` のみ false)         |
+| DisplayOuterTerminalEkimeiOriginSide / …TerminalSide | bool           | 路線外発着欄(起点/終点側)                                         | false                             |
+| DiagramDisplayOuterTerminal                          | int            | ダイヤの路線外発着表示                                            | 0                                 |
+| SecondRoundChaku / SecondRoundHatsu                  | int            | 秒処理 0=切捨 1=丸め 2=切上 (`CdDedJikoku::CConv::ESecondRound`)  | 0 / 0                             |
+| Display2400                                          | bool           | 0:00着を24:00表記                                                 | false                             |
+| OperationNumberRows                                  | int            | 運用番号段数 (1.10〜)                                             | 1                                 |
+| DisplayInOutLinkCode                                 | bool           | 入出区連携コード欄 (1.10〜)                                       | false                             |
 
 ### 5.9 WindowPlacement (1.12〜, 任意)
 
 読込は ini 設定 `WindowPlacementRestore` 有効時のみ反映。
 
-| キー | 意味 |
-|---|---|
-| RosenViewWidth | 路線ビュー幅 px |
+| キー            | 意味                                                                                                                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RosenViewWidth  | 路線ビュー幅 px                                                                                                                                                                         |
 | ChildWindow. ×n | 子ウィンドウ1つ: `WindowType`(0=下り時刻表,1=上り時刻表,2=ダイヤ,3=下りカスタマイズ時刻表,4=上りカスタマイズ時刻表,5=運用表,6=運用一覧図), `DiaIndex`, `XPos`, `YPos`, `XSize`, `YSize` |
 
 ---
@@ -407,27 +415,27 @@ TrackContentCont が空でも空値のキーが出力されるだけでエラー
 
 **前作業 (CentDedBeforeOperation::EBOperation)**
 
-| 種類 | 意味 | 書式 |
-|---|---|---|
-| 0 | 入換 (Shunt) | `0/入換元番線idx$入換発時刻/[入換着時刻]$着時刻表示(0|1)` |
-| 1 | 増結 (Connect) | `1/前方に連結(0|1)$連結時刻` + 子Before作業列(`…{idx}B`) |
-| 2 | 解結 (Release) | `2/解結位置$解結両数/解結時刻` + 子After作業列(`…{idx}A`) |
-| 3 | 出区 (Out) | `3/出区時刻$入出区連携コード/元運用番号(;連結)` |
-| 4 | 路線外始発 (Outer) | `4/路線外始発駅idx$始発時刻/当駅着時刻$入出区連携コード/元運用番号(;連結)` |
-| 5 | 前列車接続 (Junction) | `5/起点時刻$仮運用番号(;連結)` |
-| 6 | 運用番号変更 (NumberChange) | `6/運用番号(;連結)`。**運番が空 = 運用番号順反転が有効** (1.13〜) |
+| 種類 | 意味                        | 書式                                                                       |
+| ---- | --------------------------- | -------------------------------------------------------------------------- |
+| 0    | 入換 (Shunt)                | `0/入換元番線idx$入換発時刻/[入換着時刻]$着時刻表示(0                      | 1)`                                      |
+| 1    | 増結 (Connect)              | `1/前方に連結(0                                                            | 1)$連結時刻` + 子Before作業列(`…{idx}B`) |
+| 2    | 解結 (Release)              | `2/解結位置$解結両数/解結時刻` + 子After作業列(`…{idx}A`)                  |
+| 3    | 出区 (Out)                  | `3/出区時刻$入出区連携コード/元運用番号(;連結)`                            |
+| 4    | 路線外始発 (Outer)          | `4/路線外始発駅idx$始発時刻/当駅着時刻$入出区連携コード/元運用番号(;連結)` |
+| 5    | 前列車接続 (Junction)       | `5/起点時刻$仮運用番号(;連結)`                                             |
+| 6    | 運用番号変更 (NumberChange) | `6/運用番号(;連結)`。**運番が空 = 運用番号順反転が有効** (1.13〜)          |
 
 **後作業 (CentDedAfterOperation::EAOperation)**
 
-| 種類 | 意味 | 書式 |
-|---|---|---|
-| 0 | 入換 | `0/入換先番線idx$入換発時刻/[入換着時刻]$発時刻表示(0|1)` |
-| 1 | 増結 | `1/前方に連結(0|1)$連結時刻` + 子Before作業列 |
-| 2 | 解結 | `2/解結位置$解結両数/解結時刻` + 子After作業列 |
-| 3 | 入区 (In) | `3/入区時刻$入出区連携コード` |
-| 4 | 路線外終着 | `4/路線外終着駅idx$当駅発時刻/終着時刻$入出区連携コード` |
-| 5 | 次列車接続 | `5/終点時刻$次列車接続タイプ(0-3: 0=接続なし?/列車情報変更/種別変更等)` |
-| 6 | 運用番号変更 | `6/運用番号(;連結)` (空=順反転) |
+| 種類 | 意味         | 書式                                                                    |
+| ---- | ------------ | ----------------------------------------------------------------------- |
+| 0    | 入換         | `0/入換先番線idx$入換発時刻/[入換着時刻]$発時刻表示(0                   | 1)`                           |
+| 1    | 増結         | `1/前方に連結(0                                                         | 1)$連結時刻` + 子Before作業列 |
+| 2    | 解結         | `2/解結位置$解結両数/解結時刻` + 子After作業列                          |
+| 3    | 入区 (In)    | `3/入区時刻$入出区連携コード`                                           |
+| 4    | 路線外終着   | `4/路線外終着駅idx$当駅発時刻/終着時刻$入出区連携コード`                |
+| 5    | 次列車接続   | `5/終点時刻$次列車接続タイプ(0-3: 0=接続なし?/列車情報変更/種別変更等)` |
+| 6    | 運用番号変更 | `6/運用番号(;連結)` (空=順反転)                                         |
 
 読込時の補正: 番線idx・路線外駅idx が範囲外なら 0、次列車接続タイプ範囲外なら 0。
 運用番号は `;` 区切りで複数(併結編成分)持てる。
@@ -445,6 +453,7 @@ bool系・0値は省略される。例: `PointTextHeight=10;Facename=Meiryo UI;B
 ## 7. 旧バージョン読込 (後方互換) の要点
 
 ### 7.1 S00: OuDia.1.02 / OuDiaSecond.1.00 (CconvCentDedS00.cpp)
+
 - Eki: `Kyoukaisen`(境界線) を読み、**分岐駅設定の推定に利用**(現行モデルに境界線は存在しない)。
   EkiTrack2Cont・DownMain/UpMain 等の OuDiaSecond1.00 拡張キーは「あれば読む」。
 - EkiJikoku: `駅扱[;[着/]発]` のみ($番線なし)。**駅扱3(経由なし)は0(運行なし)に変換**
@@ -452,6 +461,7 @@ bool系・0値は省略される。例: `PointTextHeight=10;Facename=Meiryo UI;B
 - BrunchOpposite/LoopOpposite等は存在しない。
 
 ### 7.2 S05: OuDiaSecond.1.01〜1.05 (CconvCentDedS05.cpp)
+
 - Ressya に別キー **`RessyaTrack`**(駅ごとの番線+作業をカンマ連結)と **`OperationNumber`** があり、
   読込時に現行の EkiJikoku 内番線・Before/AfterOperation・運用番号へ変換する
   (`BeforeOperation_From_string` / `AfterOperation_From_string`)。
@@ -462,6 +472,7 @@ bool系・0値は省略される。例: `PointTextHeight=10;Facename=Meiryo UI;B
 - OuterTerminal は `OuterTerminalEkimei` のみ(略称なし)。
 
 ### 7.3 S09: OuDiaSecond.1.06〜1.09 (CconvCentDedS09.cpp)
+
 - 構造はほぼ現行。EkiJikoku に `$番線` あり、`Operation{path}` あり。
 - Operation のパラメータ配置が旧式: 出区 `3/時刻$運番`(連携コードなし)、
   路線外始発 `4/駅idx$時刻/着時刻$運番`、前作業 Junction は `5/時刻$解結表示省略/仮運番(;連結)`
@@ -470,6 +481,7 @@ bool系・0値は省略される。例: `PointTextHeight=10;Facename=Meiryo UI;B
 - `SyubetsuChange`(種別変更)キーが存在した(現行では次列車接続 type5 に統合)。
 
 ### 7.4 .oud (OuDia 1.02) の読み書き
+
 - **読み込み**: FileType=`OuDia.1.02` → S00 リーダーで .oud2 と同一の文法で解釈
   (文字コードは BOM なし= Shift-JIS として読む)。
 - **書き出し** (`CconvCDedRosenFileDataOud` + `CconvCentDedOud`): 拡張子 .oud で保存すると
@@ -484,6 +496,7 @@ bool系・0値は省略される。例: `PointTextHeight=10;Facename=Meiryo UI;B
   - DispProp は現行と同じ内容を出力(OuDia は未知キーを無視する想定)。
 
 ### 7.5 その他の入出力(参考)
+
 `CconvCDedRosenFileDataDigital/2/3` は「外部時刻表インポート」(汎用テキスト/JRおでかけネット/JR北海道)で、
 .oud2 形式とは無関係(CMainFrame.cpp から利用)。`.oud2backup` は自動バックアップで中身は .oud2 と同一
 (保存後の変更フラグ処理のみ異なる)。時刻表CSV (`OuDiaSecond.JikokuhyouCsv.1`) は別形式。

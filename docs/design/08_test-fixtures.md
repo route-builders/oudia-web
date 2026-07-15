@@ -20,18 +20,18 @@
 
 分析 §03(FileType とアプリ版の対応表)と `origin/OuDiaSecond変更箇所.txt` の「FileType を更新」記載から、各 FileType を**生成できる**アプリ版の範囲は次の通り確定する。
 
-| FileType | 生成できるアプリ版 | リーダー系統 | フィクスチャ要否 |
-|---|---|---|---|
-| OuDiaSecond.1.00 | Ver1.00 系(2017) | S00 | **必須**(M1/M2 代表) |
-| 1.01〜1.04 | Ver1.01〜Ver1.04.03 | S05 | 任意(1.05 で代表) |
-| **1.05** | Ver1.04.04〜**Ver1.04.09**(V1 系最終) | S05 | **必須**(S05 グループ代表 = グループ内最多キー) |
-| 1.06〜1.08 | Ver2.00〜Ver2.02.05 | S09 | 任意(1.09 で代表) |
-| **1.09** | Ver2.03〜**Ver2.04.06** | S09 | **必須**(S09 グループ代表) |
-| **1.10** | Ver2.05〜Ver2.05.02 | current | **必須**(current グループ下端。1.11〜1.17 キーの省略時デフォルト読みを検証) |
-| 1.11〜1.15 | Ver2.06〜Ver2.06.17 | current | 任意 |
-| **1.16** | Ver2.06.18〜Ver2.06.20 | current | **必須**(現行 1 つ手前。1.17 新キーの欠落読みを検証) |
-| 1.17 | Ver2.06.21〜2.06.23(現行) | current | 現行版で生成可 |
-| OuDia.1.02(.oud) | 現行版の .oud 書き出し / 本家 OuDia(〜Ver1.02.05) | S00 | **必須** |
+| FileType         | 生成できるアプリ版                                | リーダー系統 | フィクスチャ要否                                                            |
+| ---------------- | ------------------------------------------------- | ------------ | --------------------------------------------------------------------------- |
+| OuDiaSecond.1.00 | Ver1.00 系(2017)                                  | S00          | **必須**(M1/M2 代表)                                                        |
+| 1.01〜1.04       | Ver1.01〜Ver1.04.03                               | S05          | 任意(1.05 で代表)                                                           |
+| **1.05**         | Ver1.04.04〜**Ver1.04.09**(V1 系最終)             | S05          | **必須**(S05 グループ代表 = グループ内最多キー)                             |
+| 1.06〜1.08       | Ver2.00〜Ver2.02.05                               | S09          | 任意(1.09 で代表)                                                           |
+| **1.09**         | Ver2.03〜**Ver2.04.06**                           | S09          | **必須**(S09 グループ代表)                                                  |
+| **1.10**         | Ver2.05〜Ver2.05.02                               | current      | **必須**(current グループ下端。1.11〜1.17 キーの省略時デフォルト読みを検証) |
+| 1.11〜1.15       | Ver2.06〜Ver2.06.17                               | current      | 任意                                                                        |
+| **1.16**         | Ver2.06.18〜Ver2.06.20                            | current      | **必須**(現行 1 つ手前。1.17 新キーの欠落読みを検証)                        |
+| 1.17             | Ver2.06.21〜2.06.23(現行)                         | current      | 現行版で生成可                                                              |
+| OuDia.1.02(.oud) | 現行版の .oud 書き出し / 本家 OuDia(〜Ver1.02.05) | S00          | **必須**                                                                    |
 
 必要バイナリの結論: **Ver1.00 系・Ver1.04.09・Ver2.04.x・Ver2.05.x・Ver2.06.18〜20 の 5 本**(+現行 2.06.23、+任意で本家 OuDia 1.02.05)。
 
@@ -55,16 +55,16 @@
 
 ### 2.1 生成マトリクス(確定)
 
-| フィクスチャ | 生成方法 | 検証方法 |
-|---|---|---|
-| current/(1.17) | 現行 ver2.06.23 で作成・保存 | T1 恒等ラウンドトリップ(file-io §5.2) |
-| legacy/v116, v110, v109 | **実バイナリ生成**(Ver2.06.18〜20 / Ver2.05.x / Ver2.04.x で §2.2 の共通シナリオを入力して保存) | §2.4 の 3 条件 |
-| legacy/v105, v100 | **synthetic を既定**(§2.3)。Ver1.04.09 / Ver1.00 系バイナリが入手できたら実生成に差し替え | §2.4 の 3 条件(synthetic はこれが正当性の根拠) |
-| legacy/oud(OuDia.1.02) | 2 系統: (a) 現行版の .oud 書き出し(OuDiaSecond 拡張喪失後の .oud)、(b) 本家 OuDia Ver1.02.05 で作成・保存(生の .oud、Shift_JIS) | 現行 Windows 版で開けること + T2 |
-| `*.expected.oud2`(旧世代 → 1.17 期待値) | **現行 ver2.06.23 で旧世代ファイルを「開く → 名前を付けて保存」**した実出力 | T2 比較の右辺そのもの |
-| oud-export/`*.expected.oud` | 現行 ver2.06.23 の .oud 書き出し実出力 | T6 比較の右辺 |
-| synthetic/(境界ケース) | 手書き(file-io §5.1 の escape / sjis-0x5c / unknown-keys / edge-jikoku 等) | 単体テスト仕様に対して。unknown-keys 以外は現行 Windows 版で開けることも確認 |
-| derive 運用探索ペア | §5(M7a) | 計測ビルドのダンプ一致 |
+| フィクスチャ                            | 生成方法                                                                                                                        | 検証方法                                                                     |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| current/(1.17)                          | 現行 ver2.06.23 で作成・保存                                                                                                    | T1 恒等ラウンドトリップ(file-io §5.2)                                        |
+| legacy/v116, v110, v109                 | **実バイナリ生成**(Ver2.06.18〜20 / Ver2.05.x / Ver2.04.x で §2.2 の共通シナリオを入力して保存)                                 | §2.4 の 3 条件                                                               |
+| legacy/v105, v100                       | **synthetic を既定**(§2.3)。Ver1.04.09 / Ver1.00 系バイナリが入手できたら実生成に差し替え                                       | §2.4 の 3 条件(synthetic はこれが正当性の根拠)                               |
+| legacy/oud(OuDia.1.02)                  | 2 系統: (a) 現行版の .oud 書き出し(OuDiaSecond 拡張喪失後の .oud)、(b) 本家 OuDia Ver1.02.05 で作成・保存(生の .oud、Shift_JIS) | 現行 Windows 版で開けること + T2                                             |
+| `*.expected.oud2`(旧世代 → 1.17 期待値) | **現行 ver2.06.23 で旧世代ファイルを「開く → 名前を付けて保存」**した実出力                                                     | T2 比較の右辺そのもの                                                        |
+| oud-export/`*.expected.oud`             | 現行 ver2.06.23 の .oud 書き出し実出力                                                                                          | T6 比較の右辺                                                                |
+| synthetic/(境界ケース)                  | 手書き(file-io §5.1 の escape / sjis-0x5c / unknown-keys / edge-jikoku 等)                                                      | 単体テスト仕様に対して。unknown-keys 以外は現行 Windows 版で開けることも確認 |
+| derive 運用探索ペア                     | §5(M7a)                                                                                                                         | 計測ビルドのダンプ一致                                                       |
 
 ### 2.2 実バイナリでの生成手順(共通シナリオ方式)
 
@@ -123,43 +123,43 @@ packages/derive/fixtures/
 
 網羅すべきファイル形式上の特性と担当ファイルの対応。**新しい互換バグが見つかるたびに行を足す**(= ゲート強化。file-io §5.4)。
 
-| 特性タグ | 内容 | 担当フィクスチャ(初期セット) |
-|---|---|---|
-| basic | 駅・種別・ダイヤ・列車の最小構成 | synthetic/minimal.oud2、legacy 全世代の台本共通部 |
-| seconds / midnight | 秒付き時刻・日跨ぎ・24 時超 | synthetic/edge-jikoku.oud2、台本(各世代) |
-| tsuuka / keiyunasi | 通過「ﾚ」・経由なし(旧駅扱 3 は v100/oud のみ) | 台本、legacy/v100、legacy/oud |
-| brunch-loop | 同名駅複数登場 + 分岐駅/環状線設定 | current/brunch-loop.oud2、台本 |
-| track | 番線・主本線・略称・ダイヤ表示省略・範囲外 index 補正 | current/track.oud2(範囲外 index は synthetic) |
-| outer-terminal | 路線外発着駅 | current/operation-*.oud2 に含める |
-| op-7kinds | 前後作業 7 種すべて | current/operation-basic.oud2 |
-| op-nested | 増結・解結の入れ子(`Operation13B.0A` 形式) | current/operation-nested.oud2、origin sample2.oud2 |
-| op-mode1 / op-mode2 | EnableOperation=1 / 2 | operation/ ペアと共用(§5) |
-| inout-link | 入出区連携コード | current/operation-inout.oud2 |
-| customize | カスタマイズ時刻表表示設定(下り/上り各 16 項目) | current/customize.oud2 |
-| crossing | CrossingCheckRule(HeadwaySecondMinimum 含む) | current/crossing.oud2 |
-| window-placement | WindowPlacement 透過書き戻し | current/window-placement.oud2(Windows 版で配置を変えて保存) |
-| canceled-hidden | 運休列車・隠し種別(1.15〜) | current/ 台本、legacy/v116 |
-| pattern | パターンダイヤプレビュー(1.16〜) | legacy/v116、current/ |
-| kijun-dia | KijunDiaIndex 省略時の「基準運転時分」名検索 | synthetic/kijun-omitted.oud2 |
-| disp-prop | 非デフォルトのフォント 8 種・色群 | current/dispprop.oud2 |
-| escape | コメント・備考中の改行/バックスラッシュ | synthetic/escape.oud2(+ noncanon。file-io §5.1) |
-| sjis-0x5c | 0x5C 救済ハック対象の壊れた SJIS | synthetic/sjis-0x5c.oud |
-| unknown-keys | 未知キー/未知ノード(1.18 想定) | synthetic/unknown-keys.oud2 |
-| large | 性能ベンチ規模(500 列車級) | origin sample.oud2(参照)+ 生成スクリプトによる合成 |
+| 特性タグ            | 内容                                                  | 担当フィクスチャ(初期セット)                                |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------------------------- |
+| basic               | 駅・種別・ダイヤ・列車の最小構成                      | synthetic/minimal.oud2、legacy 全世代の台本共通部           |
+| seconds / midnight  | 秒付き時刻・日跨ぎ・24 時超                           | synthetic/edge-jikoku.oud2、台本(各世代)                    |
+| tsuuka / keiyunasi  | 通過「ﾚ」・経由なし(旧駅扱 3 は v100/oud のみ)        | 台本、legacy/v100、legacy/oud                               |
+| brunch-loop         | 同名駅複数登場 + 分岐駅/環状線設定                    | current/brunch-loop.oud2、台本                              |
+| track               | 番線・主本線・略称・ダイヤ表示省略・範囲外 index 補正 | current/track.oud2(範囲外 index は synthetic)               |
+| outer-terminal      | 路線外発着駅                                          | current/operation-*.oud2 に含める                           |
+| op-7kinds           | 前後作業 7 種すべて                                   | current/operation-basic.oud2                                |
+| op-nested           | 増結・解結の入れ子(`Operation13B.0A` 形式)            | current/operation-nested.oud2、origin sample2.oud2          |
+| op-mode1 / op-mode2 | EnableOperation=1 / 2                                 | operation/ ペアと共用(§5)                                   |
+| inout-link          | 入出区連携コード                                      | current/operation-inout.oud2                                |
+| customize           | カスタマイズ時刻表表示設定(下り/上り各 16 項目)       | current/customize.oud2                                      |
+| crossing            | CrossingCheckRule(HeadwaySecondMinimum 含む)          | current/crossing.oud2                                       |
+| window-placement    | WindowPlacement 透過書き戻し                          | current/window-placement.oud2(Windows 版で配置を変えて保存) |
+| canceled-hidden     | 運休列車・隠し種別(1.15〜)                            | current/ 台本、legacy/v116                                  |
+| pattern             | パターンダイヤプレビュー(1.16〜)                      | legacy/v116、current/                                       |
+| kijun-dia           | KijunDiaIndex 省略時の「基準運転時分」名検索          | synthetic/kijun-omitted.oud2                                |
+| disp-prop           | 非デフォルトのフォント 8 種・色群                     | current/dispprop.oud2                                       |
+| escape              | コメント・備考中の改行/バックスラッシュ               | synthetic/escape.oud2(+ noncanon。file-io §5.1)             |
+| sjis-0x5c           | 0x5C 救済ハック対象の壊れた SJIS                      | synthetic/sjis-0x5c.oud                                     |
+| unknown-keys        | 未知キー/未知ノード(1.18 想定)                        | synthetic/unknown-keys.oud2                                 |
+| large               | 性能ベンチ規模(500 列車級)                            | origin sample.oud2(参照)+ 生成スクリプトによる合成          |
 
 ### 3.3 台帳(fixtures/README.md)の必須記載項目
 
 フィクスチャ 1 ファイルにつき 1 行:
 
-| 列 | 内容 |
-|---|---|
-| ファイルパス | fixtures/ からの相対 |
-| FileType | 例 OuDiaSecond.1.05 |
-| 生成方法 | `ver2.06.23 保存` / `Ver2.04.01 保存` / `synthetic 手書き` / `ユーザ提供` |
-| 生成に使ったバイナリ | 版番号 + 入手元 URL + **zip の SHA-256**(§1.3-2) |
-| 検証状態 | §2.4 の条件 1/2/3 の達成チェック |
-| 特性タグ | §3.2 のタグ列挙 |
-| 権利 | `自作` / `origin 同梱(帰属調査中)` / `提供者許諾済(§4)` |
+| 列                   | 内容                                                                      |
+| -------------------- | ------------------------------------------------------------------------- |
+| ファイルパス         | fixtures/ からの相対                                                      |
+| FileType             | 例 OuDiaSecond.1.05                                                       |
+| 生成方法             | `ver2.06.23 保存` / `Ver2.04.01 保存` / `synthetic 手書き` / `ユーザ提供` |
+| 生成に使ったバイナリ | 版番号 + 入手元 URL + **zip の SHA-256**(§1.3-2)                          |
+| 検証状態             | §2.4 の条件 1/2/3 の達成チェック                                          |
+| 特性タグ             | §3.2 のタグ列挙                                                           |
+| 権利                 | `自作` / `origin 同梱(帰属調査中)` / `提供者許諾済(§4)`                   |
 
 ---
 
@@ -200,15 +200,15 @@ OperationTableContent・割当運番はファイルに保存されない導出�
 
 ### 5.3 ケース構成(30 本以上の内訳)
 
-| 区分 | 本数 | 内容 |
-|---|---|---|
-| mode1(接続のみ) | 5 | 折返し・同駅同番線検索・起点時刻跨ぎ ON/OFF・番線不一致で接続しない負例 |
-| mode2(運番割当) | 10 | 出区起点伝播・折返し反転(OperationNumberReverse 両値)・接尾辞 ";n" の発生と除去・運用番号変更(空運番 = 順反転)・仮運番/空白運番・前列車の無い前列車接続 |
-| 増解結入れ子 | 5 | 増結位置前/後・解結 3 モード・入れ子 2 段・連結編成の運番配列 |
-| 入出区連携コード | 3 | 1:1 成立(iStatus=2)・1:多不成立・コード不一致 |
-| パターンダイヤ | 2 | サイクル複製列車を含む接続 |
-| 実規模 | 2 | origin sample2.oud2 と sample.oud2(そのまま入力に使う。権利は §3.1 の扱いに従い参照) |
-| エッジ | 3+ | 分岐環状駅群をまたぐ在線・起点時刻ちょうどの接続・運用なしダイヤ(空出力) |
+| 区分             | 本数 | 内容                                                                                                                                                    |
+| ---------------- | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| mode1(接続のみ)  | 5    | 折返し・同駅同番線検索・起点時刻跨ぎ ON/OFF・番線不一致で接続しない負例                                                                                 |
+| mode2(運番割当)  | 10   | 出区起点伝播・折返し反転(OperationNumberReverse 両値)・接尾辞 ";n" の発生と除去・運用番号変更(空運番 = 順反転)・仮運番/空白運番・前列車の無い前列車接続 |
+| 増解結入れ子     | 5    | 増結位置前/後・解結 3 モード・入れ子 2 段・連結編成の運番配列                                                                                           |
+| 入出区連携コード | 3    | 1:1 成立(iStatus=2)・1:多不成立・コード不一致                                                                                                           |
+| パターンダイヤ   | 2    | サイクル複製列車を含む接続                                                                                                                              |
+| 実規模           | 2    | origin sample2.oud2 と sample.oud2(そのまま入力に使う。権利は §3.1 の扱いに従い参照)                                                                    |
+| エッジ           | 3+   | 分岐環状駅群をまたぐ在線・起点時刻ちょうどの接続・運用なしダイヤ(空出力)                                                                                |
 
 入力 oud2 は §3.2 の operation 系フィクスチャと共用し、`packages/derive/fixtures/operation/caseNN/input.oud2` + `expected.operation.json`(+ 採取メタ: 使用ビルド・実行日・シリアル実行の有無)で 1 ケース 1 ディレクトリにする。
 
@@ -216,13 +216,13 @@ OperationTableContent・割当運番はファイルに保存されない導出�
 
 ## 6. ロードマップへの反映(作業の置き場所)
 
-| 時期 | 作業 | 本書の節 |
-|---|---|---|
-| M0 | ブログ/Wayback 走査で 5 バイナリ入手(Ver1.x は入手できなくてよい)、私的アーカイブ + SHA-256 台帳、Wayback 保存リクエスト | §1 |
-| M0 | 生成台本の確定 → v109/v110/v116 実生成、v100/v105 synthetic 作成、全件で §2.4 条件 1・2 を達成、`*.expected.oud2` 生成、台帳初版コミット | §2, §3 |
-| M0 | sample/sample2 のライセンス帰属調査(原典作者への確認)着手 | §3.1 |
-| M2 | T1〜T6 ゲート稼働(current/ + synthetic/ + legacy/ 全件)。セルフチェック由来ファイルの受入手順運用開始 | §3, §4 |
-| M6 前後 | customize / track / crossing 系フィクスチャの拡充(M6 完了条件の表示一致比較に使用) | §3.2 |
-| M7a | 計測ビルドパッチ作成 → 30 ケース採取 → 比較器実装。**移植コード着手前に expected 一式がコミット済みであること** | §5 |
+| 時期    | 作業                                                                                                                                     | 本書の節 |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| M0      | ブログ/Wayback 走査で 5 バイナリ入手(Ver1.x は入手できなくてよい)、私的アーカイブ + SHA-256 台帳、Wayback 保存リクエスト                 | §1       |
+| M0      | 生成台本の確定 → v109/v110/v116 実生成、v100/v105 synthetic 作成、全件で §2.4 条件 1・2 を達成、`*.expected.oud2` 生成、台帳初版コミット | §2, §3   |
+| M0      | sample/sample2 のライセンス帰属調査(原典作者への確認)着手                                                                                | §3.1     |
+| M2      | T1〜T6 ゲート稼働(current/ + synthetic/ + legacy/ 全件)。セルフチェック由来ファイルの受入手順運用開始                                    | §3, §4   |
+| M6 前後 | customize / track / crossing 系フィクスチャの拡充(M6 完了条件の表示一致比較に使用)                                                       | §3.2     |
+| M7a     | 計測ビルドパッチ作成 → 30 ケース採取 → 比較器実装。**移植コード着手前に expected 一式がコミット済みであること**                          | §5       |
 
 本書により、ロードマップ M0 の完了条件「フィクスチャの入手・作成・検証手順のドキュメント化」は本書を指し、その検収は §2.4 条件 1・2 を満たしたフィクスチャ一式と台帳のコミットで行う。

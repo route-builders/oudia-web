@@ -35,15 +35,15 @@
 
 `origin/DiagramEdit/DiagramEdit/entDed/CentDedBeforeOperation.h`。作業種類は `enum class EBOperation`:
 
-| 列挙値 | 意味 | 備考 |
-|---|---|---|
-| `BOperation_Shunt` | 入換(規定値) | 番線間の移動。前作業では「設定番線 → 発着番線側」への移動 |
-| `BOperation_Connect` | 増結 | 増結相手編成の**前作業コンテナを入れ子で保持** |
-| `BOperation_Release` | 解結 | 解結編成の**後作業コンテナを入れ子で保持** |
-| `BOperation_Out` | 出区 | 開始作業。運用番号の入力起点 |
-| `BOperation_Outer` | 路線外始発 | 開始作業。路線外発着駅 Index と時刻を持つ |
-| `BOperation_Junction` | 前列車接続 | 開始作業。出区・路線外以外はすべてこれ |
-| `BOperation_NumberChange` | 運用番号変更 | 編成そのまま運番のみ変更。反転も可(Ver2.06.05〜) |
+| 列挙値                    | 意味         | 備考                                                      |
+| ------------------------- | ------------ | --------------------------------------------------------- |
+| `BOperation_Shunt`        | 入換(規定値) | 番線間の移動。前作業では「設定番線 → 発着番線側」への移動 |
+| `BOperation_Connect`      | 増結         | 増結相手編成の**前作業コンテナを入れ子で保持**            |
+| `BOperation_Release`      | 解結         | 解結編成の**後作業コンテナを入れ子で保持**                |
+| `BOperation_Out`          | 出区         | 開始作業。運用番号の入力起点                              |
+| `BOperation_Outer`        | 路線外始発   | 開始作業。路線外発着駅 Index と時刻を持つ                 |
+| `BOperation_Junction`     | 前列車接続   | 開始作業。出区・路線外以外はすべてこれ                    |
+| `BOperation_NumberChange` | 運用番号変更 | 編成そのまま運番のみ変更。反転も可(Ver2.06.05〜)          |
 
 フィールドは**作業種類ごとに意味が変わる汎用スロット**である(C++ 上は 1 クラスに全種類を詰めた「非タグ付き共用体」的設計):
 

@@ -42,11 +42,11 @@ packages/render/
 
 3 つの座標系を区別する。名称は原典に揃える。
 
-| 座標系 | 単位 | 内容 |
-|---|---|---|
-| **Dgr 座標** | 秒(整数) | デバイス非依存のダイヤグラム座標。X = 午前 0 時からの経過秒(86400 超・負を許容)、Y = 駅間最小所要秒数の累積。`computeDiagramLayout` の出力座標系 |
-| **ビュー座標** | CSS px(浮動小数) | Canvas の CSS ピクセル。原典の Dcd(GDI 論理座標)に対応。描画・ヒットテストはこの座標系で行う |
-| **デバイス座標** | 物理 px | `CSS px × devicePixelRatio`。render 内部でのみ扱い(`ctx.setTransform(dpr,0,0,dpr,0,0)` を張って以後 CSS px で描く)、上位には見せない |
+| 座標系           | 単位             | 内容                                                                                                                                             |
+| ---------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Dgr 座標**     | 秒(整数)         | デバイス非依存のダイヤグラム座標。X = 午前 0 時からの経過秒(86400 超・負を許容)、Y = 駅間最小所要秒数の累積。`computeDiagramLayout` の出力座標系 |
+| **ビュー座標**   | CSS px(浮動小数) | Canvas の CSS ピクセル。原典の Dcd(GDI 論理座標)に対応。描画・ヒットテストはこの座標系で行う                                                     |
+| **デバイス座標** | 物理 px          | `CSS px × devicePixelRatio`。render 内部でのみ扱い(`ctx.setTransform(dpr,0,0,dpr,0,0)` を張って以後 CSS px で描く)、上位には見せない             |
 
 #### X 軸(時刻 → x)
 
@@ -79,10 +79,10 @@ packages/render/
 
 ```typescript
 interface ViewTransform {
-  readonly contentX: number;   // ビュー左上に表示する DgrX(秒)
-  readonly contentY: number;   // ビュー左上に表示する DgrY(秒)
-  readonly pxPerSecX: number;  // DgrX 1 秒あたりの CSS px(既定 0.05。クランプ 0.0001〜10)
-  readonly pxPerSecY: number;  // DgrY 1 秒あたりの CSS px(同上)
+  readonly contentX: number; // ビュー左上に表示する DgrX(秒)
+  readonly contentY: number; // ビュー左上に表示する DgrY(秒)
+  readonly pxPerSecX: number; // DgrX 1 秒あたりの CSS px(既定 0.05。クランプ 0.0001〜10)
+  readonly pxPerSecY: number; // DgrY 1 秒あたりの CSS px(同上)
 }
 // x_px = (dgrX - contentX) * pxPerSecX 、逆変換も提供
 ```
@@ -113,33 +113,35 @@ RosenFileData ──(derive)──▶ DiagramLayout ──(render)──▶ 4 �
 
 ```typescript
 interface DiagramLayout {
-  kitenJikoku: Seconds;                 // 左端 DgrX
-  zone: { x: DgrZone; y: DgrZone };     // 全体範囲(X サイズは常に 86400)
-  ekis: DgrEki[];                       // 駅 Index 順。y座標(Org/Ter)・主要駅・在線表・個別背景色 index・駅名
-  syubetsus: DgrSyubetsu[];             // 線スタイル・時刻表文字色・停車記号種別・親種別 index
+  kitenJikoku: Seconds; // 左端 DgrX
+  zone: { x: DgrZone; y: DgrZone }; // 全体範囲(X サイズは常に 86400)
+  ekis: DgrEki[]; // 駅 Index 順。y座標(Org/Ter)・主要駅・在線表・個別背景色 index・駅名
+  syubetsus: DgrSyubetsu[]; // 線スタイル・時刻表文字色・停車記号種別・親種別 index
   ressyaCont: [DgrRessya[], DgrRessya[]]; // [0]=下り / [1]=上り
 }
 
 interface DgrRessya {
   houkou: 0 | 1;
   syubetsuIndex: number;
-  ressyabangou: string; ressyamei: string; gousuu: string;
-  xZone: DgrZone;                       // 全列車線を含む X 範囲(始終同時刻なら例外的にサイズ 1)
-  ekiJikokus: DgrEkiJikoku[];           // 駅 Order 順・駅数と同数
-  ressyasens: DgrRessyasen[];           // 折れ線の直線区間列(0 本以上)
+  ressyabangou: string;
+  ressyamei: string;
+  gousuu: string;
+  xZone: DgrZone; // 全列車線を含む X 範囲(始終同時刻なら例外的にサイズ 1)
+  ekiJikokus: DgrEkiJikoku[]; // 駅 Order 順・駅数と同数
+  ressyasens: DgrRessyasen[]; // 折れ線の直線区間列(0 本以上)
 }
 
 interface DgrEkiJikoku {
-  ekiatsukai: Ekiatsukai;               // 停車 / 通過 / 経由なし / 運行なし
-  xChaku: Seconds | null;               // 着 X(INT_MIN → null)
-  xHatsu: Seconds | null;               // 発 X
-  xRessyasen: Seconds | null;           // 中間駅での列車線交点 X(線形補間値。端点では null)
+  ekiatsukai: Ekiatsukai; // 停車 / 通過 / 経由なし / 運行なし
+  xChaku: Seconds | null; // 着 X(INT_MIN → null)
+  xHatsu: Seconds | null; // 発 X
+  xRessyasen: Seconds | null; // 中間駅での列車線交点 X(線形補間値。端点では null)
   ressyaTrackIndex: number | null;
-  shouldRessyajouhouDraw: boolean;      // この駅位置にラベルを描くか
+  shouldRessyajouhouDraw: boolean; // この駅位置にラベルを描くか
 }
 
 interface DgrRessyasen {
-  kitenEkiOrder: number;                // 起点駅 Order(この 2 値のみ。座標は駅時刻から導出)
+  kitenEkiOrder: number; // 起点駅 Order(この 2 値のみ。座標は駅時刻から導出)
   syuutenEkiOrder: number;
 }
 ```
@@ -150,11 +152,11 @@ interface DgrRessyasen {
 
 `computeDiagramLayout` は全体計算だが、コマンド型ディスパッチで増分更新する:
 
-| コマンド型 | 再計算 |
-|---|---|
-| `ressya/replaceRange` / `ressya/swap` | 該当 `DgrRessya` のみ再構築(`readCentDedRessya` 相当の 1 列車パイプラインを公開関数 `computeDgrRessya(rosen, diaIndex, houkou, ressyaIndex, ekis)` として切り出す。v0.7 で前列車接続によるラベル抑止入力 `bRessyajouhouOmit` 相当が引数に加わる — §1.3 手順 3)。ただしパターンダイヤプレビュー中・運用機能有効時は全再構築(原典同様 — 駅間最小秒やプレビュー複製が他列車に依存するため) |
-| `eki/*` / `syubetsu/*` / `rosen/*` / `diaProp/*` | 全再構築(駅間最小所要秒の再走査を含む) |
-| 表示オプション変更 | 再構築不要(render 側の再描画のみ) |
+| コマンド型                                       | 再計算                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ressya/replaceRange` / `ressya/swap`            | 該当 `DgrRessya` のみ再構築(`readCentDedRessya` 相当の 1 列車パイプラインを公開関数 `computeDgrRessya(rosen, diaIndex, houkou, ressyaIndex, ekis)` として切り出す。v0.7 で前列車接続によるラベル抑止入力 `bRessyajouhouOmit` 相当が引数に加わる — §1.3 手順 3)。ただしパターンダイヤプレビュー中・運用機能有効時は全再構築(原典同様 — 駅間最小秒やプレビュー複製が他列車に依存するため) |
+| `eki/*` / `syubetsu/*` / `rosen/*` / `diaProp/*` | 全再構築(駅間最小所要秒の再走査を含む)                                                                                                                                                                                                                                                                                                                                                  |
+| 表示オプション変更                               | 再構築不要(render 側の再描画のみ)                                                                                                                                                                                                                                                                                                                                                       |
 
 注意: 列車編集は駅間最小所要秒(= Y 座標)を変え得るが、原典同様**列車編集では Y を再計算しない**。メニュー[表示]-[更新]相当の「再計算して再描画」コマンドを提供する(原典仕様踏襲)。
 
@@ -162,12 +164,12 @@ interface DgrRessyasen {
 
 同一サイズ・同一位置に `position:absolute` で重ねた 4 枚の `<canvas>`。**各 Canvas のサイズはビューポートサイズ(× dpr)であり、ダイヤ全体サイズではない**(スクロールは ViewTransform の contentX/Y 変更 + 再描画で表現し、巨大 Canvas を作らない)。この「ビューポートサイズ Canvas」の帰結として、L1〜L3 すべてがスクロール / ズーム / リサイズで再描画対象になる — 02_architecture §5.1 の初期表からダーティ契機を拡張しており(同表も本書に合わせて更新済み)、以下が確定版である。
 
-| レイヤ | 内容 | ダーティ契機 |
-|---|---|---|
-| L1(最背面) | 背景色(基本 + 駅間個別 4 色)・縦罫線・横罫線・時ラベル・駅名欄 | スクロール・ズーム・リサイズ・駅/表示設定変更 |
-| L2 | スジ(列車線)・在線表運用線(v0.6+) | レイアウト再計算・スクロール・ズーム・リサイズ |
-| L3 | 列車ラベル(回転)・停車駅明示 ○・入出区記号(v0.7+) | 同上 |
-| L4(最前面) | 選択・ホバーのオーバレイ | ポインタ移動(高頻度。このレイヤだけが独立して更新される) |
+| レイヤ     | 内容                                                           | ダーティ契機                                             |
+| ---------- | -------------------------------------------------------------- | -------------------------------------------------------- |
+| L1(最背面) | 背景色(基本 + 駅間個別 4 色)・縦罫線・横罫線・時ラベル・駅名欄 | スクロール・ズーム・リサイズ・駅/表示設定変更            |
+| L2         | スジ(列車線)・在線表運用線(v0.6+)                              | レイアウト再計算・スクロール・ズーム・リサイズ           |
+| L3         | 列車ラベル(回転)・停車駅明示 ○・入出区記号(v0.7+)              | 同上                                                     |
+| L4(最前面) | 選択・ホバーのオーバレイ                                       | ポインタ移動(高頻度。このレイヤだけが独立して更新される) |
 
 rAF ループはダーティフラグの立ったレイヤのみ全再描画する。原典の `ScrollWindow` 部分ブリット・OpenMP 並列・駅 Y キャッシュの永続化は移植しない(rAF 全再描画 + カリングで置換。ただし駅 → ビュー Y のフレーム内キャッシュ `Float64Array` は毎フレーム冒頭で構築する — `ReadYDcdCache` 相当で、スジ 1 本ごとの座標変換関数呼び出しを配列参照にする。キャッシュは駅 Index 基準の **Org-Y / Ter-Y の 2 配列**で持ち、スジ端点では列車方向に応じて参照を入れ替える — §1.3 手順 7)。
 
@@ -177,18 +179,19 @@ rAF ループはダーティフラグの立ったレイヤのみ全再描画す�
 2. 背景: 基本背景色で塗り、駅間個別背景色オプション ON なら駅間ごとに個別色(基本 + 4 色)。
 3. 縦罫線: 8 択固定テーブル(原典 `m_arVline` そのまま移植)
 
-   | mode | pitch | middlePitch | boldPitch |
-   |---|---|---|---|
-   | 0 | 1 分 | 5 分 | 30 分 |
-   | 1(既定) | 2 分 | 10 分 | 60 分 |
-   | 2 | 5 分 | 10 分 | 60 分 |
-   | 3 | 10 分 | 30 分 | 60 分 |
-   | 4 | 15 分 | 15 分 | 60 分 |
-   | 5 | 20 分 | 20 分 | 60 分 |
-   | 6 | 30 分 | 30 分 | 60 分 |
-   | 7 | 60 分 | 60 分 | 60 分 |
+   | mode    | pitch | middlePitch | boldPitch |
+   | ------- | ----- | ----------- | --------- |
+   | 0       | 1 分  | 5 分        | 30 分     |
+   | 1(既定) | 2 分  | 10 分       | 60 分     |
+   | 2       | 5 分  | 10 分       | 60 分     |
+   | 3       | 10 分 | 30 分       | 60 分     |
+   | 4       | 15 分 | 15 分       | 60 分     |
+   | 5       | 20 分 | 20 分       | 60 分     |
+   | 6       | 30 分 | 30 分       | 60 分     |
+   | 7       | 60 分 | 60 分       | 60 分     |
 
    時刻が boldPitch の倍数 → 太線(2px)、middlePitch の倍数 → 実線(1px)、それ以外 → 細点線(`setLineDash([1,2])`)。色はすべて『縦横軸色』。開始位置は表示左端以降の最初のピッチ倍数。表示範囲内のみ描画。
+
 4. 横罫線: 駅ごとに 1 本。主要駅 = 太線(2px)、一般駅 = 実線(1px)。在線表駅は Org/Ter の 2 本 + 番線線。上下余白境界も太線。
 5. 時ラベル: 表示左端以降の**毎正時**に「時」数字を中央揃え(左右端はクリップ内に収まるよう位置調整)。
 6. 駅名欄: 横罫線の延長 + 駅名テキスト(一般駅名非表示オプション時も起終点は常に表示)+ 在線表駅の番線名。
@@ -224,11 +227,11 @@ rAF ループはダーティフラグの立ったレイヤのみ全再描画す�
 
 種別 index → `DgrSyubetsu` → Canvas 線属性への変換(`CconvCentDed::CentDedRessyasyubetsu_to_CDcdFreeLineProp` 相当):
 
-| 原典 ESenStyle | Canvas |
-|---|---|
-| 実線(SenStyle_Jissen) | `setLineDash([])` |
-| 破線(SenStyle_Hasen) | `setLineDash([6, 3])` |
-| 点線(SenStyle_Tensen) | `setLineDash([2, 2])` |
+| 原典 ESenStyle                | Canvas                      |
+| ----------------------------- | --------------------------- |
+| 実線(SenStyle_Jissen)         | `setLineDash([])`           |
+| 破線(SenStyle_Hasen)          | `setLineDash([6, 3])`       |
+| 点線(SenStyle_Tensen)         | `setLineDash([2, 2])`       |
 | 一点鎖線(SenStyle_Ittensasen) | `setLineDash([8, 3, 2, 3])` |
 
 - 色 = 種別の `DiagramSenColor`。太さ = `DiagramSenIsBold ? 2 : 1`(CSS px。原典の論理幅 2/1 と同義)。
@@ -249,11 +252,11 @@ rAF ループはダーティフラグの立ったレイヤのみ全再描画す�
   // dxPx = dxDgr * pxPerSecX, dyPx = dyDgr * pxPerSecY — 角度はズーム比に依存するため描画時に計算
   // 注意: deg は GDI lfEscapement(反時計回り)の角度。Canvas の rotate は y 軸下向き座標系で
   // 正 = 時計回りのため符号を反転して適用する。
-  const rad = -deg * Math.PI / 180;
+  const rad = (-deg * Math.PI) / 180;
   ctx.save();
   ctx.translate(xPx, yPx);
   ctx.rotate(rad);
-  ctx.fillText(text, 0, -(textHeight + 2));  // 線の上側にテキスト高 + 2px オフセット
+  ctx.fillText(text, 0, -(textHeight + 2)); // 線の上側にテキスト高 + 2px オフセット
   ctx.restore();
   ```
 
@@ -281,13 +284,13 @@ rAF ループはダーティフラグの立ったレイヤのみ全再描画す�
 
 イベント割当:
 
-| 操作 | 挙動 |
-|---|---|
-| ダブルクリック / ダブルタップ(列車線上) | 列車を特定 → 時刻表ビューのタブを開き該当列車・駅時刻セルへフォーカス(原典 `OnLButtonDblClk_openJikokuhyouView`) |
-| ダブルクリック(駅名欄) | 駅のプロパティダイアログ |
-| ホバー(ポインタ移動) | **Web 版追加**: 命中スジを L4 に強調描画(同一列車の全区間を線幅 +2px の半透明同色で重畳)+ カーソル `pointer` + ツールチップ(列車番号・種別・列車名)。原典に無いが表示専用ビューのため互換を壊さない |
-| シングルクリック | 命中スジを「選択」状態にして L4 に強調維持(Esc / 空白クリックで解除)。時刻表への遷移はしない(ダブルクリックのみ) |
-| 右クリック | コンテキストメニューなし(原典踏襲。ブラウザ既定も抑止しない) |
+| 操作                                    | 挙動                                                                                                                                                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ダブルクリック / ダブルタップ(列車線上) | 列車を特定 → 時刻表ビューのタブを開き該当列車・駅時刻セルへフォーカス(原典 `OnLButtonDblClk_openJikokuhyouView`)                                                                                    |
+| ダブルクリック(駅名欄)                  | 駅のプロパティダイアログ                                                                                                                                                                            |
+| ホバー(ポインタ移動)                    | **Web 版追加**: 命中スジを L4 に強調描画(同一列車の全区間を線幅 +2px の半透明同色で重畳)+ カーソル `pointer` + ツールチップ(列車番号・種別・列車名)。原典に無いが表示専用ビューのため互換を壊さない |
+| シングルクリック                        | 命中スジを「選択」状態にして L4 に強調維持(Esc / 空白クリックで解除)。時刻表への遷移はしない(ダブルクリックのみ)                                                                                    |
+| 右クリック                              | コンテキストメニューなし(原典踏襲。ブラウザ既定も抑止しない)                                                                                                                                        |
 
 ### 2.2 ズーム / パン
 
@@ -301,17 +304,17 @@ rAF ループはダーティフラグの立ったレイヤのみ全再描画す�
 
 入力割当:
 
-| 入力 | 挙動 | 由来 |
-|---|---|---|
-| ホイール(修飾なし) | **縦スクロールのみ**。移動量 = 縦罫ピッチ × ノッチ数 | 原典忠実 |
-| Shift + ホイール | 横スクロール(同量) | Web 追加 |
-| Ctrl + ホイール | X 表示範囲の離散増減(上記 30 分規則。ブラウザのページズームは `preventDefault`) | Web 追加(離散規則は原典) |
-| Ctrl + Shift + ホイール | Y 表示範囲の離散増減 | Web 追加 |
-| ツールバー / メニュー / キー(原典アクセラレータ準拠) | X/Y 拡大縮小・Y リセット | 原典忠実 |
-| 矢印キー / Home / End / PgUp / PgDn | スクロール(原典と同じ移動量) | 原典忠実 |
-| **ポインタドラッグ** | **パン(2 軸スクロール)**。`setPointerCapture` 使用。ドラッグ距離 4px 未満で離した場合はクリック扱い | Web 追加(原典はドラッグ無反応のため衝突しない) |
-| ピンチ(タッチ 2 本) | 軸ごとの離散ズームに量子化: ピンチの累積スケールが √2 を超えるたびに主方向の軸へ 1 段階適用 | Web 追加 |
-| 指定列車番号へ移動 | 検索バーから該当スジ位置へスクロール(`setZoneCenter` 相当) | 原典忠実 |
+| 入力                                                 | 挙動                                                                                                | 由来                                           |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| ホイール(修飾なし)                                   | **縦スクロールのみ**。移動量 = 縦罫ピッチ × ノッチ数                                                | 原典忠実                                       |
+| Shift + ホイール                                     | 横スクロール(同量)                                                                                  | Web 追加                                       |
+| Ctrl + ホイール                                      | X 表示範囲の離散増減(上記 30 分規則。ブラウザのページズームは `preventDefault`)                     | Web 追加(離散規則は原典)                       |
+| Ctrl + Shift + ホイール                              | Y 表示範囲の離散増減                                                                                | Web 追加                                       |
+| ツールバー / メニュー / キー(原典アクセラレータ準拠) | X/Y 拡大縮小・Y リセット                                                                            | 原典忠実                                       |
+| 矢印キー / Home / End / PgUp / PgDn                  | スクロール(原典と同じ移動量)                                                                        | 原典忠実                                       |
+| **ポインタドラッグ**                                 | **パン(2 軸スクロール)**。`setPointerCapture` 使用。ドラッグ距離 4px 未満で離した場合はクリック扱い | Web 追加(原典はドラッグ無反応のため衝突しない) |
+| ピンチ(タッチ 2 本)                                  | 軸ごとの離散ズームに量子化: ピンチの累積スケールが √2 を超えるたびに主方向の軸へ 1 段階適用         | Web 追加                                       |
+| 指定列車番号へ移動                                   | 検索バーから該当スジ位置へスクロール(`setZoneCenter` 相当)                                          | 原典忠実                                       |
 
 スクロール位置・罫線モード等の表示状態は localStorage に永続化(原典 .ini 相当。ビュー記述子をキーに含める)。
 
@@ -337,12 +340,12 @@ rAF ループはダーティフラグの立ったレイヤのみ全再描画す�
 
 代表規模 500 列車 × 50 駅、フレーム予算 16.6ms に対する配分:
 
-| 処理 | 予算 | 備考 |
-|---|---|---|
-| L4 のみ更新(ホバー) | ≤ 2ms | ポインタ移動時はこれだけ。ヒットテストは列挙カリング済みで ≤ 0.5ms |
-| L1+L2+L3 全再描画(パン 1 フレーム) | ≤ 10ms | 罫線 ≤ 1ms、スジ ≤ 5ms、ラベル ≤ 4ms |
-| computeDgrRessya(1 列車) | ≤ 0.5ms | 編集反映。列単位再計算 |
-| computeDiagramLayout(全体) | ≤ 100ms | 駅・種別編集時のみ。同期実行を許容(Worker に出さない — 全再構築は対話頻度が低く、転送コストが利益を上回るため不採用と決定) |
+| 処理                               | 予算    | 備考                                                                                                                       |
+| ---------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
+| L4 のみ更新(ホバー)                | ≤ 2ms   | ポインタ移動時はこれだけ。ヒットテストは列挙カリング済みで ≤ 0.5ms                                                         |
+| L1+L2+L3 全再描画(パン 1 フレーム) | ≤ 10ms  | 罫線 ≤ 1ms、スジ ≤ 5ms、ラベル ≤ 4ms                                                                                       |
+| computeDgrRessya(1 列車)           | ≤ 0.5ms | 編集反映。列単位再計算                                                                                                     |
+| computeDiagramLayout(全体)         | ≤ 100ms | 駅・種別編集時のみ。同期実行を許容(Worker に出さない — 全再構築は対話頻度が低く、転送コストが利益を上回るため不採用と決定) |
 
 CI ベンチマーク(Vitest bench + happy-path の OffscreenCanvas 実測は Playwright)でレイアウト計算・描画コマンド発行数を追跡する。
 
@@ -377,14 +380,21 @@ CI ベンチマーク(Vitest bench + happy-path の OffscreenCanvas 実測は Pl
 DOM 構成(1 グリッドあたり):
 
 ```html
-<div class="grid-root">                 <!-- position:relative、フォーカス保持(tabindex=0) -->
-  <canvas class="grid-content"/>        <!-- セル・罫線・固定行列(ビューポートサイズ) -->
-  <canvas class="grid-overlay"/>        <!-- フォーカス枠・選択ハイライト・連続入力中セル表示 -->
-  <div class="grid-scroller">           <!-- overflow:auto、ネイティブスクロールバー -->
-    <div class="grid-spacer"/>          <!-- コンテンツ総サイズを持つ空 div -->
+<div class="grid-root">
+  <!-- position:relative、フォーカス保持(tabindex=0) -->
+  <canvas class="grid-content" />
+  <!-- セル・罫線・固定行列(ビューポートサイズ) -->
+  <canvas class="grid-overlay" />
+  <!-- フォーカス枠・選択ハイライト・連続入力中セル表示 -->
+  <div class="grid-scroller">
+    <!-- overflow:auto、ネイティブスクロールバー -->
+    <div class="grid-spacer" />
+    <!-- コンテンツ総サイズを持つ空 div -->
   </div>
-  <input class="grid-ime-proxy"/>       <!-- フォーカスセル位置に重ねる透明 input(IME・キー捕捉) -->
-  <div aria-live="polite" class="sr-only"/>  <!-- フォーカスセル内容の読み上げ通知 -->
+  <input class="grid-ime-proxy" />
+  <!-- フォーカスセル位置に重ねる透明 input(IME・キー捕捉) -->
+  <div aria-live="polite" class="sr-only" />
+  <!-- フォーカスセル内容の読み上げ通知 -->
 </div>
 ```
 
@@ -405,14 +415,14 @@ CCellBuilder 群 2.4 万行は移植せず、derive の純関数に圧縮する(
 
 ```typescript
 interface CellSpec {
-  text: string;                       // 表示文字列(記号 'ﾚ' '||' '・・' '----' '○' '====' を含む)
-  fontIndex: number;                  // 表示プロパティのフォント表 index(種別フォント)
-  color: Rgb;                         // 文字色(種別の時刻表文字色 / 通過灰色 128,128,128)
-  bgColor: Rgb | null;                // null = 既定背景。運休列車 = 灰 128,128,128、駅名列 = 見出し色
+  text: string; // 表示文字列(記号 'ﾚ' '||' '・・' '----' '○' '====' を含む)
+  fontIndex: number; // 表示プロパティのフォント表 index(種別フォント)
+  color: Rgb; // 文字色(種別の時刻表文字色 / 通過灰色 128,128,128)
+  bgColor: Rgb | null; // null = 既定背景。運休列車 = 灰 128,128,128、駅名列 = 見出し色
   align: 'left' | 'center' | 'right';
-  vertical: boolean;                  // 縦書き(列車名・備考)
+  vertical: boolean; // 縦書き(列車名・備考)
   borders: { top: BorderStyle; bottom: BorderStyle; left: BorderStyle; right: BorderStyle };
-  attachRows?: number;                // 縦セル結合(駅時刻表の時セル等。結合起点セルのみ >1)
+  attachRows?: number; // 縦セル結合(駅時刻表の時セル等。結合起点セルのみ >1)
 }
 
 function cellSpec(vm: JikokuhyouViewModel, row: number, col: number): CellSpec;
@@ -428,14 +438,14 @@ function cellSpec(vm: JikokuhyouViewModel, row: number, col: number): CellSpec;
 
 原典 `InvalidateCell` / `updateUI_ReplaceRessya` の写像:
 
-| 契機 | 無効化 |
-|---|---|
-| `ressya/replaceRange`(列車編集) | 該当列車列のみ: ColSpec の X 対応を範囲更新(挿入 / 削除で後続列をシフト)+ 該当列のセルキャッシュ破棄 + 該当列矩形の再描画 |
-| `ressya/swap` | 2 列のみ |
-| `eki/*` / `syubetsu/*` / `rosen/*` | ビューモデル・ColSpec・Geometry 全再構築 + 全再描画 |
-| フォーカス移動・選択変更 | overlay のみ再描画(content 不変) |
-| スクロール | content 全再描画(可視域変化。セルキャッシュは残るため CellSpec 再評価は新規可視分のみ) |
-| 表示トグル変更 | 行構成が変わるもの(全時刻表示等)は ColSpec 再構築、書式のみ(秒表示等)はセルキャッシュ破棄 + 全再描画 |
+| 契機                               | 無効化                                                                                                                    |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `ressya/replaceRange`(列車編集)    | 該当列車列のみ: ColSpec の X 対応を範囲更新(挿入 / 削除で後続列をシフト)+ 該当列のセルキャッシュ破棄 + 該当列矩形の再描画 |
+| `ressya/swap`                      | 2 列のみ                                                                                                                  |
+| `eki/*` / `syubetsu/*` / `rosen/*` | ビューモデル・ColSpec・Geometry 全再構築 + 全再描画                                                                       |
+| フォーカス移動・選択変更           | overlay のみ再描画(content 不変)                                                                                          |
+| スクロール                         | content 全再描画(可視域変化。セルキャッシュは残るため CellSpec 再評価は新規可視分のみ)                                    |
+| 表示トグル変更                     | 行構成が変わるもの(全時刻表示等)は ColSpec 再構築、書式のみ(秒表示等)はセルキャッシュ破棄 + 全再描画                      |
 
 再描画は rAF に合流(同一フレーム内の複数無効化を 1 回に統合)。非アクティブタブは保留フラグ方式(§2.4 と同じ)。
 
@@ -495,9 +505,9 @@ CSV 入出力(時刻表 / カスタマイズ / 運用表 / 駅時刻表)は `@ou
 ```typescript
 interface RenderTarget {
   readonly ctx: CanvasRenderingContext2D | OffscreenCanvasRenderingContext2D;
-  readonly zone: { x: number; y: number; w: number; h: number };  // 描画領域(CSS px 相当の論理座標)
-  withClip(zone: Zone, fn: () => void): void;      // CaDcdTargetClip 相当
-  withOffset(dx: number, dy: number, fn: () => void): void;  // CaDcdTargetItemPosition 相当
+  readonly zone: { x: number; y: number; w: number; h: number }; // 描画領域(CSS px 相当の論理座標)
+  withClip(zone: Zone, fn: () => void): void; // CaDcdTargetClip 相当
+  withOffset(dx: number, dy: number, fn: () => void): void; // CaDcdTargetItemPosition 相当
 }
 ```
 
@@ -505,35 +515,35 @@ interface RenderTarget {
 
 ### 6.2 対応表
 
-| DcDrawLib / 原典機構 | Web 実装 | 区分 |
-|---|---|---|
-| `IfDcdTarget::getHdc()` | `CanvasRenderingContext2D`(RenderTarget 経由) | 標準 API |
-| `CDcdTargetOnPaint`(WM_PAINT) | 画面 Canvas + rAF ループ | 標準 API |
-| `CDcdTargetCompatibleBitmap`(ダブルバッファ) | **不要**(Canvas はブラウザが合成。ちらつき無し) | 消滅 |
-| `CDcdTargetPrinter` / `CDcdTargetMfcPrintInfo` | OffscreenCanvas + PagedRenderer(§5.2) | 自作(小) |
-| `CaDcdTargetZoomDisplay`(印刷 DPI スケール) | ViewTransform のスケール差し替え(300/96) | 自作(小) |
-| `CaDcdTargetClip` / `CaDcdTargetItemPosition` | `ctx.save() + clip()/translate() + restore()`(RenderTarget のヘルパ) | 標準 API |
-| `CconvContentPosToTarget`(原点 + 倍率変換) | `ViewTransform` 自作(数十行。将来の描画バックエンド差し替え点) | 自作(小) |
-| `CGdiCache` + `CGdiHFont/HPen/HBrushHolder` | **不要**。`FontSpec → ctx.font 文字列` の変換結果のみ Map キャッシュ(textStyle.ts) | 消滅 |
-| `CdFontProp`(フォント名・高さ 3 態) | `{family, sizePx, bold, italic}`。pt 指定は `pt × 96/72` で px 化(9pt → 12px)。既定 `"Meiryo UI", Meiryo, "Hiragino Sans", sans-serif`(フォント同梱はしない。非 Windows 環境はフォールバックによる字形差を受容) | 自作(小) |
-| `CdPenProp`(色・太さ・線種) | `strokeStyle` / `lineWidth` / `setLineDash`(§1.4 の確定パターン) | 標準 API |
-| `CdBrushProp` / `CdColorProp` | `fillStyle`。COLORREF(0x00BBGGRR)⇔ RGB 変換は format 層 | 標準 API |
-| `CDcdLine` / `CDcdFreeLine`(直線・折れ線) | `beginPath / moveTo / lineTo / stroke`(primitives.ts) | 標準 API |
-| `CDcdRectangle` / `CDcdFillrect` | `strokeRect` / `fillRect` | 標準 API |
-| `CDcdFillrectRop`(ROP 塗り) | **不要**(XOR 描画の用途 = 選択表示はオーバレイレイヤの半透明塗りで代替) | 消滅 |
-| `CDcdText` / `CDcdTextbox`(枠内テキスト) | `fillText` + `measureText` + クリップ + 自前整列 | 標準 API |
-| `CDcdTextboxV3` / `CVerticalTextElement`(縦書き) | **自作**: 1 文字ずつ縦積み描画(§4.3。CSS `writing-mode` は Canvas に効かない) | 自作(小) |
-| GDI 回転テキスト(`lfEscapement`) | `ctx.translate + rotate + fillText`(§1.5) | 標準 API |
-| `Ellipse`(停車記号) | `ctx.arc + fill + stroke` | 標準 API |
-| `CDcdGrid`(X/Y 列・罫線・セル) | **GridGeometry + GridRenderer 自作**(§4。prefix-sum + 4 象限クリップ) | 自作(中) |
-| `CWndDcdGrid`(フォーカス・箱型 / 個別選択・キーボードナビ・自動スクロール・InvalidateCell) | **GridEngine 自作**(§4.4–4.5。DOM イベント + overlay Canvas + ネイティブスクロールバー) | 自作(大) |
-| `CaDcdGrid_PageSelector` / `CaDcdDiagram_PageSelector` | PagedRenderer(§5.2) | 自作(小) |
-| `ScrollWindow` 部分スクロールブリット | **不要**(rAF 全再描画 + カリング。§1.2) | 消滅 |
-| `SetScrollInfo` / `CdScrollbarProp` | ダイヤグラム: 自前(ドラッグパン + キー)。グリッド: ネイティブスクロールバー(spacer div) | 標準 API + 自作(小) |
-| OpenMP 並列描画 + GDI critical section | **不要**(単一スレッド Canvas で予算内。§3.1) | 消滅 |
-| `CLineFunc`(直線計算) | hitTest.ts 内の線分距離関数として移植 | 自作(小) |
-| `CconvDcDrawProp`(描画プロパティ ⇔ 文字列) | format 層(oud2 のフォント・色文字列の読み書き)に移管。render は数値化済み Spec を受ける | 移管 |
-| devicePixelRatio(GDI に相当なし) | 全 Canvas で `物理 px = CSS px × min(dpr, 2)`、`setTransform` で論理座標 = CSS px に統一(§3.2) | 新規 |
+| DcDrawLib / 原典機構                                                                       | Web 実装                                                                                                                                                                                                        | 区分                |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `IfDcdTarget::getHdc()`                                                                    | `CanvasRenderingContext2D`(RenderTarget 経由)                                                                                                                                                                   | 標準 API            |
+| `CDcdTargetOnPaint`(WM_PAINT)                                                              | 画面 Canvas + rAF ループ                                                                                                                                                                                        | 標準 API            |
+| `CDcdTargetCompatibleBitmap`(ダブルバッファ)                                               | **不要**(Canvas はブラウザが合成。ちらつき無し)                                                                                                                                                                 | 消滅                |
+| `CDcdTargetPrinter` / `CDcdTargetMfcPrintInfo`                                             | OffscreenCanvas + PagedRenderer(§5.2)                                                                                                                                                                           | 自作(小)            |
+| `CaDcdTargetZoomDisplay`(印刷 DPI スケール)                                                | ViewTransform のスケール差し替え(300/96)                                                                                                                                                                        | 自作(小)            |
+| `CaDcdTargetClip` / `CaDcdTargetItemPosition`                                              | `ctx.save() + clip()/translate() + restore()`(RenderTarget のヘルパ)                                                                                                                                            | 標準 API            |
+| `CconvContentPosToTarget`(原点 + 倍率変換)                                                 | `ViewTransform` 自作(数十行。将来の描画バックエンド差し替え点)                                                                                                                                                  | 自作(小)            |
+| `CGdiCache` + `CGdiHFont/HPen/HBrushHolder`                                                | **不要**。`FontSpec → ctx.font 文字列` の変換結果のみ Map キャッシュ(textStyle.ts)                                                                                                                              | 消滅                |
+| `CdFontProp`(フォント名・高さ 3 態)                                                        | `{family, sizePx, bold, italic}`。pt 指定は `pt × 96/72` で px 化(9pt → 12px)。既定 `"Meiryo UI", Meiryo, "Hiragino Sans", sans-serif`(フォント同梱はしない。非 Windows 環境はフォールバックによる字形差を受容) | 自作(小)            |
+| `CdPenProp`(色・太さ・線種)                                                                | `strokeStyle` / `lineWidth` / `setLineDash`(§1.4 の確定パターン)                                                                                                                                                | 標準 API            |
+| `CdBrushProp` / `CdColorProp`                                                              | `fillStyle`。COLORREF(0x00BBGGRR)⇔ RGB 変換は format 層                                                                                                                                                         | 標準 API            |
+| `CDcdLine` / `CDcdFreeLine`(直線・折れ線)                                                  | `beginPath / moveTo / lineTo / stroke`(primitives.ts)                                                                                                                                                           | 標準 API            |
+| `CDcdRectangle` / `CDcdFillrect`                                                           | `strokeRect` / `fillRect`                                                                                                                                                                                       | 標準 API            |
+| `CDcdFillrectRop`(ROP 塗り)                                                                | **不要**(XOR 描画の用途 = 選択表示はオーバレイレイヤの半透明塗りで代替)                                                                                                                                         | 消滅                |
+| `CDcdText` / `CDcdTextbox`(枠内テキスト)                                                   | `fillText` + `measureText` + クリップ + 自前整列                                                                                                                                                                | 標準 API            |
+| `CDcdTextboxV3` / `CVerticalTextElement`(縦書き)                                           | **自作**: 1 文字ずつ縦積み描画(§4.3。CSS `writing-mode` は Canvas に効かない)                                                                                                                                   | 自作(小)            |
+| GDI 回転テキスト(`lfEscapement`)                                                           | `ctx.translate + rotate + fillText`(§1.5)                                                                                                                                                                       | 標準 API            |
+| `Ellipse`(停車記号)                                                                        | `ctx.arc + fill + stroke`                                                                                                                                                                                       | 標準 API            |
+| `CDcdGrid`(X/Y 列・罫線・セル)                                                             | **GridGeometry + GridRenderer 自作**(§4。prefix-sum + 4 象限クリップ)                                                                                                                                           | 自作(中)            |
+| `CWndDcdGrid`(フォーカス・箱型 / 個別選択・キーボードナビ・自動スクロール・InvalidateCell) | **GridEngine 自作**(§4.4–4.5。DOM イベント + overlay Canvas + ネイティブスクロールバー)                                                                                                                         | 自作(大)            |
+| `CaDcdGrid_PageSelector` / `CaDcdDiagram_PageSelector`                                     | PagedRenderer(§5.2)                                                                                                                                                                                             | 自作(小)            |
+| `ScrollWindow` 部分スクロールブリット                                                      | **不要**(rAF 全再描画 + カリング。§1.2)                                                                                                                                                                         | 消滅                |
+| `SetScrollInfo` / `CdScrollbarProp`                                                        | ダイヤグラム: 自前(ドラッグパン + キー)。グリッド: ネイティブスクロールバー(spacer div)                                                                                                                         | 標準 API + 自作(小) |
+| OpenMP 並列描画 + GDI critical section                                                     | **不要**(単一スレッド Canvas で予算内。§3.1)                                                                                                                                                                    | 消滅                |
+| `CLineFunc`(直線計算)                                                                      | hitTest.ts 内の線分距離関数として移植                                                                                                                                                                           | 自作(小)            |
+| `CconvDcDrawProp`(描画プロパティ ⇔ 文字列)                                                 | format 層(oud2 のフォント・色文字列の読み書き)に移管。render は数値化済み Spec を受ける                                                                                                                         | 移管                |
+| devicePixelRatio(GDI に相当なし)                                                           | 全 Canvas で `物理 px = CSS px × min(dpr, 2)`、`setTransform` で論理座標 = CSS px に統一(§3.2)                                                                                                                  | 新規                |
 
 ### 6.3 テキストメトリクスに関する注意(確定事項)
 

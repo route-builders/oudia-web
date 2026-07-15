@@ -10,11 +10,11 @@
 
 `DiagramEdit/DiagramEdit.sln` は3プロジェクト構成:
 
-| プロジェクト | 種別 | 内容 |
-|---|---|---|
-| `DiagramEdit` (`DiagramEdit/DiagramEdit/DiagramEdit.vcxproj`) | Application (exe) | 本体。Doc/View、各 View サブディレクトリ、entDed、DedRosenFileData |
-| `DiagramEditLibPrj` (`DiagramEdit/DiagramEditLibPrj/DiagramEditLibPrj.vcxproj`) | StaticLibrary | `libs/` 配下(DcDrawLib, OuLib, OuMfc)をまとめてビルドする静的ライブラリ |
-| `OuDiaSecond_Setup` | vdproj | インストーラ |
+| プロジェクト                                                                    | 種別              | 内容                                                                    |
+| ------------------------------------------------------------------------------- | ----------------- | ----------------------------------------------------------------------- |
+| `DiagramEdit` (`DiagramEdit/DiagramEdit/DiagramEdit.vcxproj`)                   | Application (exe) | 本体。Doc/View、各 View サブディレクトリ、entDed、DedRosenFileData      |
+| `DiagramEditLibPrj` (`DiagramEdit/DiagramEditLibPrj/DiagramEditLibPrj.vcxproj`) | StaticLibrary     | `libs/` 配下(DcDrawLib, OuLib, OuMfc)をまとめてビルドする静的ライブラリ |
+| `OuDiaSecond_Setup`                                                             | vdproj            | インストーラ                                                            |
 
 - PlatformToolset v142、CharacterSet=Unicode(内部文字列は `TCHAR`/`tstring` = `std::wstring` 相当。`libs/OuLib/Str/tstring.h`)。
 - ライブラリ層の名前空間: `DcDrawLib::{DcdCd, DcDraw, DcdGrid, DcDrawMfc, WinUtil}` / `OuLib::{NsOu, NsMu, Str, Dir, NsPropEditUi2}` / `OuMfc::{Hidemdi, FrameLeftPane, TreeCtrl, MfcUtil, OuDlg}`。
@@ -32,17 +32,17 @@
 
 ### 2.2 Hidemdi 基盤クラス(`libs/OuMfc/Hidemdi/`)
 
-| クラス | 基底 | 役割 |
-|---|---|---|
-| `CHidemdiApp` | `CWinApp` | ルートDocテンプレートを `RegisterRootDoctmpl()` で保持。`pRootDoc()`/`pRootDoctmpl()` を提供。`OnCmdMsg()` オーバーライドでコマンドメッセージをルートDocへ委譲。`OnFileNew/Save/SaveAs` を処理 |
-| `CHidemdiRootDoctmpl` | `CMultiDocTemplate` | ルートDocテンプレート(アプリに1つ)。`OpenDocumentFile()` は既存ドキュメントを全部閉じてから開く(=SDI 的挙動)。`SaveAllModified()`/`CloseAllDocuments()` はサブDocview群へ先に伝播 |
-| `CHidemdiRootDoc` | `CDocument` | ルートDoc基底。**`UpdateAllSubDocviews(pSender, lHint, pHint)`**: 全 DocTemplate を列挙し、ルート以外の全ドキュメントに `UpdateAllViews()` を呼ぶ(`CHidemdiRootDoc.cpp`)。`OnFileSave/SaveAs/Close` を処理 |
-| `CHidemdiRootFrame` / `CHidemdiRootView` | `CMDIChildWnd` / `CView` | ルートDoc用のフレーム/ビューだが**常に非表示・実処理なし**(ルートDocは画面を持たない) |
-| `CHidemdiSubDoctmpl` | `CMultiDocTemplate` | サブDoc/View 用テンプレート(Doc, Frame, View の3クラスを登録) |
-| `CHidemdiDoctmplDocstrAlone` | `CHidemdiSubDoctmpl` | **同じ DocStr を持つドキュメントの二重オープンを防止**。`OpenDocumentFile()` で既存があればそれをアクティブ化して返す |
-| `CHidemdiSubDoc` | `CDocument` | サブDoc基底。`m_strDocStr`(**ドキュメント文字列**: ルートDoc内でこのサブDocが編集する部分を特定する文字列)を持つ。`OnOpenDocument(lpszPathName)` の引数はファイルパスではなく DocStr として使われる |
-| `CHidemdiMainfrm` | `CMDIFrameWnd` | メインフレーム基底。サブViewを開くのはメインフレームの責務 |
-| `CDropTargetDoctmpl` | - | ファイルのドラッグ&ドロップ受付 |
+| クラス                                   | 基底                     | 役割                                                                                                                                                                                                       |
+| ---------------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CHidemdiApp`                            | `CWinApp`                | ルートDocテンプレートを `RegisterRootDoctmpl()` で保持。`pRootDoc()`/`pRootDoctmpl()` を提供。`OnCmdMsg()` オーバーライドでコマンドメッセージをルートDocへ委譲。`OnFileNew/Save/SaveAs` を処理             |
+| `CHidemdiRootDoctmpl`                    | `CMultiDocTemplate`      | ルートDocテンプレート(アプリに1つ)。`OpenDocumentFile()` は既存ドキュメントを全部閉じてから開く(=SDI 的挙動)。`SaveAllModified()`/`CloseAllDocuments()` はサブDocview群へ先に伝播                          |
+| `CHidemdiRootDoc`                        | `CDocument`              | ルートDoc基底。**`UpdateAllSubDocviews(pSender, lHint, pHint)`**: 全 DocTemplate を列挙し、ルート以外の全ドキュメントに `UpdateAllViews()` を呼ぶ(`CHidemdiRootDoc.cpp`)。`OnFileSave/SaveAs/Close` を処理 |
+| `CHidemdiRootFrame` / `CHidemdiRootView` | `CMDIChildWnd` / `CView` | ルートDoc用のフレーム/ビューだが**常に非表示・実処理なし**(ルートDocは画面を持たない)                                                                                                                      |
+| `CHidemdiSubDoctmpl`                     | `CMultiDocTemplate`      | サブDoc/View 用テンプレート(Doc, Frame, View の3クラスを登録)                                                                                                                                              |
+| `CHidemdiDoctmplDocstrAlone`             | `CHidemdiSubDoctmpl`     | **同じ DocStr を持つドキュメントの二重オープンを防止**。`OpenDocumentFile()` で既存があればそれをアクティブ化して返す                                                                                      |
+| `CHidemdiSubDoc`                         | `CDocument`              | サブDoc基底。`m_strDocStr`(**ドキュメント文字列**: ルートDoc内でこのサブDocが編集する部分を特定する文字列)を持つ。`OnOpenDocument(lpszPathName)` の引数はファイルパスではなく DocStr として使われる        |
+| `CHidemdiMainfrm`                        | `CMDIFrameWnd`           | メインフレーム基底。サブViewを開くのはメインフレームの責務                                                                                                                                                 |
+| `CDropTargetDoctmpl`                     | -                        | ファイルのドラッグ&ドロップ受付                                                                                                                                                                            |
 
 `LHINT_SUBVIEW_TO_ROOTDOC = -1`(`CHidemdiRootDoctmpl.h`): `OnUpdate` の `lHint` にこれが渡ると「編集中データをルートDocへ反映せよ」の意味。各ビューの `OnUpdate` は冒頭でこれを判定して早期リターンする(例: `ViewJikokuhyou/CJikokuhyouView.cpp`)。
 
@@ -52,20 +52,20 @@
 
 - `InitInstance()` でルートテンプレート `CDiagramEditDoctmpl`(`IDR_DIATYPE`, `RUNTIME_CLASS(CDiagramEditDoc)`)を登録後、**12種のサブDoc/Viewテンプレート**を `CHidemdiDoctmplDocstrAlone` で登録し、メンバに保持:
 
-| メンバ | Doc / View クラス | 画面 |
-|---|---|---|
-| `m_pdoctmplEki` | `CEkiDoc` / `CEkiView` | 駅 |
-| `m_pdoctmplResssyasyubetsu` | `CRessyasyubetsuDoc` / `CRessyasyubetsuView` | 列車種別 |
-| `m_pdoctmplJikokuhyou` | `CJikokuhyouDoc` / `CJikokuhyouView` | 時刻表(下り/上り/カスタム) |
-| `m_pdoctmplDiagram` | `CDedDiagramDoc` / `CDedDiagramView` | ダイヤグラム |
-| `m_pdoctmplComment` | `CDedCommentDoc` / `CDedCommentView` | コメント |
-| `m_pdoctmplOperationTable` | `COperationTableDoc` / `COperationTableView` | 運用表 |
-| `m_pdoctmplAllOperationTable` | `CAllOperationTableDoc` / `CAllOperationTableView` | 運用一覧表 |
-| `m_pdoctmplAllOperationTable2` | `CDedAllOperationTable2Doc` / `CDedAllOperationTable2View` | 運用一覧図 |
-| `m_pdoctmplEkiJikokuhyou` | `CEkiJikokuhyouDoc` / `CEkiJikokuhyouView` | 駅時刻表 |
-| `m_pdoctmplEkiJikokuhyouList` | `CEkiJikokuhyouListDoc` / `CEkiJikokuhyouListView` | 駅時刻表一覧 |
-| `m_pdoctmplInOutLinkCodeList` | `CInOutLinkCodeListDoc` / `CInOutLinkCodeListView` | 入出区連携コード一覧 |
-| `m_pdoctmplCrossingCheck` | `CCrossingCheckDoc` / `CCrossingCheckView` | 交差支障チェック |
+| メンバ                         | Doc / View クラス                                          | 画面                       |
+| ------------------------------ | ---------------------------------------------------------- | -------------------------- |
+| `m_pdoctmplEki`                | `CEkiDoc` / `CEkiView`                                     | 駅                         |
+| `m_pdoctmplResssyasyubetsu`    | `CRessyasyubetsuDoc` / `CRessyasyubetsuView`               | 列車種別                   |
+| `m_pdoctmplJikokuhyou`         | `CJikokuhyouDoc` / `CJikokuhyouView`                       | 時刻表(下り/上り/カスタム) |
+| `m_pdoctmplDiagram`            | `CDedDiagramDoc` / `CDedDiagramView`                       | ダイヤグラム               |
+| `m_pdoctmplComment`            | `CDedCommentDoc` / `CDedCommentView`                       | コメント                   |
+| `m_pdoctmplOperationTable`     | `COperationTableDoc` / `COperationTableView`               | 運用表                     |
+| `m_pdoctmplAllOperationTable`  | `CAllOperationTableDoc` / `CAllOperationTableView`         | 運用一覧表                 |
+| `m_pdoctmplAllOperationTable2` | `CDedAllOperationTable2Doc` / `CDedAllOperationTable2View` | 運用一覧図                 |
+| `m_pdoctmplEkiJikokuhyou`      | `CEkiJikokuhyouDoc` / `CEkiJikokuhyouView`                 | 駅時刻表                   |
+| `m_pdoctmplEkiJikokuhyouList`  | `CEkiJikokuhyouListDoc` / `CEkiJikokuhyouListView`         | 駅時刻表一覧               |
+| `m_pdoctmplInOutLinkCodeList`  | `CInOutLinkCodeListDoc` / `CInOutLinkCodeListView`         | 入出区連携コード一覧       |
+| `m_pdoctmplCrossingCheck`      | `CCrossingCheckDoc` / `CCrossingCheckView`                 | 交差支障チェック           |
 
 フレームクラスはすべて素の `CMDIChildWnd`。
 
@@ -75,7 +75,7 @@
 - 設定永続化: `.ini`(PrivateProfile)を `%LOCALAPPDATA%\OuDiaSecondV2\OuDiaSecondV2.ini` に置く(`m_pszProfileName` 差し替え。`makeLocalAppdataFilename()` が LocalAppData 配下に `\OuDiaSecondV2\` を連結。LOCALAPPDATA 取得失敗時は `GetTempPath` へフォールバック)。ログは同フォルダの `OuDiaSecond.log`(`logmsg_setFilename`)。MRU は `LoadStdProfileSettings()`。
   `writeCWndDiagramViewProp()/readCWndDiagramViewProp()`、`writeCWndJikokuhyouViewProp()/read...` が各ビューの表示設定(ズーム率 `DcdPerDgrX/Y`、縦罫モード `DiagramVlineMode`、列車番号/列車名表示、秒表示 `Jikokuhyou_DisplaySecondEkiJikoku`、コロン表示、基準運転時分機能等)を `[AppProp]` セクションに読み書きする。
 - CSVコンバータのファクトリ: `createCconvJikokuhyouCsv()` / `createCconvJikokuhyouCustomizeCsv()` / `createCconvOperationTableCsv()`。
-- ファイルダイアログ用フィルタ: `getCFileDialogFilterOpen()`(「OuDiaSecond ﾌｧｲﾙ (*.oud2;*.oud)」の結合1エントリ+全ファイル)、`getCFileDialogFilterSave()`(OuDiaSecond(*.oud2)+OuDia(*.oud, `IDS_OriginalOuDiaFilter`)+全ファイル。保存ダイアログでも `.oud` を選択できる)、`getCFileDialogFilterCsv()`。
+- ファイルダイアログ用フィルタ: `getCFileDialogFilterOpen()`(「OuDiaSecond ﾌｧｲﾙ (_.oud2;_.oud)」の結合1エントリ+全ファイル)、`getCFileDialogFilterSave()`(OuDiaSecond(_.oud2)+OuDia(_.oud, `IDS_OriginalOuDiaFilter`)+全ファイル。保存ダイアログでも `.oud` を選択できる)、`getCFileDialogFilterCsv()`。
 
 **`CMainFrame`**(`CMainFrame.h/.cpp`、基底 `CHidemdiMainfrm`):
 
@@ -125,17 +125,17 @@ virtual Ou<CRfEditCmd> createUndoCmd() = 0;
 
 ### 4.2 具象コマンド(`DedRosenFileData/EditCmd/`)
 
-| クラス | 対象 |
-|---|---|
-| `CRfEditCmd_Ressya` | 列車の追加・置換・削除(ダイヤIndex+方向+列車Index範囲) |
-| `CRfEditCmd_RessyaSwap` | 列車の入れ替え |
-| `CRfEditCmd_Eki` | 駅 |
-| `CRfEditCmd_Ressyasyubetsu` / `_RessyasyubetsuSwap` | 列車種別 |
-| `CRfEditCmd_Dia` / `_DiaProp` | ダイヤの追加削除 / ダイヤのプロパティ |
-| `CRfEditCmd_Rosen` | 路線プロパティ |
-| `CRfEditCmd_Comment` | コメント |
-| `CRfEditCmd_Operation` | 運用 |
-| `CRfEditCmd_DedRosenFileDataProp` / `_RosenFileData` | ファイル全体のプロパティ/全置換 |
+| クラス                                               | 対象                                                   |
+| ---------------------------------------------------- | ------------------------------------------------------ |
+| `CRfEditCmd_Ressya`                                  | 列車の追加・置換・削除(ダイヤIndex+方向+列車Index範囲) |
+| `CRfEditCmd_RessyaSwap`                              | 列車の入れ替え                                         |
+| `CRfEditCmd_Eki`                                     | 駅                                                     |
+| `CRfEditCmd_Ressyasyubetsu` / `_RessyasyubetsuSwap`  | 列車種別                                               |
+| `CRfEditCmd_Dia` / `_DiaProp`                        | ダイヤの追加削除 / ダイヤのプロパティ                  |
+| `CRfEditCmd_Rosen`                                   | 路線プロパティ                                         |
+| `CRfEditCmd_Comment`                                 | コメント                                               |
+| `CRfEditCmd_Operation`                               | 運用                                                   |
+| `CRfEditCmd_DedRosenFileDataProp` / `_RosenFileData` | ファイル全体のプロパティ/全置換                        |
 
 `CRfEditCmd_Ressya` の構造(`CRfEditCmd_Ressya.h`)が典型例: 属性に `m_iDiaIndex`, `m_ERessyahoukou`, `m_iIndexDst`(置換先Index, INT_MAX=末尾), `m_iSizeDst`(削除数), `m_CentDedRessyaContSrc`(追加する列車群)、内部に `m_pCentDedRessyaContOld`(execute で削除した旧列車)。置換=削除+追加で表現。`CaMuiSelect<CentDedRessya> m_CaMuiSelect` はコンテナの部分選択アダプタで、**ビューでの複数選択(非連続含む)をコマンド内の選択状態に写す**(`CWndJikokuhyou::createCmd()` が生成元)。`m_bWaitOperationConnect` は連続入力時に運用探索を遅延させる最適化フラグ。
 
@@ -215,15 +215,15 @@ redo():
 
 実装バリエーション:
 
-| クラス | 用途 |
-|---|---|
-| `CDcdTargetOnPaint` | WM_PAINT(BeginPaint/EndPaint) |
-| `CDcdTargetGetDC` | GetDC による随時描画 |
-| `CDcdTargetCompatibleBitmap` | オフスクリーンビットマップ(ダブルバッファ) |
-| `CDcdTargetPrinter` | プリンタDC |
-| `CDcdTargetMfcPrintInfo`(`DcDrawMfc/`) | MFC の `OnPrint(CDC*, CPrintInfo*)` から生成。印刷/印刷プレビュー両対応。描画領域=`CPrintInfo::m_rectDraw`、1論理単位=プリンタ1ドット |
-| `CaDcdTargetItemPosition` | 既存ターゲットの部分領域(余白適用等)へのアダプタ |
-| `CaDcdTargetClip` | クリップ領域アダプタ |
+| クラス                                    | 用途                                                                                                                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CDcdTargetOnPaint`                       | WM_PAINT(BeginPaint/EndPaint)                                                                                                                                             |
+| `CDcdTargetGetDC`                         | GetDC による随時描画                                                                                                                                                      |
+| `CDcdTargetCompatibleBitmap`              | オフスクリーンビットマップ(ダブルバッファ)                                                                                                                                |
+| `CDcdTargetPrinter`                       | プリンタDC                                                                                                                                                                |
+| `CDcdTargetMfcPrintInfo`(`DcDrawMfc/`)    | MFC の `OnPrint(CDC*, CPrintInfo*)` から生成。印刷/印刷プレビュー両対応。描画領域=`CPrintInfo::m_rectDraw`、1論理単位=プリンタ1ドット                                     |
+| `CaDcdTargetItemPosition`                 | 既存ターゲットの部分領域(余白適用等)へのアダプタ                                                                                                                          |
+| `CaDcdTargetClip`                         | クリップ領域アダプタ                                                                                                                                                      |
 | `CaDcdTargetZoomDisplay`(`DcDraw/Print/`) | 印刷ターゲットに**ディスプレイ相当の論理座標**を設定するアダプタ(ディスプレイDPI:プリンタDPI比でマッピングモード変更)。これにより画面用の描画コードがそのまま印刷に使える |
 
 `CGdiCache`(`CGdiCache.h`): プロパティ(CdFontProp等)→GDIハンドルの対照表キャッシュ。ハンドル破棄責務を持つ。`CGdiHFontHolder/HPenHolder/HBrushHolder` は参照カウント付きホルダ。
@@ -253,8 +253,8 @@ virtual bool getItemSize( IfDcdTarget*, CdDcdSizeXy* ) = 0;             // 自�
   - `CSelect`/`CSelectCell`(選択状態)
   - `CBoxSelect`(矩形選択操作)/`CRandomSelect`(Ctrl+クリックの個別選択)
   - `CPropStack`
-  更新は `CWndDcdGrid::update()` が各集約オブジェクトへ `update_adjustProp()`/`update_updateScreen()` を委譲(例: フォーカス移動→自動スクロール)。部分再描画 API `InvalidateGrid()`/`InvalidateCell()`。
-  時刻表・駅・運用表など**グリッド系ビューはすべてこのウインドウの派生**(`CWndJikokuhyou`, `CWndDcdGridOperationTable` 等)。
+    更新は `CWndDcdGrid::update()` が各集約オブジェクトへ `update_adjustProp()`/`update_updateScreen()` を委譲(例: フォーカス移動→自動スクロール)。部分再描画 API `InvalidateGrid()`/`InvalidateCell()`。
+    時刻表・駅・運用表など**グリッド系ビューはすべてこのウインドウの派生**(`CWndJikokuhyou`, `CWndDcdGridOperationTable` 等)。
 
 ### 6.6 WinUtil
 
@@ -299,13 +299,13 @@ virtual bool getItemSize( IfDcdTarget*, CdDcdSizeXy* ) = 0;             // 自�
 
 ## 9. CSV変換機能
 
-| クラス | 場所 | 内容 |
-|---|---|---|
-| `CconvJikokuhyouCsv` | `ConvJikokuhyouCsv/CconvJikokuhyouCsv.h` | 時刻表形式CSVへの**エクスポート(encode)専用**変換。実装メソッドは `encode` / `encode_AddRessya` / `encode_AddRessyaNull` / `encode_Ekijikoku` / `encode_BeforeOperation` / `encode_AfterOperation` のみで、クラスコメントには「取り込むこともできます」とあるが decode(インポート)系メソッドは未実装。アプリ内の利用箇所もエクスポートのみ(`ViewJikokuhyou/CDlgOuJikokuhyouCsvExport.cpp`)。外部時刻表の取り込みは別機構 `CDlgDigitalJikokuhyouImport`(`CMainFrame.cpp` の `OnFileDigitalJikokuhyoufileImport_Process`)が担う。「下り」「上り」「列車番号」「列車種別」「列車名」「号数」「備考」「着」「発」「レ」「‖」「番線」「運用番号」「始発駅作業」「前作業」「後作業」等の固定見出し文字列をメンバに持つ。駅時刻の文字列化 `encode_Ekijikoku()` は駅扱(停車/通過/経由なし)+秒表示+コロン+2400表記+秒丸めを引数で制御。通過で時刻を持つ場合は末尾に "?" を付ける |
-| `CconvJikokuhyouCustomizeCsv` | 同ディレクトリ | カスタマイズ時刻表(表示列仕様 `CdYColSpecCont` に基づく)のCSV出力 |
-| `CconvOperationTableCsv` | `ViewOperationTable/CconvOperationTableCsv.h` | 運用表のCSV変換 |
-| `CconvEkiJikokuhyouCsv` | `ViewEkiJikokuhyou/CconvEkiJikokuhyouCsv.h` | 駅時刻表のCSV変換 |
-| `CconvAllOperationTableCsv` | `ViewAllOperationTable/CconvAllOperationTableCsv.h` | 運用一覧表のCSV変換 |
+| クラス                        | 場所                                                | 内容                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ----------------------------- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `CconvJikokuhyouCsv`          | `ConvJikokuhyouCsv/CconvJikokuhyouCsv.h`            | 時刻表形式CSVへの**エクスポート(encode)専用**変換。実装メソッドは `encode` / `encode_AddRessya` / `encode_AddRessyaNull` / `encode_Ekijikoku` / `encode_BeforeOperation` / `encode_AfterOperation` のみで、クラスコメントには「取り込むこともできます」とあるが decode(インポート)系メソッドは未実装。アプリ内の利用箇所もエクスポートのみ(`ViewJikokuhyou/CDlgOuJikokuhyouCsvExport.cpp`)。外部時刻表の取り込みは別機構 `CDlgDigitalJikokuhyouImport`(`CMainFrame.cpp` の `OnFileDigitalJikokuhyoufileImport_Process`)が担う。「下り」「上り」「列車番号」「列車種別」「列車名」「号数」「備考」「着」「発」「レ」「‖」「番線」「運用番号」「始発駅作業」「前作業」「後作業」等の固定見出し文字列をメンバに持つ。駅時刻の文字列化 `encode_Ekijikoku()` は駅扱(停車/通過/経由なし)+秒表示+コロン+2400表記+秒丸めを引数で制御。通過で時刻を持つ場合は末尾に "?" を付ける |
+| `CconvJikokuhyouCustomizeCsv` | 同ディレクトリ                                      | カスタマイズ時刻表(表示列仕様 `CdYColSpecCont` に基づく)のCSV出力                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `CconvOperationTableCsv`      | `ViewOperationTable/CconvOperationTableCsv.h`       | 運用表のCSV変換                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `CconvEkiJikokuhyouCsv`       | `ViewEkiJikokuhyou/CconvEkiJikokuhyouCsv.h`         | 駅時刻表のCSV変換                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `CconvAllOperationTableCsv`   | `ViewAllOperationTable/CconvAllOperationTableCsv.h` | 運用一覧表のCSV変換                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 CSV基盤は `libs/OuLib/Str/CsvDocument/CdCsvDocument`。生成は `CDiagramEditApp::createCconvJikokuhyouCsv()` 等のファクトリ経由。
 
@@ -342,20 +342,20 @@ CSV基盤は `libs/OuLib/Str/CsvDocument/CdCsvDocument`。生成は `CDiagramEdi
 
 ### 11.2 Windows/MFC 依存で置き換えが必要なもの
 
-| 現行 | Web での置き換え候補 |
-|---|---|
-| MDI 子ウインドウ(CMDIChildWnd)+Hidemdi | タブ/分割ペイン/フローティングパネル(golden-layout 等)。「同一 DocStr は単一インスタンス」規則(`CHidemdiDoctmplDocstrAlone`)は維持 |
-| DocTemplate/RUNTIME_CLASS による動的生成 | ビュー種別→コンポーネントのレジストリ(単純な map) |
-| `OnCmdMsg` のコマンドルーティング連鎖(View→Wnd→Doc→App) | コマンドディスパッチャ+アクティブビューコンテキスト。メニュー/ショートカットの有効判定(OnUpdateXxx)も一元化 |
-| GDI (HDC/HFONT/HPEN/HBRUSH), CGdiCache | Canvas 2D API。`CdFontProp/CdPenProp/CdBrushProp` は ctx.font/strokeStyle 等へ直接マップでき、ハンドルキャッシュは不要 |
-| `IfDcdTarget` 実装群(OnPaint/CompatibleBitmap/Printer) | 画面=Canvas、ダブルバッファ=OffscreenCanvas(またはブラウザ任せ)、印刷=印刷用レイアウト or PDF 生成。`getDrawableZone` のダーティ矩形最適化は要不要を再評価 |
-| `CWndDcdGrid`(グリッド+フォーカス+選択+スクロール) | 仮想化グリッドを Canvas で自前描画(現行同様)か、DOM グリッド。フォーカス/矩形選択/個別選択/キーボードナビは仕様として移植 |
-| MFC 印刷パイプライン+`CaDcdTargetZoomDisplay` | CSS print / PDF。「画面と同じ描画コードで印刷する」思想は、Canvas→PDF(または print 用再レンダリング)で再現 |
-| クリップボード独自フォーマット(RegisterClipboardFormat) | `navigator.clipboard` + カスタム MIME(または JSON テキスト)。アプリ内コピー&ペーストはストア内バッファでも可 |
-| `.ini`(PrivateProfile)によるビュー表示設定・MRU | localStorage / IndexedDB |
-| `HtmlHelp()`(.chm) | HTML マニュアルへのリンク(原本 `DiagramEdit/manual/oudia_manual/` が HTML なので流用可) |
-| `IfProgress`+`CDlgProgress` | 非同期処理+進捗UI(中断フラグの仕様は同じ) |
-| logmsg のファイルログ | console/構造化ログ |
+| 現行                                                    | Web での置き換え候補                                                                                                                                       |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MDI 子ウインドウ(CMDIChildWnd)+Hidemdi                  | タブ/分割ペイン/フローティングパネル(golden-layout 等)。「同一 DocStr は単一インスタンス」規則(`CHidemdiDoctmplDocstrAlone`)は維持                         |
+| DocTemplate/RUNTIME_CLASS による動的生成                | ビュー種別→コンポーネントのレジストリ(単純な map)                                                                                                          |
+| `OnCmdMsg` のコマンドルーティング連鎖(View→Wnd→Doc→App) | コマンドディスパッチャ+アクティブビューコンテキスト。メニュー/ショートカットの有効判定(OnUpdateXxx)も一元化                                                |
+| GDI (HDC/HFONT/HPEN/HBRUSH), CGdiCache                  | Canvas 2D API。`CdFontProp/CdPenProp/CdBrushProp` は ctx.font/strokeStyle 等へ直接マップでき、ハンドルキャッシュは不要                                     |
+| `IfDcdTarget` 実装群(OnPaint/CompatibleBitmap/Printer)  | 画面=Canvas、ダブルバッファ=OffscreenCanvas(またはブラウザ任せ)、印刷=印刷用レイアウト or PDF 生成。`getDrawableZone` のダーティ矩形最適化は要不要を再評価 |
+| `CWndDcdGrid`(グリッド+フォーカス+選択+スクロール)      | 仮想化グリッドを Canvas で自前描画(現行同様)か、DOM グリッド。フォーカス/矩形選択/個別選択/キーボードナビは仕様として移植                                  |
+| MFC 印刷パイプライン+`CaDcdTargetZoomDisplay`           | CSS print / PDF。「画面と同じ描画コードで印刷する」思想は、Canvas→PDF(または print 用再レンダリング)で再現                                                 |
+| クリップボード独自フォーマット(RegisterClipboardFormat) | `navigator.clipboard` + カスタム MIME(または JSON テキスト)。アプリ内コピー&ペーストはストア内バッファでも可                                               |
+| `.ini`(PrivateProfile)によるビュー表示設定・MRU         | localStorage / IndexedDB                                                                                                                                   |
+| `HtmlHelp()`(.chm)                                      | HTML マニュアルへのリンク(原本 `DiagramEdit/manual/oudia_manual/` が HTML なので流用可)                                                                    |
+| `IfProgress`+`CDlgProgress`                             | 非同期処理+進捗UI(中断フラグの仕様は同じ)                                                                                                                  |
+| logmsg のファイルログ                                   | console/構造化ログ                                                                                                                                         |
 
 ### 11.3 注意すべき仕様・難所
 
