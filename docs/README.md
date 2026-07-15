@@ -5,6 +5,8 @@ OuDiaSecond Web 再実装プロジェクトのドキュメント一覧。
 - **analysis/** — 原典(OuDiaSecond ver2.06.23、`origin/` 配下)のソースコード・マニュアルの分析。仕様の一次情報がソースしかない領域の「仕様書」を兼ねる。
 - **design/** — Web 版の設計。分析結果を根拠に、技術選定・データモデル・各機能の実装方式を決定する。
 - **glossary.md** — 日本語用語 / 原典識別子 / Web 版識別子の対応表。
+- **開発プロセス**(規約・テンプレート) — tasking.md、definition-of-done.md、coding-standards.md ほか(下記「開発プロセス」表)。
+- **tasks/** — 個別タスクドキュメント。**decisions/** — アーキテクチャ決定記録(ADR)。**pr/** — PR テンプレート。
 
 ## 読む順序(初めて読む人向け)
 
@@ -39,6 +41,20 @@ OuDiaSecond Web 再実装プロジェクトのドキュメント一覧。
 | [06_view-others.md](analysis/06_view-others.md) | その他ビュー(路線ツリー・駅・種別・コメント・入出区連携コード一覧)と各プロパティダイアログ |
 | [07_view-operation.md](analysis/07_view-operation.md) | 運用機能・交差支障チェック。CDedOperationConnecter(運用探索 1 万行)のアルゴリズム、運用表/一覧/一覧図/箱ダイヤ |
 | [08_manual-features.md](analysis/08_manual-features.md) | マニュアルからの機能インベントリ。本家 OuDia コアと OuDiaSecond 拡張の 2 層整理、Tier 重要度分類、用語対応表 |
+
+## 開発プロセス(規約・テンプレート)
+
+| ドキュメント | 内容 |
+|---|---|
+| [dev-setup.md](dev-setup.md) | 開発環境セットアップ。必要ツール、リポジトリ構成、日常コマンド、`origin/`(CP932)の扱い |
+| [coding-standards.md](coding-standards.md) | コーディング規約。TypeScript strict 設定、ESLint/Prettier、層の責務と依存方向、命名(glossary 準拠)、SPDX ヘッダ |
+| [testing-guidelines.md](testing-guidelines.md) | テスト規約。黄金テスト(バイト一致)の運用ルール、プロパティ/スナップショット/E2E の書き方、CI ゲート一覧 |
+| [error-handling.md](error-handling.md) | エラー処理・ロギング規約。エラー分類と対応、Error Boundary 粒度、通知 UI の使い分け、データ保全の不変条件 |
+| [tasking.md](tasking.md) | タスク管理ガイド。タスクの種類・ライフサイクル、ブランチ/コミット/PR 規約、AI 協働のルール |
+| [definition-of-done.md](definition-of-done.md) | 完了の定義。全タスク共通の基準とタスクタイプ別の追加基準、品質ゲート |
+| [tasks/](tasks/README.md) | タスクドキュメント一覧([テンプレート](tasks/0000-template.md)) |
+| [decisions/](decisions/README.md) | アーキテクチャ決定記録(ADR)一覧([テンプレート](decisions/adr-template.md)) |
+| [pr/0000-template.md](pr/0000-template.md) | プルリクエストテンプレート |
 
 ## その他
 
