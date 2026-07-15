@@ -1,0 +1,14 @@
+{
+  "name": "@oudia/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "React シェル UI・Zustand ストア・タブ管理・ファイルアクセス・PWA",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "dependencies": {
+    "@oudia/render": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc --build"
+  }
+}

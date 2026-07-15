@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "files": [],
+  "references": [
+    { "path": "./packages/format" },
+    { "path": "./packages/domain" },
+    { "path": "./packages/derive" },
+    { "path": "./packages/render" },
+    { "path": "./apps/web" }
+  ]
+}

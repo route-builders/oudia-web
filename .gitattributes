@@ -1,0 +1,8 @@
+# フィクスチャはバイト単位で厳密に管理する。
+# 黄金テスト(oud2 バイト一致)が Git の改行変換で壊れるのを防ぐため、
+# バイナリ扱い(-text)にして CRLF/LF 変換・自動正規化を一切かけない。
+# 参照: docs/dev-setup.md §8、docs/design/04_file-io.md §5
+**/fixtures/** -text -diff
+
+# 原典ソース(読み取り専用)は上流との差分比較のため一切変換しない。
+origin/** -text
