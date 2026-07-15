@@ -54,6 +54,12 @@ export {
 } from './value/operation.js';
 export type { OperationKeyStore, OperationEntry } from './value/operation.js';
 
+// ---- 現行世代リーダー(ノードツリー → RosenFileData)----
+export { readRosenFile, ReaderErrorCode } from './reader/index.js';
+export type { ReadRosenFileResult } from './reader/index.js';
+export { fileTypeGroup, ReadContext, ReadError } from './reader/index.js';
+export type { FileTypeGroup } from './reader/index.js';
+
 /** bytes → ノードツリー(decode + parse)。デコード情報も返す。 */
 export type ParseNodeTreeResult =
   | {
