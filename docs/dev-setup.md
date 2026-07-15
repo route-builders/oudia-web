@@ -6,12 +6,12 @@
 
 ## 1. 必要なツール
 
-| ツール | バージョン | 備考 |
-|---|---|---|
-| **Node.js** | 22 LTS | `.node-version` / `engines` で固定 |
-| **pnpm** | 9 系 | Corepack で有効化: `corepack enable pnpm` |
-| **Git** | 2.40+ | |
-| ブラウザ | Chromium 系(開発の主対象)、Firefox、Safari | 対応ブラウザ表は [design/02_architecture.md](./design/02_architecture.md) §8 |
+| ツール      | バージョン                                 | 備考                                                                         |
+| ----------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
+| **Node.js** | 22 LTS                                     | `.node-version` / `engines` で固定                                           |
+| **pnpm**    | 9 系                                       | Corepack で有効化: `corepack enable pnpm`                                    |
+| **Git**     | 2.40+                                      |                                                                              |
+| ブラウザ    | Chromium 系(開発の主対象)、Firefox、Safari | 対応ブラウザ表は [design/02_architecture.md](./design/02_architecture.md) §8 |
 
 Windows 版 OuDiaSecond 2.06.23(実機または VM)は、フィクスチャ・期待値の生成に必要になる(M0 以降。[design/08_test-fixtures.md](./design/08_test-fixtures.md))。日常の開発には不要。
 
@@ -44,17 +44,17 @@ oudia-second-web/
 
 ## 4. 日常の開発コマンド
 
-| コマンド | 内容 |
-|---|---|
-| `pnpm dev` | 開発サーバ起動(apps/web、Vite) |
-| `pnpm build` | 全パッケージのビルド |
-| `pnpm typecheck` | TypeScript 型検査(全 workspace) |
-| `pnpm lint` | ESLint + dependency-cruiser(依存方向チェック) |
-| `pnpm format` / `pnpm format:check` | Prettier 適用 / 検査 |
-| `pnpm test` | Vitest 全件(ユニット + 黄金テスト + プロパティテスト) |
-| `pnpm test --filter @oudia/format` | パッケージ単位のテスト |
-| `pnpm bench` | ベンチマーク(vitest bench) |
-| `pnpm e2e` | Playwright E2E(要 `pnpm exec playwright install`) |
+| コマンド                            | 内容                                                  |
+| ----------------------------------- | ----------------------------------------------------- |
+| `pnpm dev`                          | 開発サーバ起動(apps/web、Vite)                        |
+| `pnpm build`                        | 全パッケージのビルド                                  |
+| `pnpm typecheck`                    | TypeScript 型検査(全 workspace)                       |
+| `pnpm lint`                         | ESLint + dependency-cruiser(依存方向チェック)         |
+| `pnpm format` / `pnpm format:check` | Prettier 適用 / 検査                                  |
+| `pnpm test`                         | Vitest 全件(ユニット + 黄金テスト + プロパティテスト) |
+| `pnpm test --filter @oudia/format`  | パッケージ単位のテスト                                |
+| `pnpm bench`                        | ベンチマーク(vitest bench)                            |
+| `pnpm e2e`                          | Playwright E2E(要 `pnpm exec playwright install`)     |
 
 コミット前に最低限 `pnpm typecheck && pnpm lint && pnpm test` を通すこと([definition-of-done.md](./definition-of-done.md))。
 
@@ -88,14 +88,14 @@ oudia-second-web/
 
 ## 8. トラブルシューティング
 
-| 症状 | 対処 |
-|---|---|
-| `pnpm install` が engine エラー | Node のバージョンを確認(22 LTS)。`corepack enable pnpm` を再実行 |
-| 黄金テストが手元でだけ fail | Git の改行変換を疑う。フィクスチャは `.gitattributes` で `-text`(バイナリ扱い)にしてあるか確認 |
-| `origin/` のファイルが文字化けして見える | 正常(CP932)。§5 の iconv を使う |
+| 症状                                     | 対処                                                                                           |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm install` が engine エラー          | Node のバージョンを確認(22 LTS)。`corepack enable pnpm` を再実行                               |
+| 黄金テストが手元でだけ fail              | Git の改行変換を疑う。フィクスチャは `.gitattributes` で `-text`(バイナリ扱い)にしてあるか確認 |
+| `origin/` のファイルが文字化けして見える | 正常(CP932)。§5 の iconv を使う                                                                |
 
 ## 変更履歴
 
-| 日付 | 変更内容 |
-|------|---------|
+| 日付       | 変更内容                                |
+| ---------- | --------------------------------------- |
 | 2026-07-15 | 初版作成(M0 で整備する構成の規約として) |

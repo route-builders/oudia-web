@@ -10,19 +10,20 @@
 
 ### 1.1 対応一覧
 
-| # | 形式 | FileType | 読 | 書 | 実装 | 対応リリース |
-|---|---|---|---|---|---|---|
-| 1 | .oud2 現行 | OuDiaSecond.1.10〜1.17 | ○ | ○(常に 1.17 で書く) | 現行リーダー + 1.17 ライター | 読: v0.1 / 書: v0.2 |
-| 2 | .oud2 旧世代 | OuDiaSecond.1.06〜1.09 | ○ | ―(読込後 1.17 で保存) | S09 リーダー | v0.1 |
-| 3 | .oud2 旧世代 | OuDiaSecond.1.01〜1.05 | ○ | ― | S05 リーダー | v0.1 |
-| 4 | .oud2 初版 | OuDiaSecond.1.00 | ○ | ― | S00 リーダー | v0.1 |
-| 5 | .oud(OuDia) | OuDia.1.02 | ○ | ○(機能喪失警告付き) | S00 リーダー / oud ライター | 読: v0.1 / 書: v0.2 |
-| 6 | .oud2backup(自動バックアップ) | 中身は #1 と同一 | ○ | ○ | #1 と完全共用。保存先のみ OPFS(§7.6) | v0.2 |
-| 7 | 時刻表 CSV | OuDiaSecond.JikokuhyouCsv.* | ○ | ○ | CSV コンバータ | 読: v0.5 / 書: v0.2 |
-| 8 | カスタマイズ時刻表 CSV | 同上(Customize) | ― | ○ | 同上 | v0.6 |
-| 9 | 駅時刻表 CSV | ― | ― | ○ | 同上(原典 `ViewEkiJikokuhyou/CconvEkiJikokuhyouCsv`) | v0.2 |
-| 10 | 運用表 CSV・運用一覧表 CSV | ― | ― | ○ | 同上(原典 `ViewOperationTable/CconvOperationTableCsv`・`ViewAllOperationTable/CconvAllOperationTableCsv`) | v0.7 |
-| 11 | 外部時刻表インポート(汎用テキスト / JR おでかけネット / JR 北海道) | ― | × | × | **対象外**(CconvCDedRosenFileDataDigital/2/3。原典でも .oud2 とは独立機能。将来検討) | ― |
+| #   | 形式                                                               | FileType                    | 読  | 書                    | 実装                                                                                                      | 対応リリース        |
+| --- | ------------------------------------------------------------------ | --------------------------- | --- | --------------------- | --------------------------------------------------------------------------------------------------------- | ------------------- |
+| 1   | .oud2 現行                                                         | OuDiaSecond.1.10〜1.17      | ○   | ○(常に 1.17 で書く)   | 現行リーダー + 1.17 ライター                                                                              | 読: v0.1 / 書: v0.2 |
+| 2   | .oud2 旧世代                                                       | OuDiaSecond.1.06〜1.09      | ○   | ―(読込後 1.17 で保存) | S09 リーダー                                                                                              | v0.1                |
+| 3   | .oud2 旧世代                                                       | OuDiaSecond.1.01〜1.05      | ○   | ―                     | S05 リーダー                                                                                              | v0.1                |
+| 4   | .oud2 初版                                                         | OuDiaSecond.1.00            | ○   | ―                     | S00 リーダー                                                                                              | v0.1                |
+| 5   | .oud(OuDia)                                                        | OuDia.1.02                  | ○   | ○(機能喪失警告付き)   | S00 リーダー / oud ライター                                                                               | 読: v0.1 / 書: v0.2 |
+| 6   | .oud2backup(自動バックアップ)                                      | 中身は #1 と同一            | ○   | ○                     | #1 と完全共用。保存先のみ OPFS(§7.6)                                                                      | v0.2                |
+| 7   | 時刻表 CSV                                                         | OuDiaSecond.JikokuhyouCsv.* | ○   | ○                     | CSV コンバータ                                                                                            | 読: v0.5 / 書: v0.2 |
+| 8   | カスタマイズ時刻表 CSV                                             | 同上(Customize)             | ―   | ○                     | 同上                                                                                                      | v0.6                |
+| 9   | 駅時刻表 CSV                                                       | ―                           | ―   | ○                     | 同上(原典 `ViewEkiJikokuhyou/CconvEkiJikokuhyouCsv`)                                                      | v0.2                |
+| 10  | 運用表 CSV・運用一覧表 CSV                                         | ―                           | ―   | ○                     | 同上(原典 `ViewOperationTable/CconvOperationTableCsv`・`ViewAllOperationTable/CconvAllOperationTableCsv`) | v0.7                |
+| 11  | 外部時刻表インポート(汎用テキスト / JR おでかけネット / JR 北海道) | ―                           | ×   | ×                     | **対象外**(CconvCDedRosenFileDataDigital/2/3。原典でも .oud2 とは独立機能。将来検討)                      | ―                   |
+
 ### 1.2 対応方針(確定事項)
 
 1. **読込の FileType 判定は原典 `isEncodeAbleFormat` と同一の 5 グループ分岐**とする(分析 §3)。グループ外は原典同様エラー(-1001「FileType が正しくありません」)とし、`FileTypeAppComment` があればエラーダイアログに「より新しいアプリで作成されたファイル」の案内を出す(原典の用途を踏襲)。
@@ -84,11 +85,17 @@ packages/format/src/
 export function readRosenFile(bytes: Uint8Array): ReadResult;
 
 export type ReadResult =
-  | { ok: true; data: RosenFileData; warnings: ReadWarning[];
-      sourceInfo: { fileType: string; encoding: 'utf-8' | 'shift_jis';
-                    appComment: string | null } }
-  | { ok: false; code: number;            // 原典の負コード体系(§3.7)
-      details: ErrorDetail[] };           // COuErrorInfoContainer 相当
+  | {
+      ok: true;
+      data: RosenFileData;
+      warnings: ReadWarning[];
+      sourceInfo: { fileType: string; encoding: 'utf-8' | 'shift_jis'; appComment: string | null };
+    }
+  | {
+      ok: false;
+      code: number; // 原典の負コード体系(§3.7)
+      details: ErrorDetail[];
+    }; // COuErrorInfoContainer 相当
 
 // ---- 書出 ----
 export function writeOud2(data: RosenFileData, opts?: WriteOud2Options): Uint8Array;
@@ -100,8 +107,8 @@ export interface WriteOud2Options {
 
 export function writeOud(data: RosenFileData): { bytes: Uint8Array; loss: OudLossReport };
 export interface OudLossReport {
-  droppedFeatures: string[];      // 警告ダイアログ用(運用・番線・運休 等、原典文言を再現)
-  unmappableChars: string[];      // SJIS へ変換できず '?' に置換した文字
+  droppedFeatures: string[]; // 警告ダイアログ用(運用・番線・運休 等、原典文言を再現)
+  unmappableChars: string[]; // SJIS へ変換できず '?' に置換した文字
 }
 
 // ---- 低レベル(テスト・ツール用に公開)----
@@ -116,10 +123,10 @@ export function serializePropertiesText(root: PtDirectory): string; // CRLF 済�
 
 ### 2.4 外部依存
 
-| 依存 | 用途 | 条件 |
-|---|---|---|
+| 依存                   | 用途                                                 | 条件                                                                                           |
+| ---------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
 | encoding-japanese(MIT) | **.oud / CSV(SJIS 選択時)の Shift_JIS 書き出しのみ** | `writer/oud.ts` と `csv/` から dynamic import。読込パス・oud2 書き出しパスのバンドルに含めない |
-| (なし) | それ以外はすべて標準 API(TextDecoder / TextEncoder) | format は DOM 非依存・Node 単体実行可能を維持 |
+| (なし)                 | それ以外はすべて標準 API(TextDecoder / TextEncoder)  | format は DOM 非依存・Node 単体実行可能を維持                                                  |
 
 ---
 
@@ -152,13 +159,13 @@ export type PtNode = PtProperty | PtDirectory;
 
 export interface PtProperty {
   readonly kind: 'property';
-  readonly name: string;   // 最初の '=' より前。'=' が無い行は行全体
-  readonly value: string;  // エスケープ解除済み。'=' が無い行は ''
+  readonly name: string; // 最初の '=' より前。'=' が無い行は行全体
+  readonly value: string; // エスケープ解除済み。'=' が無い行は ''
 }
 
 export interface PtDirectory {
   readonly kind: 'directory';
-  readonly name: string;            // 末尾 '.' を除いた名前
+  readonly name: string; // 末尾 '.' を除いた名前
   readonly children: readonly PtNode[]; // 出現順を完全保存
 }
 ```
@@ -170,12 +177,12 @@ export interface PtDirectory {
 
 入力文字列を `\n` で分割し(CR は ① で除去済み)、行を上から単一パスで処理する。ディレクトリのネストはスタックで管理する。行種別の判定は原典 `decodeNodeContainer` と同一の順序・条件とする。
 
-| 優先 | 条件 | 動作 |
-|---|---|---|
-| 1 | 空行 | 読み飛ばす |
-| 2 | `.` のみの行 | 現在のディレクトリを閉じる。ルートで出現したら**文法エラー**(reason: Container Aborted / ディレクトリが途中で閉じています) |
-| 3 | `=` を含まず、末尾が `.` | ディレクトリ開始(名前 = 末尾 `.` 除去)。スタックに push |
-| 4 | それ以外 | プロパティ。最初の `=` で名前/値に分割。`=` が無ければ名前のみ・値 `''`(**エラーにしない**) |
+| 優先 | 条件                     | 動作                                                                                                                       |
+| ---- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 1    | 空行                     | 読み飛ばす                                                                                                                 |
+| 2    | `.` のみの行             | 現在のディレクトリを閉じる。ルートで出現したら**文法エラー**(reason: Container Aborted / ディレクトリが途中で閉じています) |
+| 3    | `=` を含まず、末尾が `.` | ディレクトリ開始(名前 = 末尾 `.` 除去)。スタックに push                                                                    |
+| 4    | それ以外                 | プロパティ。最初の `=` で名前/値に分割。`=` が無ければ名前のみ・値 `''`(**エラーにしない**)                                |
 
 - EOF 到達時にスタックが空でない場合、原典は**通常これを受理する**(閉じ忘れディレクトリは EOF までを子として読む。分析 §2)。文法エラー(reason: Container Is Not Closed)になるのは、ディレクトリ開始行の直後に 1 文字も残っていない場合のみで、この挙動も一致させる。
 - 文法エラーのユーザ可視コードはいずれも **-1 に集約**する。原典 `CDedRosenFileData_from_string`(DedRosenFileData/CconvCDedRosenFileData.cpp)は `CConvNodeContainer::decode` の負値(Aborted=-1 / NotClosed=-2)を `if (iResult < 0) iRv = -1` で一括して -1 に潰すため、-2 はユーザに表面化しない。内訳(Aborted / NotClosed)は `ErrorDetail.reason` で区別する(§3.7)。
@@ -193,8 +200,8 @@ export interface PtDirectory {
 ```typescript
 class NodeCursor {
   constructor(dir: PtDirectory);
-  values(name: string): readonly string[];       // 同名プロパティ全件(消費マーク付与)
-  value(name: string): string | undefined;       // 先頭 1 件
+  values(name: string): readonly string[]; // 同名プロパティ全件(消費マーク付与)
+  value(name: string): string | undefined; // 先頭 1 件
   directories(name: string): readonly PtDirectory[];
   /** 未消費ノードを「直前の消費済み兄弟」アンカー付きで列挙(§3.8) */
   unconsumed(): readonly { anchor: Anchor | null; node: PtNode }[];
@@ -219,23 +226,44 @@ export interface PropSpec<E> {
 
 ```typescript
 export const ressyasyubetsuSpecs: PropSpec<Ressyasyubetsu>[] = [
-  { key: 'Syubetsumei',
+  {
+    key: 'Syubetsumei',
     // -11 はエンティティ局所コード(分析 §5.5)。最終コードへの段階オフセットは ReadContext が加算(§3.7)
-    read: ([v], d, ctx) => { if (!v) ctx.error(-11, 'Syubetsumei が指定されていません'); d.syubetsumei = v; },
-    write: e => e.syubetsumei },                          // 常に出力
-  { key: 'Ryakusyou',
-    read: ([v], d) => { d.ryakusyou = v ?? ''; },
-    write: e => e.ryakusyou !== '' ? e.ryakusyou : undefined }, // 空なら出力しない
-  { key: 'JikokuhyouMojiColor',
-    read: ([v], d) => { d.jikokuhyouMojiColor = decodeColor(v) ?? d.jikokuhyouMojiColor; },
-    write: e => encodeColor(e.jikokuhyouMojiColor) },
+    read: ([v], d, ctx) => {
+      if (!v) ctx.error(-11, 'Syubetsumei が指定されていません');
+      d.syubetsumei = v;
+    },
+    write: (e) => e.syubetsumei,
+  }, // 常に出力
+  {
+    key: 'Ryakusyou',
+    read: ([v], d) => {
+      d.ryakusyou = v ?? '';
+    },
+    write: (e) => (e.ryakusyou !== '' ? e.ryakusyou : undefined),
+  }, // 空なら出力しない
+  {
+    key: 'JikokuhyouMojiColor',
+    read: ([v], d) => {
+      d.jikokuhyouMojiColor = decodeColor(v) ?? d.jikokuhyouMojiColor;
+    },
+    write: (e) => encodeColor(e.jikokuhyouMojiColor),
+  },
   // …(分析 §5.5 の表の行順のまま)
-  { key: 'DiagramSenIsBold',
-    read: ([v], d) => { d.diagramSenIsBold = v === '1'; },
-    write: e => e.diagramSenIsBold ? '1' : undefined },   // true のみ出力
-  { key: 'Hidden',
-    read: ([v], d) => { d.hidden = v === '1'; },
-    write: e => e.hidden ? '1' : undefined },
+  {
+    key: 'DiagramSenIsBold',
+    read: ([v], d) => {
+      d.diagramSenIsBold = v === '1';
+    },
+    write: (e) => (e.diagramSenIsBold ? '1' : undefined),
+  }, // true のみ出力
+  {
+    key: 'Hidden',
+    read: ([v], d) => {
+      d.hidden = v === '1';
+    },
+    write: (e) => (e.hidden ? '1' : undefined),
+  },
 ];
 ```
 
@@ -243,12 +271,12 @@ export const ressyasyubetsuSpecs: PropSpec<Ressyasyubetsu>[] = [
 
 出力条件のパターンは次の 4 種に整理でき、すべて `write` の戻り値 `undefined` で表現する(条件の enum 化はしない — 「Brunch 有かつ true 時のみ」のような複合条件が現に存在し、関数がもっとも単純)。
 
-| パターン | 例 |
-|---|---|
-| 常に出力 | Rosenmei、DownMain/UpMain、DiagramTrackOmit、DispProp 全キー |
-| true のときのみ `1` | OperationNumberReverse、DiagramSenIsBold、Canceled、JikokuhyouTrackDisplay* 等 |
+| パターン               | 例                                                                                          |
+| ---------------------- | ------------------------------------------------------------------------------------------- |
+| 常に出力               | Rosenmei、DownMain/UpMain、DiagramTrackOmit、DispProp 全キー                                |
+| true のときのみ `1`    | OperationNumberReverse、DiagramSenIsBold、Canceled、JikokuhyouTrackDisplay* 等              |
 | 非デフォルトのときのみ | EnableOperation(>0)、BrunchCoreEkiIndex(>=0)、NextEkiDistance(≠0)、ParentSyubetsuIndex(>=0) |
-| 空でないときのみ | Ryakusyou、Ressyabangou、Ressyamei、Gousuu、Bikou、EkimeiJikokuRyaku 等 |
+| 空でないときのみ       | Ryakusyou、Ressyabangou、Ressyamei、Gousuu、Bikou、EkimeiJikokuRyaku 等                     |
 
 なお **DispProp は原典実装が全キー常時出力**(コメントと実装が乖離している。分析 §5.8)であり、実装の側に合わせる。
 
@@ -309,18 +337,18 @@ jikokuPart := chaku '/' [hatsu] | hatsu
 
 zod 等の検証層は置かず、以下の原典規則そのものを検証層とする(アーキ §1.2)。各規則は `reader/adjust.ts` と各 PropSpec の `read` に実装し、単体テストを 1 規則 1 テストで常設する。
 
-| 規則 | 適用箇所 |
-|---|---|
-| 数値が非数 → 0 / キーごとの既定値(原典 `_ttoi`/`stoi` 相当) | 全 int キー |
-| bool は `=="1"` 判定(例外: CrossingCheckRule.Enable は `!="0"`、DisplayRessyamei は `=="0"` のみ false) | 全 bool キー |
-| 範囲外の番線 index → 主本線(下り DownMain / 上り UpMain) | EkiJikoku、Operation 入換番線 |
-| 範囲外の種別 index 等 → 0 | Syubetsu、路線外駅 idx、次列車接続タイプ |
-| `Houkou` が解釈不能な `Ressya.` → **黙って Null 列車として無視**(エラーにせず警告に積む) | Ressya |
-| `EkiTrack2Cont.` 欠落 → デフォルト 2 番線 + DownMain=0/UpMain=1 | Eki |
-| KijunDiaIndex 省略 → DiaName=="基準運転時分" を検索、なければ 0 | Rosen |
-| 旧駅扱 3(経由なし)→ 0 | EkiJikoku(全世代) |
-| HeadwaySecondMinimum ≥ HeadwaySecond → 0 に補正 | CrossingCheckRule |
-| OuterTerminal の Ekimei 空エントリ → 無視 | Eki |
+| 規則                                                                                                    | 適用箇所                                 |
+| ------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| 数値が非数 → 0 / キーごとの既定値(原典 `_ttoi`/`stoi` 相当)                                             | 全 int キー                              |
+| bool は `=="1"` 判定(例外: CrossingCheckRule.Enable は `!="0"`、DisplayRessyamei は `=="0"` のみ false) | 全 bool キー                             |
+| 範囲外の番線 index → 主本線(下り DownMain / 上り UpMain)                                                | EkiJikoku、Operation 入換番線            |
+| 範囲外の種別 index 等 → 0                                                                               | Syubetsu、路線外駅 idx、次列車接続タイプ |
+| `Houkou` が解釈不能な `Ressya.` → **黙って Null 列車として無視**(エラーにせず警告に積む)                | Ressya                                   |
+| `EkiTrack2Cont.` 欠落 → デフォルト 2 番線 + DownMain=0/UpMain=1                                         | Eki                                      |
+| KijunDiaIndex 省略 → DiaName=="基準運転時分" を検索、なければ 0                                         | Rosen                                    |
+| 旧駅扱 3(経由なし)→ 0                                                                                   | EkiJikoku(全世代)                        |
+| HeadwaySecondMinimum ≥ HeadwaySecond → 0 に補正                                                         | CrossingCheckRule                        |
+| OuterTerminal の Ekimei 空エントリ → 無視                                                               | Eki                                      |
 
 読込後処理は原典 `from_OuPropertiesText` 末尾と同順で実行する: `adjustBrunchLoopCont()` → `adjustOperation()` → `adjustCrossingCheckRuleByEkiEdit()`(これらは `@oudia/domain` の整合カスケード関数を使う…のではなく、**format 内では行わない**。format はファイル同型の生データを返すのみとし、読込直後の adjust 呼び出しと運用探索(OperationConnect)はアプリ層が domain / derive(Worker)に依頼する。依存方向 format ← domain を守るための分担である)。
 
@@ -328,17 +356,17 @@ zod 等の検証層は置かず、以下の原典規則そのものを検証層�
 
 原典の負コード体系(分析 §8)を踏襲する。PropSpec の `ctx.error` にはエンティティ局所コード(分析 §5 の各表の値)を渡し、ReadContext が原典と同じ段階オフセットを加算して最終コードを得る: Ressyasyubetsu 系 -100 / Dia 系 -200(`CentDedRosen_From_OuPropertiesText` 内)、DispProp 系 -500、`from_OuPropertiesText` 系 -1000(`CDedRosenFileData_from_string` 内)。最終コードを原典と同じ値にするのは、エラーコードがユーザコミュニティの既知情報である可能性と、原典との突き合わせデバッグのためである。
 
-| コード | 意味 |
-|---|---|
-| -1 | 文法: OuPropertiesText の解釈失敗。トップレベルの `.`(Container Aborted)とディレクトリ開始行がファイル末尾にある場合(Container Is Not Closed)の両方を含む — 原典は decode の負値(-1 / -2)を一括で -1 に潰すため(§3.3)、ユーザ可視コードは常に -1。内訳は `ErrorDetail.reason` で区別 |
-| -3 | 物理: ファイルに `\0` が含まれる(バイナリ)。原典ファイル層 `stringFromFile`(vectorToFile.cpp)のコード(-1 オープン失敗 / -2 読み込み失敗 / -3 `\0` 混入)のうち、bytes を直接受け取る Web 版で生じ得るのは -3 のみ |
-| -1001 | FileType が正しくありません |
-| -1002 / -1003 | Rosen. / DispProp. が見つかりません |
-| -1022 / -1032 | Ekijikokukeisiki / Ekikibo 不正 |
-| -1111 | Syubetsumei 未指定 |
-| -1152 | DiagramSenStyle 不正 |
-| -1211 / -1212 | DiaName 未指定 / RessyaCont なし |
-| -1352 | 起点時刻不正 |
+| コード        | 意味                                                                                                                                                                                                                                                                                 |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| -1            | 文法: OuPropertiesText の解釈失敗。トップレベルの `.`(Container Aborted)とディレクトリ開始行がファイル末尾にある場合(Container Is Not Closed)の両方を含む — 原典は decode の負値(-1 / -2)を一括で -1 に潰すため(§3.3)、ユーザ可視コードは常に -1。内訳は `ErrorDetail.reason` で区別 |
+| -3            | 物理: ファイルに `\0` が含まれる(バイナリ)。原典ファイル層 `stringFromFile`(vectorToFile.cpp)のコード(-1 オープン失敗 / -2 読み込み失敗 / -3 `\0` 混入)のうち、bytes を直接受け取る Web 版で生じ得るのは -3 のみ                                                                     |
+| -1001         | FileType が正しくありません                                                                                                                                                                                                                                                          |
+| -1002 / -1003 | Rosen. / DispProp. が見つかりません                                                                                                                                                                                                                                                  |
+| -1022 / -1032 | Ekijikokukeisiki / Ekikibo 不正                                                                                                                                                                                                                                                      |
+| -1111         | Syubetsumei 未指定                                                                                                                                                                                                                                                                   |
+| -1152         | DiagramSenStyle 不正                                                                                                                                                                                                                                                                 |
+| -1211 / -1212 | DiaName 未指定 / RessyaCont なし                                                                                                                                                                                                                                                     |
+| -1352         | 起点時刻不正                                                                                                                                                                                                                                                                         |
 
 - `ErrorDetail`(原典 COuErrorInfoContainer 相当)は `{ reason: string, entries: { key: string, value: string }[] }` の蓄積とし、エラーダイアログで「どのノードのどの値が悪いか」を提示する。
 - **警告**(パースを止めない事象)は別チャネル `ReadWarning[]` に積む: Null 列車の無視、範囲外 index の補正発生、0x5C ハックの適用、SJIS デコードでの置換文字発生 等。開発者コンソールとアプリの「ファイル情報」ダイアログで確認できるようにする。
@@ -351,7 +379,7 @@ zod 等の検証層は置かず、以下の原典規則そのものを検証層�
 export interface PreservedNode {
   /** 直前の消費済み兄弟ノード。null = コンテナ先頭 */
   readonly anchor: { name: string; occurrence: number } | null;
-  readonly node: PtNode;   // ツリーごと保持(未知ディレクトリも可)
+  readonly node: PtNode; // ツリーごと保持(未知ディレクトリも可)
 }
 ```
 
@@ -371,16 +399,16 @@ export interface PreservedNode {
 
 一致させる要素の全リスト:
 
-| 要素 | 規則 |
-|---|---|
-| BOM | UTF-8 BOM(EF BB BF)を必ず前置 |
-| 改行 | 全行 CRLF。最終行(FileTypeAppComment)も CRLF で終端 |
-| キー順序 | schema テーブルの行順(= 分析 §5 の書き出し順) |
-| ノード順序 | Rosen 内: Rosenmei → 別名 → Eki× → Ressyasyubetsu× → Dia× → 路線プロパティ群 → Comment。ルート: FileType → Rosen. → DispProp. → (preserved: WindowPlacement.) → FileTypeAppComment |
-| 条件付き出力 | §3.4 の 4 パターン。キー単位で `write` が担う |
-| 値書式 | 時刻・色・フォント・EkiJikoku・Operation の各 encode(§3.5) |
-| エスケープ | LF→`\n`、`\`→`\\` のみ |
-| 未知ノード | §3.8 の anchor 位置へ書き戻し |
+| 要素         | 規則                                                                                                                                                                               |
+| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| BOM          | UTF-8 BOM(EF BB BF)を必ず前置                                                                                                                                                      |
+| 改行         | 全行 CRLF。最終行(FileTypeAppComment)も CRLF で終端                                                                                                                                |
+| キー順序     | schema テーブルの行順(= 分析 §5 の書き出し順)                                                                                                                                      |
+| ノード順序   | Rosen 内: Rosenmei → 別名 → Eki× → Ressyasyubetsu× → Dia× → 路線プロパティ群 → Comment。ルート: FileType → Rosen. → DispProp. → (preserved: WindowPlacement.) → FileTypeAppComment |
+| 条件付き出力 | §3.4 の 4 パターン。キー単位で `write` が担う                                                                                                                                      |
+| 値書式       | 時刻・色・フォント・EkiJikoku・Operation の各 encode(§3.5)                                                                                                                         |
+| エスケープ   | LF→`\n`、`\`→`\\` のみ                                                                                                                                                             |
+| 未知ノード   | §3.8 の anchor 位置へ書き戻し                                                                                                                                                      |
 
 ### 4.2 シリアライズ手順
 
@@ -402,14 +430,14 @@ Uint8Array
 
 ### 4.3 スカラの文字列化規則
 
-| 型 | 規則 |
-|---|---|
-| int | 10 進、そのまま(`String(n)`)。先頭ゼロなし |
-| bool | `'1'` / (false は原則キー省略。常時出力キーのみ `'0'`) |
-| 列挙 | 原典の識別子文字列そのまま(`Jikokukeisiki_Hatsuchaku`、`SenStyle_Jissen`、`Ekikibo_Ippan` 等)。数値化しない |
-| 複数行文字列(Comment / Bikou) | `\n` エスケープで 1 行化 |
-| DiagramTrackOmit | `0`/`1` のカンマ連結、番線数分を常に出力 |
-| JikokuhyouSyubetsuChangeDisplay* 等の複合値 | カンマ連結 5 値 / 2 値(分析 §5.2 の書式) |
+| 型                                          | 規則                                                                                                        |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| int                                         | 10 進、そのまま(`String(n)`)。先頭ゼロなし                                                                  |
+| bool                                        | `'1'` / (false は原則キー省略。常時出力キーのみ `'0'`)                                                      |
+| 列挙                                        | 原典の識別子文字列そのまま(`Jikokukeisiki_Hatsuchaku`、`SenStyle_Jissen`、`Ekikibo_Ippan` 等)。数値化しない |
+| 複数行文字列(Comment / Bikou)               | `\n` エスケープで 1 行化                                                                                    |
+| DiagramTrackOmit                            | `0`/`1` のカンマ連結、番線数分を常に出力                                                                    |
+| JikokuhyouSyubetsuChangeDisplay* 等の複合値 | カンマ連結 5 値 / 2 値(分析 §5.2 の書式)                                                                    |
 
 ### 4.4 FileType と FileTypeAppComment
 
@@ -453,14 +481,14 @@ packages/format/fixtures/
 
 ### 5.2 テスト種別
 
-| ID | 内容 | 対象 | 合格条件 |
-|---|---|---|---|
-| T1 | **恒等ラウンドトリップ**: `writeOud2(readRosenFile(bytes).data, { appComment: sourceInfo.appComment })` | current/ + synthetic/ の .oud2(escape-noncanon.oud2 を除く。§5.1 注記) | **元バイト列と完全一致**(BOM・CRLF 含む) |
-| T2 | **旧世代変換**: 旧ファイルを読み 1.17 で書出 | legacy/ | `*.expected.oud2` と FileTypeAppComment 行正規化のうえ一致 |
-| T3 | **冪等性**: T1/T2 の出力を再読込 → 再書出(escape-noncanon.oud2 を含む全ファイル) | 全ファイル | 1 回目の出力と完全一致(deep-equal でなくバイト比較) |
-| T4 | **値スキャナのプロパティテスト**: fast-check で `decode(encode(x)) === x`(有効域)、`encode(decode(s)) === s`(正規形文字列) | jikoku / color / font / ekiJikoku / operation | 恒等 |
-| T5 | **文法ファズ**: ランダムなノードツリー生成 → serialize → parse → ツリー一致。壊れた入力(未閉ディレクトリ等)でクラッシュせず負コードを返す | node/ | 恒等・無例外 |
-| T6 | **.oud 書き出し**: `writeOud(readRosenFile(sample2).data)` | oud-export/ | 期待値と一致 + loss レポートの内容検証 |
+| ID  | 内容                                                                                                                                      | 対象                                                                   | 合格条件                                                   |
+| --- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | ---------------------------------------------------------- |
+| T1  | **恒等ラウンドトリップ**: `writeOud2(readRosenFile(bytes).data, { appComment: sourceInfo.appComment })`                                   | current/ + synthetic/ の .oud2(escape-noncanon.oud2 を除く。§5.1 注記) | **元バイト列と完全一致**(BOM・CRLF 含む)                   |
+| T2  | **旧世代変換**: 旧ファイルを読み 1.17 で書出                                                                                              | legacy/                                                                | `*.expected.oud2` と FileTypeAppComment 行正規化のうえ一致 |
+| T3  | **冪等性**: T1/T2 の出力を再読込 → 再書出(escape-noncanon.oud2 を含む全ファイル)                                                          | 全ファイル                                                             | 1 回目の出力と完全一致(deep-equal でなくバイト比較)        |
+| T4  | **値スキャナのプロパティテスト**: fast-check で `decode(encode(x)) === x`(有効域)、`encode(decode(s)) === s`(正規形文字列)                | jikoku / color / font / ekiJikoku / operation                          | 恒等                                                       |
+| T5  | **文法ファズ**: ランダムなノードツリー生成 → serialize → parse → ツリー一致。壊れた入力(未閉ディレクトリ等)でクラッシュせず負コードを返す | node/                                                                  | 恒等・無例外                                               |
+| T6  | **.oud 書き出し**: `writeOud(readRosenFile(sample2).data)`                                                                                | oud-export/                                                            | 期待値と一致 + loss レポートの内容検証                     |
 
 ### 5.3 差分レポータ
 
@@ -488,12 +516,12 @@ packages/format/fixtures/
 
 4 リーダー(current / S09 / S05 / S00)は次を共有する: 文法パーサ(§3.3)、値スキャナ(§3.5。ただし旧書式バリアントを引数で切替)、寛容読込規則(§3.6)、出力先の `RosenFileData`(常に現行 1.17 相当の内部モデル)。**世代差分のみを各リーダーに書く**。原典が S09/S05/S00 を独立クラスにしている構造に合わせ、共通化しすぎて挙動差を潰さないよう「差分は明示的に列挙する」スタイルを取る。
 
-| リーダー | FileType | 差分変換(分析 §7) |
-|---|---|---|
-| current | 1.10–1.17 | なし(グループ内は新キーを省略時デフォルトで吸収する前方互換読み) |
-| S09 | 1.06–1.09 | Operation のパラメータ配置が旧式: 出区 `3/時刻$運番`(入出区連携コードなし)、路線外始発 `4/駅idx$時刻/着時刻$運番`、前作業 Junction の旧 p2(解結表示省略)読み飛ばし。`SyubetsuChange` キー → 次列車接続 type へ統合 |
-| S05 | 1.01–1.05 | 別キー `RessyaTrack`(1 要素 = `番線idx[;作業/p1$p2/p3]`、作業 0=なし/1=入換/2=入出区)と `OperationNumber` を読み、現行の EkiJikoku 内番線 + Before/AfterOperation + 運用番号へ変換。OuterTerminal は Ekimei のみ |
-| S00 | 1.00 / OuDia.1.02 | EkiJikoku に `$番線` なし(番線は主本線に設定)。駅扱 3(経由なし)→ 0。`Kyoukaisen` を読み**分岐駅設定の推定**に利用。OuDiaSecond1.00 拡張キー(EkiTrack2Cont / DownMain / UpMain 等)は「あれば読む」 |
+| リーダー | FileType          | 差分変換(分析 §7)                                                                                                                                                                                                  |
+| -------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| current  | 1.10–1.17         | なし(グループ内は新キーを省略時デフォルトで吸収する前方互換読み)                                                                                                                                                   |
+| S09      | 1.06–1.09         | Operation のパラメータ配置が旧式: 出区 `3/時刻$運番`(入出区連携コードなし)、路線外始発 `4/駅idx$時刻/着時刻$運番`、前作業 Junction の旧 p2(解結表示省略)読み飛ばし。`SyubetsuChange` キー → 次列車接続 type へ統合 |
+| S05      | 1.01–1.05         | 別キー `RessyaTrack`(1 要素 = `番線idx[;作業/p1$p2/p3]`、作業 0=なし/1=入換/2=入出区)と `OperationNumber` を読み、現行の EkiJikoku 内番線 + Before/AfterOperation + 運用番号へ変換。OuterTerminal は Ekimei のみ   |
+| S00      | 1.00 / OuDia.1.02 | EkiJikoku に `$番線` なし(番線は主本線に設定)。駅扱 3(経由なし)→ 0。`Kyoukaisen` を読み**分岐駅設定の推定**に利用。OuDiaSecond1.00 拡張キー(EkiTrack2Cont / DownMain / UpMain 等)は「あれば読む」                  |
 
 - S00 の Kyoukaisen → 分岐推定ロジックは原典 `CconvCentDedS00.cpp` からの忠実移植とする(独自解釈しない)。
 - 旧世代リーダーの正しさは T2(Windows 版生成の期待値との比較)で担保する。旧世代の書き出しは存在しないため、T1 の対象にはならない。
@@ -521,18 +549,21 @@ format は bytes ⇔ RosenFileData のみを扱い、**ファイルの取得・�
 
 ```typescript
 export interface FileAccessPort {
-  open(): Promise<OpenedFile | null>;              // ピッカー起動
+  open(): Promise<OpenedFile | null>; // ピッカー起動
   openFromHandleLike(h: unknown): Promise<OpenedFile>; // D&D / launchQueue / 最近使ったファイル
-  save(file: OpenedFile, bytes: Uint8Array): Promise<SaveOutcome>;   // 上書き
-  saveAs(bytes: Uint8Array, suggestedName: string,
-         kind: 'oud2' | 'oud' | 'csv'): Promise<SaveOutcome>;
+  save(file: OpenedFile, bytes: Uint8Array): Promise<SaveOutcome>; // 上書き
+  saveAs(
+    bytes: Uint8Array,
+    suggestedName: string,
+    kind: 'oud2' | 'oud' | 'csv',
+  ): Promise<SaveOutcome>;
   readonly capabilities: { overwrite: boolean; recentReopen: boolean };
 }
 
 export interface OpenedFile {
   name: string;
   bytes: Uint8Array;
-  handle: FileSystemFileHandle | null;  // フォールバック時 null
+  handle: FileSystemFileHandle | null; // フォールバック時 null
 }
 ```
 
@@ -577,6 +608,7 @@ export interface OpenedFile {
   ```
 
   原典は「元ファイル名_yyyymmddhhmm.oud2backup を 1 世代のみ」だが、Web 版はユーザのファイルシステムを汚さない OPFS 内であるため**5 世代**に拡張する(定数、設定変更可)。ファイル名の時刻書式は原典の yyyymmddhhmm に秒なしを踏襲しつつ、同一分内の連続バックアップは上書きとする。
+
 - **docId**: ドキュメントを開くたびに発行する UUID。FileSystemFileHandle がある場合は idb に `handle ↔ docId` を保存し、同一ファイルの再オープンで既存 docId を引き継ぐ(`handle.isSameEntry()` で照合)。
 - **クラッシュ検出**: 最初の編集で `meta.json` の `dirty: true` を書き、正常保存・正常クローズ(`beforeunload` 時に変更カウンタ 0)で `false` に戻す。起動時に全 docId を走査し、`dirty === true` のバックアップが見つかったら復元ダイアログ(ファイル名・バックアップ時刻の一覧 → 選択で通常の読込パイプラインへ)を出す。
 - **容量**: `navigator.storage.estimate()` で残量を確認し、逼迫時は古い docId のバックアップから削除。`navigator.storage.persist()` を初回保存時に要求する。
@@ -606,13 +638,14 @@ export interface OpenedFile {
    ```
 
    文字集合は原典 `vectorToFile.cpp` の `Moji5c` 定数をそのまま定数化する(「CP932 で 2 バイト目が 0x5C の文字を機械生成」はしない — 原典と集合がずれる余地を残さないため)。削除後は原典同様、**直後の文字を再検査しない**(`erase` 後に idx++ が進む挙動: `十\\` → `十\` になり 2 個目は残る)。適用時は警告に積む。
+
 5. **CR 除去**: 全 `\r` を削除(原典はテキストモード読込で CR が消える。パーサは LF のみを行区切りとするため必須の前処理)。
 
 ### 8.2 書き出しパイプライン(`encodeOudText`)
 
-| 形式 | 手順 |
-|---|---|
-| .oud2 / .oud2backup | `TextEncoder().encode(text)` の先頭に `EF BB BF` を連結。text は §4.2 ② の時点で CRLF 済み |
+| 形式                    | 手順                                                                                                                         |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| .oud2 / .oud2backup     | `TextEncoder().encode(text)` の先頭に `EF BB BF` を連結。text は §4.2 ② の時点で CRLF 済み                                   |
 | .oud / CSV(SJIS 選択時) | encoding-japanese: `Encoding.convert(Encoding.stringToCode(text), { to: 'SJIS', from: 'UNICODE' })` → `Uint8Array`。BOM なし |
 
 - SJIS 変換不能文字は encoding-japanese の既定に任せず、変換前に**自前で CP932 可否を走査**(encoding-japanese の変換結果と原文字列の再逆変換比較)して `?` 置換 + `unmappableChars` 収集を行う。ユーザに黙って文字を落とさない。
@@ -633,13 +666,13 @@ export interface OpenedFile {
 
 アーキ §8.1「数 MB 級 oud2 の読込 1 秒以内」を次のように分解する。ベンチフィクスチャは sample.oud2(1.1MB、実在の大規模ファイル)を使う。
 
-| 段 | 目標(sample.oud2) | 備考 |
-|---|---|---|
-| decodeOudText | < 50ms | TextDecoder + 単一パス走査 |
-| parsePropertiesText | < 200ms | 単一パス・非正規表現 |
-| reader(current) | < 300ms | EkiJikoku/Operation 逐次スキャン含む |
-| writeOud2 全段 | < 300ms | 自動バックアップの許容予算を兼ねる |
-| 合計(読込) | < 600ms | 目標 1 秒に対しマージン確保 |
+| 段                  | 目標(sample.oud2) | 備考                                 |
+| ------------------- | ----------------- | ------------------------------------ |
+| decodeOudText       | < 50ms            | TextDecoder + 単一パス走査           |
+| parsePropertiesText | < 200ms           | 単一パス・非正規表現                 |
+| reader(current)     | < 300ms           | EkiJikoku/Operation 逐次スキャン含む |
+| writeOud2 全段      | < 300ms           | 自動バックアップの許容予算を兼ねる   |
+| 合計(読込)          | < 600ms           | 目標 1 秒に対しマージン確保          |
 
 - Vitest bench(`vitest bench`)で上記を計測し、CI で記録・前回比 +30% で警告、+100% で fail とする。
 - 文字列連結は配列 push + 単一 join。数 MB 級で GC スパイクが観測されたらチャンク化を検討する(現時点では単純実装を優先)。
@@ -648,25 +681,25 @@ export interface OpenedFile {
 
 ## 付録 A: リリース段階との対応
 
-| リリース | 本書の実装範囲 |
-|---|---|
-| v0.1 | §3 パーサ全段 + §6.1/6.2 全世代リーダー + §7.1–7.5(開く系のみ)+ §8.1 |
-| v0.2 | §4 シリアライザ + §5 黄金テスト CI ゲート + §6.3 .oud 書き出し + §7.6 バックアップ/復元 + §7.7 + §8.2 + セルフチェック機能 + §9 時刻表 CSV・駅時刻表 CSV 書き出し |
-| v0.5 | §9 時刻表 CSV 読み込み |
-| v0.6 | §9 カスタマイズ時刻表 CSV |
-| v0.7 | §9 運用表 CSV・運用一覧表 CSV |
+| リリース | 本書の実装範囲                                                                                                                                                    |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| v0.1     | §3 パーサ全段 + §6.1/6.2 全世代リーダー + §7.1–7.5(開く系のみ)+ §8.1                                                                                              |
+| v0.2     | §4 シリアライザ + §5 黄金テスト CI ゲート + §6.3 .oud 書き出し + §7.6 バックアップ/復元 + §7.7 + §8.2 + セルフチェック機能 + §9 時刻表 CSV・駅時刻表 CSV 書き出し |
+| v0.5     | §9 時刻表 CSV 読み込み                                                                                                                                            |
+| v0.6     | §9 カスタマイズ時刻表 CSV                                                                                                                                         |
+| v0.7     | §9 運用表 CSV・運用一覧表 CSV                                                                                                                                     |
 
 ## 付録 B: 原典ソース対応表
 
-| 本書 | 原典 |
-|---|---|
-| decodeOudText / encodeOudText | `libs/OuLib/Str/vectorToFile.cpp`(stringFromFile / stringToFile / stringToFileANSI) |
-| node/(parse / serialize) | `libs/OuLib/Str/OuPropertiesText/CConvNodeContainer.cpp` ほか CNode/CDirectory/CPropertyString |
-| reader/current + schema/ | `entDed/CconvCentDed.cpp`、`DedRosenFileData/CconvCdDedDispProp.cpp` |
-| reader/s09 / s05 / s00 | `entDed/CconvCentDedS09.cpp` / `S05.cpp` / `S00.cpp` |
-| reader/fileType | `DedRosenFileData/CconvCDedRosenFileData.cpp`(isEncodeAbleFormat) |
-| writer/oud | `DedRosenFileData/CconvCDedRosenFileDataOud.cpp` + `entDed/CconvCentDedOud.cpp` |
-| value/jikoku | `entDed/CdDedJikoku.{h,cpp}`(g_CdDedJikokuConv: NoColon / ZeroToNone / NotIfZero) |
-| value/color / font | `libs/DcDrawLib/DcdCd/DcDrawProp/CconvDcDrawProp.cpp` |
-| §7.6 自動バックアップ | `CDiagramEditDoc.cpp`(backup()、iBackupIntervalSecond=60、`元名_yyyymmddhhmm.oud2backup`) |
-| csv/ | `ConvJikokuhyouCsv/`(CconvJikokuhyouCsv / CconvJikokuhyouCustomizeCsv) |
+| 本書                          | 原典                                                                                           |
+| ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| decodeOudText / encodeOudText | `libs/OuLib/Str/vectorToFile.cpp`(stringFromFile / stringToFile / stringToFileANSI)            |
+| node/(parse / serialize)      | `libs/OuLib/Str/OuPropertiesText/CConvNodeContainer.cpp` ほか CNode/CDirectory/CPropertyString |
+| reader/current + schema/      | `entDed/CconvCentDed.cpp`、`DedRosenFileData/CconvCdDedDispProp.cpp`                           |
+| reader/s09 / s05 / s00        | `entDed/CconvCentDedS09.cpp` / `S05.cpp` / `S00.cpp`                                           |
+| reader/fileType               | `DedRosenFileData/CconvCDedRosenFileData.cpp`(isEncodeAbleFormat)                              |
+| writer/oud                    | `DedRosenFileData/CconvCDedRosenFileDataOud.cpp` + `entDed/CconvCentDedOud.cpp`                |
+| value/jikoku                  | `entDed/CdDedJikoku.{h,cpp}`(g_CdDedJikokuConv: NoColon / ZeroToNone / NotIfZero)              |
+| value/color / font            | `libs/DcDrawLib/DcdCd/DcDrawProp/CconvDcDrawProp.cpp`                                          |
+| §7.6 自動バックアップ         | `CDiagramEditDoc.cpp`(backup()、iBackupIntervalSecond=60、`元名_yyyymmddhhmm.oud2backup`)      |
+| csv/                          | `ConvJikokuhyouCsv/`(CconvJikokuhyouCsv / CconvJikokuhyouCustomizeCsv)                         |

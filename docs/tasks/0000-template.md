@@ -2,17 +2,17 @@
 
 ## メタデータ
 
-| 項目 | 値 |
-|------|-----|
-| **タスクID** | 0000 |
-| **タイプ** | Feature / Bug / Refactor / Spike / Docs / Chore |
-| **ステータス** | Backlog / Ready / In Progress / In Review / Done |
-| **優先度** | Critical / High / Medium / Low |
-| **規模** | S / M / L(XL は分割する。[tasking.md](../tasking.md) 参照) |
-| **マイルストーン** | M0〜M8([design/07_roadmap.md](../design/07_roadmap.md)) |
-| **作成日** | YYYY-MM-DD |
-| **完了日** | YYYY-MM-DD |
-| **関連Issue / PR** | #XXX |
+| 項目               | 値                                                         |
+| ------------------ | ---------------------------------------------------------- |
+| **タスクID**       | 0000                                                       |
+| **タイプ**         | Feature / Bug / Refactor / Spike / Docs / Chore            |
+| **ステータス**     | Backlog / Ready / In Progress / In Review / Done           |
+| **優先度**         | Critical / High / Medium / Low                             |
+| **規模**           | S / M / L(XL は分割する。[tasking.md](../tasking.md) 参照) |
+| **マイルストーン** | M0〜M8([design/07_roadmap.md](../design/07_roadmap.md))    |
+| **作成日**         | YYYY-MM-DD                                                 |
+| **完了日**         | YYYY-MM-DD                                                 |
+| **関連Issue / PR** | #XXX                                                       |
 
 ## 概要
 
@@ -45,9 +45,11 @@
 ### 実装箇所
 
 **新規作成**:
+
 - `packages/xxx/src/...` — [役割]
 
 **変更**:
+
 - `packages/xxx/src/...` — [変更内容]
 
 ### 互換性への影響
@@ -74,13 +76,14 @@
 
 ## リスクと対策
 
-| リスク | 影響 | 対策 |
-|--------|------|------|
+| リスク   | 影響            | 対策   |
+| -------- | --------------- | ------ |
 | [リスク] | High/Medium/Low | [対策] |
 
 ## 進捗記録
 
 ### YYYY-MM-DD
+
 - [作業内容・気づき。AI 協働ではセッションをまたぐ引き継ぎ情報をここに書く]
 
 ## ふりかえり(完了時)

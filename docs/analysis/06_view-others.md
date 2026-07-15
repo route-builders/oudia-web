@@ -18,13 +18,13 @@
 
 OuDiaSecond のメインウインドウは「左ペイン = 路線ビュー(ツリー)」+「右ペイン = 各編集ビュー(MDI 的に切替)」という構成をとる。本書が扱うのは、時刻表ビュー・ダイヤグラムビュー以外の編集ビュー群である。
 
-| ビュー | 実装 | UI形式 | 編集対象 |
-|---|---|---|---|
-| 路線ビュー | `ViewRosen::CDlgRosenView`(モードレスダイアログ) + `CRosenViewTreeCtrl` | ツリー | なし(ナビゲーションのみ) |
-| 駅ビュー | `ViewEki::CEkiDoc`/`CEkiView`/`CWndDcdGridEki` | グリッド | `CentDedEki`(駅) |
-| 列車種別ビュー | `ViewRessyasyubetsu::CRessyasyubetsuDoc`/`CRessyasyubetsuView`/`CWndDcdGridRessyasyubetsu` | グリッド | `CentDedRessyasyubetsu`(種別) |
-| コメントビュー | `ViewComment::CDedCommentDoc`/`CDedCommentView` | テキストエディタ(`CEditView`) | 路線ファイルのコメント文字列 |
-| 入出区連携コード一覧 | `ViewInOutLinkCodeList::CInOutLinkCodeListDoc`/`CInOutLinkCodeListView`/`CWndDcdGridInOutLinkCodeList` | グリッド(参照専用) | `CentDedDia` 内の `InOutLinkCodeContent`(集計結果) |
+| ビュー               | 実装                                                                                                   | UI形式                        | 編集対象                                           |
+| -------------------- | ------------------------------------------------------------------------------------------------------ | ----------------------------- | -------------------------------------------------- |
+| 路線ビュー           | `ViewRosen::CDlgRosenView`(モードレスダイアログ) + `CRosenViewTreeCtrl`                                | ツリー                        | なし(ナビゲーションのみ)                           |
+| 駅ビュー             | `ViewEki::CEkiDoc`/`CEkiView`/`CWndDcdGridEki`                                                         | グリッド                      | `CentDedEki`(駅)                                   |
+| 列車種別ビュー       | `ViewRessyasyubetsu::CRessyasyubetsuDoc`/`CRessyasyubetsuView`/`CWndDcdGridRessyasyubetsu`             | グリッド                      | `CentDedRessyasyubetsu`(種別)                      |
+| コメントビュー       | `ViewComment::CDedCommentDoc`/`CDedCommentView`                                                        | テキストエディタ(`CEditView`) | 路線ファイルのコメント文字列                       |
+| 入出区連携コード一覧 | `ViewInOutLinkCodeList::CInOutLinkCodeListDoc`/`CInOutLinkCodeListView`/`CWndDcdGridInOutLinkCodeList` | グリッド(参照専用)            | `CentDedDia` 内の `InOutLinkCodeContent`(集計結果) |
 
 共通アーキテクチャ:
 
@@ -90,20 +90,20 @@ OuDiaSecond のメインウインドウは「左ペイン = 路線ビュー(ツ�
 
 `iAction`: 0=Enter、1=クリック(モーダルを出さない動作のみ)、2=ダブルクリック(モーダルを出す動作のみ)、3/4=コンテキストメニュー専用。
 
-| アイテム | 位置(Itemlocation) | 動作 |
-|---|---|---|
-| 路線 | [0] | ダブルクリック/Enter → `CMainFrame::execCDlgRosenFileProp()`(路線ファイルのプロパティ、モーダル) |
-| 駅 | [0,0] | クリック/Enter → `openCEkiDoc()`(駅ビュー) |
-| 列車種別 | [0,1] | クリック/Enter → `openCRessyasyubetsuDoc()` |
-| ダイヤ | [0,2] | ダブルクリック/Enter → `execCDlgDiaList()`(ダイヤ一覧、モーダル) |
-| 下り時刻表 | [0,2,d,0] | `openCJikokuhyouDoc(pDia, Ressyahoukou_Kudari, false, NULL)` |
-| 上り時刻表 | [0,2,d,1] | 同上 `Ressyahoukou_Nobori` |
-| ダイヤグラム | [0,2,d,2] | `openCDedDiagramDoc(pDia)` |
-| 下りカスタマイズ時刻表 | [0,2,d,3] | `openCJikokuhyouDoc(pDia, Kudari, true, NULL)`(第3引数=カスタマイズ仕様) |
-| 上りカスタマイズ時刻表 | [0,2,d,4] | 同上 Nobori/true |
-| 駅時刻表一覧 | [0,2,d,5] | `openCEkiJikokuhyouListDoc(pDia, NULL)` |
-| 運用一覧 | [0,2,d,6] | 通常 → `openCAllOperationTableDoc(pDia)`。iAction=3 → `openCDedAllOperationTable2Doc(pDia)`(箱ダイヤ運用表2)。iAction=4 → `openCInOutLinkCodeListDoc(pDia)`(入出区連携コード一覧) |
-| コメント | [0,3] | `openCDedCommentDoc()` |
+| アイテム               | 位置(Itemlocation) | 動作                                                                                                                                                                              |
+| ---------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 路線                   | [0]                | ダブルクリック/Enter → `CMainFrame::execCDlgRosenFileProp()`(路線ファイルのプロパティ、モーダル)                                                                                  |
+| 駅                     | [0,0]              | クリック/Enter → `openCEkiDoc()`(駅ビュー)                                                                                                                                        |
+| 列車種別               | [0,1]              | クリック/Enter → `openCRessyasyubetsuDoc()`                                                                                                                                       |
+| ダイヤ                 | [0,2]              | ダブルクリック/Enter → `execCDlgDiaList()`(ダイヤ一覧、モーダル)                                                                                                                  |
+| 下り時刻表             | [0,2,d,0]          | `openCJikokuhyouDoc(pDia, Ressyahoukou_Kudari, false, NULL)`                                                                                                                      |
+| 上り時刻表             | [0,2,d,1]          | 同上 `Ressyahoukou_Nobori`                                                                                                                                                        |
+| ダイヤグラム           | [0,2,d,2]          | `openCDedDiagramDoc(pDia)`                                                                                                                                                        |
+| 下りカスタマイズ時刻表 | [0,2,d,3]          | `openCJikokuhyouDoc(pDia, Kudari, true, NULL)`(第3引数=カスタマイズ仕様)                                                                                                          |
+| 上りカスタマイズ時刻表 | [0,2,d,4]          | 同上 Nobori/true                                                                                                                                                                  |
+| 駅時刻表一覧           | [0,2,d,5]          | `openCEkiJikokuhyouListDoc(pDia, NULL)`                                                                                                                                           |
+| 運用一覧               | [0,2,d,6]          | 通常 → `openCAllOperationTableDoc(pDia)`。iAction=3 → `openCDedAllOperationTable2Doc(pDia)`(箱ダイヤ運用表2)。iAction=4 → `openCInOutLinkCodeListDoc(pDia)`(入出区連携コード一覧) |
+| コメント               | [0,3]              | `openCDedCommentDoc()`                                                                                                                                                            |
 
 - 入出区連携コード一覧・運用一覧2の入口は、[運用一覧] アイテムの右クリックメニュー(`ID_MENUITEM_OPEN` / `ID_ALLOPERATIONTABLE2_OPEN` / `ID_INOUTLINKCODELIST_OPEN`、`CRosenViewTreeCtrl.cpp`)だけである。
 - ダイアログにフォーカスがあってもメニューアクセラレータが効くように `PreTranslateMessage` をメインフレームに委譲している(Windows/MFC 固有の細工)。
@@ -116,15 +116,15 @@ OuDiaSecond のメインウインドウは「左ペイン = 路線ビュー(ツ�
 
 行 = 駅(上から路線の起点順)。列は2モードある。**通常モード**:
 
-| 列 | 内容 |
-|---|---|
-| `ColumnType_EkiIndex` | 駅Index |
-| `ColumnType_Ekimei` | 駅名 |
+| 列                            | 内容       |
+| ----------------------------- | ---------- |
+| `ColumnType_EkiIndex`         | 駅Index    |
+| `ColumnType_Ekimei`           | 駅名       |
 | `ColumnType_Ekijikokukeisiki` | 駅時刻形式 |
-| `ColumnType_Ekikibo` | 駅規模 |
-| `ColumnType_EkiTrack2Count` | 番線数 |
-| `ColumnType_EkiBrunch` | 分岐駅設定 |
-| `ColumnType_EkiLoop` | 環状線設定 |
+| `ColumnType_Ekikibo`          | 駅規模     |
+| `ColumnType_EkiTrack2Count`   | 番線数     |
+| `ColumnType_EkiBrunch`        | 分岐駅設定 |
+| `ColumnType_EkiLoop`          | 環状線設定 |
 
 **表示設定モード**(メニュー [表示]-[表示設定モードにする]、`m_bDisplaySettingMode`)では列構成が置き換わる。通常モードの先頭5列(`ColumnType_EkiIndex` 〜 `ColumnType_EkiTrack2Count`)は残るが、`ColumnType_EkiBrunch`・`ColumnType_EkiLoop` の2列は表示されず、代わりに列5以降が以下の45列(計50列)になる(`CdEkiXColSpecCont.cpp` の `size()`: 通常モード=7列、表示設定モード=50列):
 
@@ -144,29 +144,29 @@ OuDiaSecond のメインウインドウは「左ペイン = 路線ビュー(ツ�
 
 **基本**
 
-| 項目 | フィールド | 値 |
-|---|---|---|
-| 駅名 | `m_strEkimei` | 必須 |
-| 駅時刻形式 | `m_eEkijikokukeisiki` : `EEkijikokukeisiki` | `Jikokukeisiki_Hatsu`(発時刻のみ・既定)/`Jikokukeisiki_Hatsuchaku`(発着)/`Jikokukeisiki_KudariChaku`(下り着)/`Jikokukeisiki_NoboriChaku`(上り着)/`Jikokukeisiki_KudariHatsuchaku`(下り発着・Second追加)/`Jikokukeisiki_NoboriHatsuchaku`(上り発着・Second追加) |
-| 駅規模 | `m_eEkikibo` : `EEkikibo` | `Ekikibo_Ippan`(一般駅=細線)/`Ekikibo_Syuyou`(主要駅=ダイヤグラム太罫線) |
-| 境界線 | `m_bKyoukaisen` | 時刻表ビューの横罫線。**OuDiaSecond ではプロパティUIから編集不可**(`UIData_Eki` で `iKyoukaisen` がコメントアウト)。旧 OuDia ファイル読込互換のためエンティティには残存(`CconvCentDedS00.cpp`/`CconvCentDedOud.cpp` が set) |
-| ダイヤグラム列車情報 下り/上り | `m_eDiagramRessyajouhouHyoujiKudari/Nobori` : `EDiagramRessyajouhouHyouji` | `DiagramRessyajouhouHyouji_Origin`(始発なら表示・既定)/`_Anytime`(常に表示)/`_Not`(表示しない) |
-| 駅時刻を駅時刻形式で正規化 | (UI設定 `bAdjustByEkijikokukeisiki`、`CWndDcdGridEki::m_bAdjustByEkijikokukeisiki`) | ON で OK 時に全ダイヤ全列車の駅時刻を形式に合わせ変換。既定 true、**.ini に保存** |
+| 項目                           | フィールド                                                                          | 値                                                                                                                                                                                                                                                             |
+| ------------------------------ | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 駅名                           | `m_strEkimei`                                                                       | 必須                                                                                                                                                                                                                                                           |
+| 駅時刻形式                     | `m_eEkijikokukeisiki` : `EEkijikokukeisiki`                                         | `Jikokukeisiki_Hatsu`(発時刻のみ・既定)/`Jikokukeisiki_Hatsuchaku`(発着)/`Jikokukeisiki_KudariChaku`(下り着)/`Jikokukeisiki_NoboriChaku`(上り着)/`Jikokukeisiki_KudariHatsuchaku`(下り発着・Second追加)/`Jikokukeisiki_NoboriHatsuchaku`(上り発着・Second追加) |
+| 駅規模                         | `m_eEkikibo` : `EEkikibo`                                                           | `Ekikibo_Ippan`(一般駅=細線)/`Ekikibo_Syuyou`(主要駅=ダイヤグラム太罫線)                                                                                                                                                                                       |
+| 境界線                         | `m_bKyoukaisen`                                                                     | 時刻表ビューの横罫線。**OuDiaSecond ではプロパティUIから編集不可**(`UIData_Eki` で `iKyoukaisen` がコメントアウト)。旧 OuDia ファイル読込互換のためエンティティには残存(`CconvCentDedS00.cpp`/`CconvCentDedOud.cpp` が set)                                    |
+| ダイヤグラム列車情報 下り/上り | `m_eDiagramRessyajouhouHyoujiKudari/Nobori` : `EDiagramRessyajouhouHyouji`          | `DiagramRessyajouhouHyouji_Origin`(始発なら表示・既定)/`_Anytime`(常に表示)/`_Not`(表示しない)                                                                                                                                                                 |
+| 駅時刻を駅時刻形式で正規化     | (UI設定 `bAdjustByEkijikokukeisiki`、`CWndDcdGridEki::m_bAdjustByEkijikokukeisiki`) | ON で OK 時に全ダイヤ全列車の駅時刻を形式に合わせ変換。既定 true、**.ini に保存**                                                                                                                                                                              |
 
 **番線・路線内トポロジ(OuDiaSecond 拡張)**
 
-| 項目 | フィールド | 説明 |
-|---|---|---|
-| 番線 | `m_CentDedEkiTrack2Cont`(`CXEkiTrack2Cont`、要素 `CentDedEkiTrack2`) | 各番線 = 番線名 `m_strTrackName`・時刻表略称 `m_strTrackRyakusyou`・上り略称 `m_strTrackNoboriRyakusyou`(空なら下り略称を共用)。リストUIで追加/編集/削除/上下移動 |
-| 下り/上り本線 | `m_iDownMain` / `m_iUpMain` | 主本線となる番線Index(UI では EkiTrack2 リストの [下り本線][上り本線] ボタン) |
-| 番線のダイヤグラム表示省略 | `m_bDiagramTrackOmit` : `vector<bool>` | 番線ごとの省略スイッチ |
-| 分岐駅設定 | `m_iBrunchCoreEkiIndex`(基幹駅Index、OFF=-1)、`m_bBrunchOpposite` | この駅を分岐扱いにして基幹駅と接続 |
-| 環状線設定 | `m_iLoopOriginEkiIndex`(起点駅Index、OFF=-1)、`m_bLoopOpposite` | 環状線の折返し設定 |
-| 分岐/環状の内部キャッシュ | `m_iBrunchLoopPosition`、`m_iEkiIndexBrunchOriginSide/Loop/BrunchTerminalSide`(deque) | 駅グループ管理用 |
-| 路線外発着駅 | `m_OuterTerminalCont` : `vector<OuterTerminal>` | 各要素 = 駅名 `OuterTerminalEkimei`・時刻表略称 `OuterTerminalJikokuRyaku`(空なら駅名)・ダイヤグラム略称 `OuterTerminalDiaRyaku`(空なら頭文字)。リストUIで追加/編集/削除/上下移動 |
-| 駅ID | `m_iID` | 内部識別子 |
-| 次駅までの距離 | `m_iNextEkiDistance` | ダイヤグラム縦軸に影響 |
-| 次駅間の背景色 | `m_iDiagramColorNextEki` | `DIAGRAMBACKCOLOR_COUNT = 5` 色パレットのIndex |
+| 項目                       | フィールド                                                                            | 説明                                                                                                                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 番線                       | `m_CentDedEkiTrack2Cont`(`CXEkiTrack2Cont`、要素 `CentDedEkiTrack2`)                  | 各番線 = 番線名 `m_strTrackName`・時刻表略称 `m_strTrackRyakusyou`・上り略称 `m_strTrackNoboriRyakusyou`(空なら下り略称を共用)。リストUIで追加/編集/削除/上下移動                 |
+| 下り/上り本線              | `m_iDownMain` / `m_iUpMain`                                                           | 主本線となる番線Index(UI では EkiTrack2 リストの [下り本線][上り本線] ボタン)                                                                                                     |
+| 番線のダイヤグラム表示省略 | `m_bDiagramTrackOmit` : `vector<bool>`                                                | 番線ごとの省略スイッチ                                                                                                                                                            |
+| 分岐駅設定                 | `m_iBrunchCoreEkiIndex`(基幹駅Index、OFF=-1)、`m_bBrunchOpposite`                     | この駅を分岐扱いにして基幹駅と接続                                                                                                                                                |
+| 環状線設定                 | `m_iLoopOriginEkiIndex`(起点駅Index、OFF=-1)、`m_bLoopOpposite`                       | 環状線の折返し設定                                                                                                                                                                |
+| 分岐/環状の内部キャッシュ  | `m_iBrunchLoopPosition`、`m_iEkiIndexBrunchOriginSide/Loop/BrunchTerminalSide`(deque) | 駅グループ管理用                                                                                                                                                                  |
+| 路線外発着駅               | `m_OuterTerminalCont` : `vector<OuterTerminal>`                                       | 各要素 = 駅名 `OuterTerminalEkimei`・時刻表略称 `OuterTerminalJikokuRyaku`(空なら駅名)・ダイヤグラム略称 `OuterTerminalDiaRyaku`(空なら頭文字)。リストUIで追加/編集/削除/上下移動 |
+| 駅ID                       | `m_iID`                                                                               | 内部識別子                                                                                                                                                                        |
+| 次駅までの距離             | `m_iNextEkiDistance`                                                                  | ダイヤグラム縦軸に影響                                                                                                                                                            |
+| 次駅間の背景色             | `m_iDiagramColorNextEki`                                                              | `DIAGRAMBACKCOLOR_COUNT = 5` 色パレットのIndex                                                                                                                                    |
 
 **時刻表(カスタマイズ時刻表)表示設定** — 下り/上り対で以下(いずれも `m_bJikokuhyou...` / `m_iJikokuhyou...`):
 
@@ -217,17 +217,17 @@ OuDiaSecond のメインウインドウは「左ペイン = 路線ビュー(ツ�
 
 ### 5.2 種別プロパティの全項目(`entDed/CentDedRessyasyubetsu.h` + `CPropEditUi_Ressyasyubetsu.h` の `UIData_Ressyasyubetsu`)
 
-| 項目 | フィールド | 値・意味 |
-|---|---|---|
-| 種別名 | `m_strSyubetsumei` | 必須(空=無効オブジェクト) |
-| 種別略称 | `m_strRyakusyou` | 時刻表の種別欄。半角6文字/全角3文字まで(マニュアル) |
-| 時刻表文字色 | `m_colorJikokuhyouMojiColor` : `CdColorProp` | ダイヤグラムの列車情報文字色を兼ねる。既定黒 |
-| 時刻表フォント | `m_iJikokuhyouFontIndex` | 0〜7 = 路線ファイルプロパティの『時刻表ビュー 1〜8』(`JIKOKUHYOUFONT_COUNT = 8`) |
-| 時刻表背景色 | `m_colorJikokuhyouBackColor` | ダイヤのプロパティで背景色パターン=種別色の場合に使用。既定白(Second追加) |
+| 項目           | フィールド                                    | 値・意味                                                                                                                                                                                                   |
+| -------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 種別名         | `m_strSyubetsumei`                            | 必須(空=無効オブジェクト)                                                                                                                                                                                  |
+| 種別略称       | `m_strRyakusyou`                              | 時刻表の種別欄。半角6文字/全角3文字まで(マニュアル)                                                                                                                                                        |
+| 時刻表文字色   | `m_colorJikokuhyouMojiColor` : `CdColorProp`  | ダイヤグラムの列車情報文字色を兼ねる。既定黒                                                                                                                                                               |
+| 時刻表フォント | `m_iJikokuhyouFontIndex`                      | 0〜7 = 路線ファイルプロパティの『時刻表ビュー 1〜8』(`JIKOKUHYOUFONT_COUNT = 8`)                                                                                                                           |
+| 時刻表背景色   | `m_colorJikokuhyouBackColor`                  | ダイヤのプロパティで背景色パターン=種別色の場合に使用。既定白(Second追加)                                                                                                                                  |
 | ダイヤグラム線 | `m_CdDiagramLineStyle` : `CdDiagramLineStyle` | 線色 `m_colorDiagramSenColor`(既定黒)・線種 `m_eDiagramSenStyle` : `ESenStyle`{`SenStyle_Jissen`実線/`SenStyle_Hasen`破線/`SenStyle_Tensen`点線/`SenStyle_Ittensasen`一点鎖線}・太線 `m_bDiagramSenIsBold` |
-| 停車駅明示 | `m_eStopMarkDrawType` : `EStopMarkDrawType` | `EStopMarkDrawType_DrawOnStop`(停車駅を明示・既定)/`_Nothing`(明示しない)/`_DrawOnPass`(通過駅明示、未使用・予約) |
-| 親種別 | `m_iParentSyubetsuIndex` | -1=OFF。0以上で親種別が有効(Second追加。派生種別のグルーピング) |
-| 隠し種別 | `m_bHidden` | true でカスタマイズ時刻表・駅時刻表から当該種別の列車を非表示(Second追加) |
+| 停車駅明示     | `m_eStopMarkDrawType` : `EStopMarkDrawType`   | `EStopMarkDrawType_DrawOnStop`(停車駅を明示・既定)/`_Nothing`(明示しない)/`_DrawOnPass`(通過駅明示、未使用・予約)                                                                                          |
+| 親種別         | `m_iParentSyubetsuIndex`                      | -1=OFF。0以上で親種別が有効(Second追加。派生種別のグルーピング)                                                                                                                                            |
+| 隠し種別       | `m_bHidden`                                   | true でカスタマイズ時刻表・駅時刻表から当該種別の列車を非表示(Second追加)                                                                                                                                  |
 
 `UIData_Ressyasyubetsu` の色は `CdColorPropNullable`(NULL可の色)で、複数選択編集時の「変更しない」を表現する。
 
@@ -271,38 +271,38 @@ OuDiaSecond のメインウインドウは「左ペイン = 路線ビュー(ツ�
 
 ### 8.1 ViewRosen 配下のダイアログ
 
-| クラス(IDD) | 役割・項目 |
-|---|---|
-| `CDlgRosenFileProp`(IDD_RosenFileProp) | 路線ファイルのプロパティ。`CTabCtrl` に4ページを内包。編集データは内部クラス `CPropEditorData` に集約: 路線名/起点時刻 `m_jikokuKitenJikoku`/既定駅間幅 `m_iDiagramDgrYZahyouKyoriDefault`/運用機能有効 `m_iEnableOperation`/表示プロパティ `CdDedDispProp`/下り上りダイヤ別名/運用番号逆順 `m_bOperationNumberReverse`/起点時刻跨ぎ運用接続 `m_bOperationCrossKitenJikoku`/基準ダイヤIndex `m_iKijunDiaIndex`/隠し種別無効 `m_bDisableHiddenSyubetsu` |
-| `CDlgRosenFileProp_Rosen`(路線ページ) | 路線名、駅名欄の幅(全角文字数、最大29)、運用機能の有効化、下り/上りダイヤ別名、運用番号逆順、運用番号段数 `m_iEDIT_OperationNumberRows`、起点時刻跨ぎ運用、基準ダイヤ、隠し種別無効 |
-| `CDlgRosenFileProp_FontColor`(フォント・色ページ) | `CdDedDispProp` を編集: 時刻表フォント1〜8(`m_arJikokuhyouFont[8]`、[1]Bold/[2]Italic/[3]Bold+Italic)、時刻表縦書き `m_fontpropJikokuhyouVFont`、ダイヤグラム駅名/時刻/列車フォント、運用表フォント `m_fontpropOperationTableFont`、運用一覧時刻フォント、コメントフォント。色: ダイヤ画面文字色 `m_colorDiaMojiColor`、列車色 `m_colorDiaRessyaColor`、縦横軸色 `m_colorDiaJikuColor`、基準運転時分の下限/上限/未定義/不正色(`m_colorStdOpeTime*Color`)、運用文字色・運用グリッド色 |
-| `CDlgRosenFileProp_Jikokuhyou`(時刻表ページ・Second追加) | 時刻表の列車の幅(半角4〜255。原作 OuDia の 4〜6 から OuDiaSecond で拡張、`DDV_MinMaxInt` に `edit_by_d_mania` コメント)、任意秒移動1/2(`m_iAnySecondIncDec1/2`)、列車名表示、路線外発着表示(始発側O/終着側T)、着/発時刻の秒丸め(`m_iSecondRoundChaku/Hatsu`)、24時以上表示 `m_bDisplay2400`、入出区連携コード表示 `m_bDisplayInOutLinkCode` |
-| `CDlgRosenFileProp_Diagram`(ダイヤグラムページ) | ダイヤグラム起点時刻(0:00〜23:59)、既定の駅間幅(30〜1800秒。『ダイヤグラムエンティティY座標』単位=秒の生値を直接編集、既定値60。分⇔秒換算コードはコメントアウト済み。原作 OuDia の 1〜30分から OuDiaSecond で秒単位・上限30分相当に変更)、路線外発着の表示方法 `m_iEDIT_DiagramDisplayOuterTerminal` |
-| `CDlgDiaList`(IDD_DiaList) | ダイヤ一覧。リストボックス+[新規作成][プロパティ...][コピー](Second追加)[削除][上へ][下へ][閉じる]。OK/キャンセルなし=**即時反映**。ダブルクリックでプロパティ |
-| `CDlgDiaProp`(IDD_DiaProp) | ダイヤのプロパティ。ダイヤ名(空・重複不可)。Second追加: 時刻表背景色(メイン色Index/サブ色Index/背景パターンIndex、パレット `CentDedDia::JIKOKUHYOUCOLOR_COUNT` 色、プレビュー矩形描画)、パターンダイヤプレビュー有効+周期(秒/分) |
-| `CDlgRosenfileInsert`(IDD_RosenfileInsert) | 路線ファイルの組入れ。組入れる .oud2 ファイル名(参照ボタン)+組入れ先駅(コンボ) |
-| `CDlgRosenCreateSubRosen`(IDD_FILE_ROSEN_CREATE_SUB_ROSEN) | 路線ファイルの切り出し。新ファイルの始発駅/終着駅コンボ(始発>終着はエラー)+範囲外を路線外発着として残すか `m_bEnableOuter` |
-| `CDlgDigitalJikokuhyouImport`(IDD_DigitalJikokuhyouImport) | デジタル時刻表(CSV)のインポート。下り1/上り1/下り2/上り2 の4ファイル指定+個別扱い無効化フラグ `m_bInvalidateIndividualHandling` |
+| クラス(IDD)                                                | 役割・項目                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `CDlgRosenFileProp`(IDD_RosenFileProp)                     | 路線ファイルのプロパティ。`CTabCtrl` に4ページを内包。編集データは内部クラス `CPropEditorData` に集約: 路線名/起点時刻 `m_jikokuKitenJikoku`/既定駅間幅 `m_iDiagramDgrYZahyouKyoriDefault`/運用機能有効 `m_iEnableOperation`/表示プロパティ `CdDedDispProp`/下り上りダイヤ別名/運用番号逆順 `m_bOperationNumberReverse`/起点時刻跨ぎ運用接続 `m_bOperationCrossKitenJikoku`/基準ダイヤIndex `m_iKijunDiaIndex`/隠し種別無効 `m_bDisableHiddenSyubetsu`                               |
+| `CDlgRosenFileProp_Rosen`(路線ページ)                      | 路線名、駅名欄の幅(全角文字数、最大29)、運用機能の有効化、下り/上りダイヤ別名、運用番号逆順、運用番号段数 `m_iEDIT_OperationNumberRows`、起点時刻跨ぎ運用、基準ダイヤ、隠し種別無効                                                                                                                                                                                                                                                                                                  |
+| `CDlgRosenFileProp_FontColor`(フォント・色ページ)          | `CdDedDispProp` を編集: 時刻表フォント1〜8(`m_arJikokuhyouFont[8]`、[1]Bold/[2]Italic/[3]Bold+Italic)、時刻表縦書き `m_fontpropJikokuhyouVFont`、ダイヤグラム駅名/時刻/列車フォント、運用表フォント `m_fontpropOperationTableFont`、運用一覧時刻フォント、コメントフォント。色: ダイヤ画面文字色 `m_colorDiaMojiColor`、列車色 `m_colorDiaRessyaColor`、縦横軸色 `m_colorDiaJikuColor`、基準運転時分の下限/上限/未定義/不正色(`m_colorStdOpeTime*Color`)、運用文字色・運用グリッド色 |
+| `CDlgRosenFileProp_Jikokuhyou`(時刻表ページ・Second追加)   | 時刻表の列車の幅(半角4〜255。原作 OuDia の 4〜6 から OuDiaSecond で拡張、`DDV_MinMaxInt` に `edit_by_d_mania` コメント)、任意秒移動1/2(`m_iAnySecondIncDec1/2`)、列車名表示、路線外発着表示(始発側O/終着側T)、着/発時刻の秒丸め(`m_iSecondRoundChaku/Hatsu`)、24時以上表示 `m_bDisplay2400`、入出区連携コード表示 `m_bDisplayInOutLinkCode`                                                                                                                                          |
+| `CDlgRosenFileProp_Diagram`(ダイヤグラムページ)            | ダイヤグラム起点時刻(0:00〜23:59)、既定の駅間幅(30〜1800秒。『ダイヤグラムエンティティY座標』単位=秒の生値を直接編集、既定値60。分⇔秒換算コードはコメントアウト済み。原作 OuDia の 1〜30分から OuDiaSecond で秒単位・上限30分相当に変更)、路線外発着の表示方法 `m_iEDIT_DiagramDisplayOuterTerminal`                                                                                                                                                                                 |
+| `CDlgDiaList`(IDD_DiaList)                                 | ダイヤ一覧。リストボックス+[新規作成][プロパティ...][コピー](Second追加)[削除][上へ][下へ][閉じる]。OK/キャンセルなし=**即時反映**。ダブルクリックでプロパティ                                                                                                                                                                                                                                                                                                                       |
+| `CDlgDiaProp`(IDD_DiaProp)                                 | ダイヤのプロパティ。ダイヤ名(空・重複不可)。Second追加: 時刻表背景色(メイン色Index/サブ色Index/背景パターンIndex、パレット `CentDedDia::JIKOKUHYOUCOLOR_COUNT` 色、プレビュー矩形描画)、パターンダイヤプレビュー有効+周期(秒/分)                                                                                                                                                                                                                                                     |
+| `CDlgRosenfileInsert`(IDD_RosenfileInsert)                 | 路線ファイルの組入れ。組入れる .oud2 ファイル名(参照ボタン)+組入れ先駅(コンボ)                                                                                                                                                                                                                                                                                                                                                                                                       |
+| `CDlgRosenCreateSubRosen`(IDD_FILE_ROSEN_CREATE_SUB_ROSEN) | 路線ファイルの切り出し。新ファイルの始発駅/終着駅コンボ(始発>終着はエラー)+範囲外を路線外発着として残すか `m_bEnableOuter`                                                                                                                                                                                                                                                                                                                                                           |
+| `CDlgDigitalJikokuhyouImport`(IDD_DigitalJikokuhyouImport) | デジタル時刻表(CSV)のインポート。下り1/上り1/下り2/上り2 の4ファイル指定+個別扱い無効化フラグ `m_bInvalidateIndividualHandling`                                                                                                                                                                                                                                                                                                                                                      |
 
 ### 8.2 マニュアル c08_dialog に列挙される全ダイアログ(参照)
 
-| 節 | ダイアログ | 対応ビュー/機能 |
-|---|---|---|
-| 3.8.1 | 印刷ページ設定 | 印刷余白(mm、小数可) |
-| 3.8.2 | 路線ファイルのプロパティ | §8.1 |
-| 3.8.3 | 保存するダイヤの選択 | WinDIA形式保存時(1ダイヤのみ保存可のため選択) |
-| 3.8.4 | 駅のプロパティ | §4 |
-| 3.8.5 | 列車種別のプロパティ | §5 |
-| 3.8.6 | ダイヤ一覧 | §8.1 |
-| 3.8.7 | ダイヤのプロパティ | §8.1 |
-| 3.8.8 | 列車のプロパティ | 時刻表ビュー担当領域 |
-| 3.8.9 | 駅時刻 | 時刻表ビュー担当領域(駅扱=運行なし/停車/通過/経由なし等) |
-| 3.8.10 | 時刻表ビューのプロパティ | 貼り付け移動量(分)ほか |
-| 3.8.11 | ダイヤグラムビューのプロパティ | 横軸範囲・表示倍率ほか |
-| 3.8.12 | 駅時刻変更 | 駅扱/着発時刻の一括変更 |
-| 3.8.13 | 時刻表CSV出力 | `CDlgOuJikokuhyouCsvExport` |
-| 3.8.14 | 路線ファイルの組入れ | §8.1 |
-| 3.8.15 | 路線ファイルの切り出し | §8.1 |
+| 節     | ダイアログ                     | 対応ビュー/機能                                          |
+| ------ | ------------------------------ | -------------------------------------------------------- |
+| 3.8.1  | 印刷ページ設定                 | 印刷余白(mm、小数可)                                     |
+| 3.8.2  | 路線ファイルのプロパティ       | §8.1                                                     |
+| 3.8.3  | 保存するダイヤの選択           | WinDIA形式保存時(1ダイヤのみ保存可のため選択)            |
+| 3.8.4  | 駅のプロパティ                 | §4                                                       |
+| 3.8.5  | 列車種別のプロパティ           | §5                                                       |
+| 3.8.6  | ダイヤ一覧                     | §8.1                                                     |
+| 3.8.7  | ダイヤのプロパティ             | §8.1                                                     |
+| 3.8.8  | 列車のプロパティ               | 時刻表ビュー担当領域                                     |
+| 3.8.9  | 駅時刻                         | 時刻表ビュー担当領域(駅扱=運行なし/停車/通過/経由なし等) |
+| 3.8.10 | 時刻表ビューのプロパティ       | 貼り付け移動量(分)ほか                                   |
+| 3.8.11 | ダイヤグラムビューのプロパティ | 横軸範囲・表示倍率ほか                                   |
+| 3.8.12 | 駅時刻変更                     | 駅扱/着発時刻の一括変更                                  |
+| 3.8.13 | 時刻表CSV出力                  | `CDlgOuJikokuhyouCsvExport`                              |
+| 3.8.14 | 路線ファイルの組入れ           | §8.1                                                     |
+| 3.8.15 | 路線ファイルの切り出し         | §8.1                                                     |
 
 ---
 

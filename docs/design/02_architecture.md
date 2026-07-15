@@ -10,49 +10,49 @@
 
 ### 1.1 前提条件(再掲)
 
-| 項目 | 内容 |
-|---|---|
-| 動作形態 | ブラウザで動作、インストール不要。PWA により完全オフライン動作 |
+| 項目         | 内容                                                                                                          |
+| ------------ | ------------------------------------------------------------------------------------------------------------- |
+| 動作形態     | ブラウザで動作、インストール不要。PWA により完全オフライン動作                                                |
 | ファイル互換 | .oud2 の読み書き**バイト互換**が最上位制約。OuDia .oud および旧版 oud2(1.00〜1.16 / OuDia.1.02)の読み込み互換 |
-| ライセンス | GPLv3 派生物として GPLv3 で公開 |
-| UI | 日本語。既存ユーザのキーボード操作体系を踏襲しつつ Web らしい改善は歓迎 |
-| 性能 | 数百列車 × 数十駅規模で時刻表編集・ダイヤ描画が快適 |
-| サーバ | 不要(クライアント完結)。ファイル共有・共同編集は将来拡張の余地として残す |
-| 開発体制 | 個人開発・段階的リリース |
+| ライセンス   | GPLv3 派生物として GPLv3 で公開                                                                               |
+| UI           | 日本語。既存ユーザのキーボード操作体系を踏襲しつつ Web らしい改善は歓迎                                       |
+| 性能         | 数百列車 × 数十駅規模で時刻表編集・ダイヤ描画が快適                                                           |
+| サーバ       | 不要(クライアント完結)。ファイル共有・共同編集は将来拡張の余地として残す                                      |
+| 開発体制     | 個人開発・段階的リリース                                                                                      |
 
 ### 1.2 技術スタック(確定)
 
-| 領域 | 採用 | 備考 |
-|---|---|---|
-| 言語 | TypeScript(strict、`exactOptionalPropertyTypes` 有効) | 時刻は `Seconds` ブランド型 + `null`(INT_MIN 全廃) |
-| UI フレームワーク | React 18 + Vite | React はシェル UI(メニュー・路線ツリー・タブ・ダイアログ)のみ |
-| UI ライブラリ | **不採用**(Radix 等を使わない) | ダイアログはネイティブ `<dialog>` + 自前フォームフック `usePropEdit` |
-| 状態管理 | Zustand + Immer(`produceWithPatches`) | 単一チョークポイント `executeCommand()` |
-| Undo/Redo | **patch 方式**(Immer のパッチ/逆パッチ) | 逆コマンド方式(createUndoCmd)は棄却 |
-| 内部モデル | **ファイル形式と同型の index 参照モデル**(ID 化しない) | .oud2 互換の検証可能性を最優先 |
-| Worker 通信 | Comlink(Apache-2.0) | 運用探索・交差支障のみ Worker 実行 |
-| 描画 | Canvas 2D(ダイヤグラム 4 レイヤ / 時刻表グリッド自前実装) | DOM 仮想化グリッド・WebGL は不採用 |
-| PWA | vite-plugin-pwa(Workbox) | 全アセット precache で完全オフライン |
-| 文字コード | 読み = `TextDecoder('shift_jis')`、.oud / CSV(SJIS 選択時)の書き出しのみ encoding-japanese(MIT) | .oud2 書き出しは UTF-8+BOM で標準 API のみ |
-| 永続化補助 | idb(ISC)、自動バックアップ本体は OPFS | |
-| バリデーション | zod **不採用** | format の寛容読込規則(非数→0、範囲外 index→主本線補正)が事実上の検証層 |
-| テスト | Vitest(format/domain/derive は Node 実行)+ Playwright(キーボード E2E) | **実ファイル群の「読込→書出→バイト一致」黄金テストを CI 必須ゲート**とする |
-| リポジトリ | pnpm workspaces のみ(Turborepo 不採用) | ロックファイル固定 + Renovate。全依存 GPLv3 互換ライセンスのみ |
+| 領域              | 採用                                                                                            | 備考                                                                       |
+| ----------------- | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| 言語              | TypeScript(strict、`exactOptionalPropertyTypes` 有効)                                           | 時刻は `Seconds` ブランド型 + `null`(INT_MIN 全廃)                         |
+| UI フレームワーク | React 18 + Vite                                                                                 | React はシェル UI(メニュー・路線ツリー・タブ・ダイアログ)のみ              |
+| UI ライブラリ     | **不採用**(Radix 等を使わない)                                                                  | ダイアログはネイティブ `<dialog>` + 自前フォームフック `usePropEdit`       |
+| 状態管理          | Zustand + Immer(`produceWithPatches`)                                                           | 単一チョークポイント `executeCommand()`                                    |
+| Undo/Redo         | **patch 方式**(Immer のパッチ/逆パッチ)                                                         | 逆コマンド方式(createUndoCmd)は棄却                                        |
+| 内部モデル        | **ファイル形式と同型の index 参照モデル**(ID 化しない)                                          | .oud2 互換の検証可能性を最優先                                             |
+| Worker 通信       | Comlink(Apache-2.0)                                                                             | 運用探索・交差支障のみ Worker 実行                                         |
+| 描画              | Canvas 2D(ダイヤグラム 4 レイヤ / 時刻表グリッド自前実装)                                       | DOM 仮想化グリッド・WebGL は不採用                                         |
+| PWA               | vite-plugin-pwa(Workbox)                                                                        | 全アセット precache で完全オフライン                                       |
+| 文字コード        | 読み = `TextDecoder('shift_jis')`、.oud / CSV(SJIS 選択時)の書き出しのみ encoding-japanese(MIT) | .oud2 書き出しは UTF-8+BOM で標準 API のみ                                 |
+| 永続化補助        | idb(ISC)、自動バックアップ本体は OPFS                                                           |                                                                            |
+| バリデーション    | zod **不採用**                                                                                  | format の寛容読込規則(非数→0、範囲外 index→主本線補正)が事実上の検証層     |
+| テスト            | Vitest(format/domain/derive は Node 実行)+ Playwright(キーボード E2E)                           | **実ファイル群の「読込→書出→バイト一致」黄金テストを CI 必須ゲート**とする |
+| リポジトリ        | pnpm workspaces のみ(Turborepo 不採用)                                                          | ロックファイル固定 + Renovate。全依存 GPLv3 互換ライセンスのみ             |
 
 ### 1.3 方式決定の一覧
 
-| 論点 | 決定 | 出所 |
-|---|---|---|
-| 内部モデル | index 参照モデル(ファイル同型)。駅作業のみ判別可能ユニオンへ正規化 | 案 3 + 案 2 |
-| Undo/Redo | patch 方式。履歴に `{コマンド型, パラメータ, patches, inversePatches}` を保存 | 案 2 |
-| ビュー差分更新 | 原典 pHint 同様「コマンド型」でディスパッチ(パッチのパス解析はしない) | 統合案 |
-| ダイヤグラム描画 | Canvas 2D × 4 レイヤ + rAF 全再描画 + ビューポートカリング | 案 2 + 案 3 |
-| entDgr レイアウト | 純関数 `computeDiagramLayout` として**仕様書通り忠実移植**(再発明しない) | 案 3 |
-| 時刻表グリッド | Canvas 自前グリッド(CWndDcdGrid 相当)。CCellBuilder 群 2.4 万行は `cellSpec` 純関数に圧縮 | 案 3 + 案 2 |
-| ファイル I/O | 独立パッケージ `@oudia/format`。出力条件はテーブル駆動。SJIS 0x5C 救済ハック再現。未知キー保持・書き戻し | 案 2 + 案 1 |
-| WindowPlacement | 読込時に保持し書き出し時に透過的に書き戻す(Windows 版との往復でファイルを壊さない) | 案 1 |
-| 運用探索 | Web Worker で忠実直訳(独自再設計しない)。導出値はストア外キャッシュに分離 | 案 3 + 案 2 |
-| リリース | v0.1 ビューア → v0.8 の 8 段階(§2.6 参照は本書 §3.5) | 案 3 |
+| 論点              | 決定                                                                                                     | 出所        |
+| ----------------- | -------------------------------------------------------------------------------------------------------- | ----------- |
+| 内部モデル        | index 参照モデル(ファイル同型)。駅作業のみ判別可能ユニオンへ正規化                                       | 案 3 + 案 2 |
+| Undo/Redo         | patch 方式。履歴に `{コマンド型, パラメータ, patches, inversePatches}` を保存                            | 案 2        |
+| ビュー差分更新    | 原典 pHint 同様「コマンド型」でディスパッチ(パッチのパス解析はしない)                                    | 統合案      |
+| ダイヤグラム描画  | Canvas 2D × 4 レイヤ + rAF 全再描画 + ビューポートカリング                                               | 案 2 + 案 3 |
+| entDgr レイアウト | 純関数 `computeDiagramLayout` として**仕様書通り忠実移植**(再発明しない)                                 | 案 3        |
+| 時刻表グリッド    | Canvas 自前グリッド(CWndDcdGrid 相当)。CCellBuilder 群 2.4 万行は `cellSpec` 純関数に圧縮                | 案 3 + 案 2 |
+| ファイル I/O      | 独立パッケージ `@oudia/format`。出力条件はテーブル駆動。SJIS 0x5C 救済ハック再現。未知キー保持・書き戻し | 案 2 + 案 1 |
+| WindowPlacement   | 読込時に保持し書き出し時に透過的に書き戻す(Windows 版との往復でファイルを壊さない)                       | 案 1        |
+| 運用探索          | Web Worker で忠実直訳(独自再設計しない)。導出値はストア外キャッシュに分離                                | 案 3 + 案 2 |
+| リリース          | v0.1 ビューア → v0.8 の 8 段階(§2.6 参照は本書 §3.5)                                                     | 案 3        |
 
 ---
 
@@ -111,30 +111,30 @@ graph LR
 
 ### 3.3 各モジュールの責務
 
-| パッケージ | 責務 | 原典対応 | 禁止事項 |
-|---|---|---|---|
-| `format` | OuPropertiesText 文法パーサ、世代別リーダー 4 系統、1.17 ライター、CSV 変換、エンコーディング判定 | CconvCDedRosenFileData / CconvCentDed(S00/S05/S09)/ CConvNodeContainer / CconvJikokuhyouCsv 群 | DOM・Zustand への依存。ドメインロジックの混入 |
-| `domain` | `RosenFileData` 型の公開(型宣言の実体は format の model/ にあり、domain が re-export する。file-io §2.3)、コマンドレデューサ、整合カスケード(駅増減伝播・index 再マップ・adjustBrunchLoop・種別シフト)、時刻演算、ソート・一本化 | entDed 群 / CRfEditCmd 群 / CDedRessyaSoater / CRessyaContUnifier | 描画・UI 概念の混入。導出値のストア格納 |
-| `derive` | ダイヤグラムレイアウト、セル仕様、運用探索、交差支障判定、駅時刻表バケツ分け | entDgr 群 / CDedOperationConnecter / CWndDcdGridCrossingCheck の判定部 / CCellBuilder 群(圧縮) | ドメイン状態の変更(入力→出力の純関数のみ) |
-| `render` | Canvas 2D プリミティブ(線・矩形・テキスト・縦書き・回転)、座標変換、グリッド基盤(固定行列・フォーカス・選択)、各レンダラ | DcDrawLib / CWndDcdGrid / CDcdDiagram2 / CRessyaDraw | ストア直接参照(描画入力はすべて引数で受ける) |
-| `apps/web` | シェル UI、ストアとコマンド実行、タブ管理、ダイアログ(`usePropEdit`)、キーマップ、File System Access、OPFS バックアップ、Worker ホスト、PWA | Hidemdi / CMainFrame / CDlgRosenView / CPropEditUi2 群 / CDiagramEditDoc | ファイル形式知識の混入(format に委譲) |
+| パッケージ | 責務                                                                                                                                                                                                                             | 原典対応                                                                                       | 禁止事項                                      |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------- |
+| `format`   | OuPropertiesText 文法パーサ、世代別リーダー 4 系統、1.17 ライター、CSV 変換、エンコーディング判定                                                                                                                                | CconvCDedRosenFileData / CconvCentDed(S00/S05/S09)/ CConvNodeContainer / CconvJikokuhyouCsv 群 | DOM・Zustand への依存。ドメインロジックの混入 |
+| `domain`   | `RosenFileData` 型の公開(型宣言の実体は format の model/ にあり、domain が re-export する。file-io §2.3)、コマンドレデューサ、整合カスケード(駅増減伝播・index 再マップ・adjustBrunchLoop・種別シフト)、時刻演算、ソート・一本化 | entDed 群 / CRfEditCmd 群 / CDedRessyaSoater / CRessyaContUnifier                              | 描画・UI 概念の混入。導出値のストア格納       |
+| `derive`   | ダイヤグラムレイアウト、セル仕様、運用探索、交差支障判定、駅時刻表バケツ分け                                                                                                                                                     | entDgr 群 / CDedOperationConnecter / CWndDcdGridCrossingCheck の判定部 / CCellBuilder 群(圧縮) | ドメイン状態の変更(入力→出力の純関数のみ)     |
+| `render`   | Canvas 2D プリミティブ(線・矩形・テキスト・縦書き・回転)、座標変換、グリッド基盤(固定行列・フォーカス・選択)、各レンダラ                                                                                                         | DcDrawLib / CWndDcdGrid / CDcdDiagram2 / CRessyaDraw                                           | ストア直接参照(描画入力はすべて引数で受ける)  |
+| `apps/web` | シェル UI、ストアとコマンド実行、タブ管理、ダイアログ(`usePropEdit`)、キーマップ、File System Access、OPFS バックアップ、Worker ホスト、PWA                                                                                      | Hidemdi / CMainFrame / CDlgRosenView / CPropEditUi2 群 / CDiagramEditDoc                       | ファイル形式知識の混入(format に委譲)         |
 
 ### 3.4 原典アーキテクチャとの対応
 
 原典の Hidemdi モデル(非表示ルート Doc + 12 種のサブ Doc/View)は次のように写像する。
 
-| 原典 | Web 版 |
-|---|---|
-| CDiagramEditDoc(ルート Doc、全データ保持) | Zustand ストア(`readonly RosenFileData` + 履歴) |
-| CRfEditCmd 派生 + executeEditCmd() | 名前付きコマンド + `executeCommand()`(単一チョークポイント) |
-| createUndoCmd() による逆コマンド | Immer `produceWithPatches` の逆パッチ |
-| UpdateAllSubDocviews + pHint(コマンド型で部分更新) | ストア購読 + コマンド型ディスパッチによるビュー差分更新 |
+| 原典                                                             | Web 版                                                                     |
+| ---------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| CDiagramEditDoc(ルート Doc、全データ保持)                        | Zustand ストア(`readonly RosenFileData` + 履歴)                            |
+| CRfEditCmd 派生 + executeEditCmd()                               | 名前付きコマンド + `executeCommand()`(単一チョークポイント)                |
+| createUndoCmd() による逆コマンド                                 | Immer `produceWithPatches` の逆パッチ                                      |
+| UpdateAllSubDocviews + pHint(コマンド型で部分更新)               | ストア購読 + コマンド型ディスパッチによるビュー差分更新                    |
 | サブ Doc の DocStr(「ダイヤ名\n方向\nフラグ」)と二重オープン防止 | ビュー記述子 `{type, diaName, houkou, customizeFlag}` をキーとするタブ管理 |
-| ダイヤ削除時のサブ Doc 強制クローズ | ストア購読でビュー記述子の整合性検証 → 自動クローズ |
-| DcDrawLib(IfDcdTarget / IfDcDraw / CGdiCache) | render パッケージの Canvas プリミティブ + 座標変換層 |
-| CPropEditUi2(StartEdit / OnUiChanged / EndEdit) | `usePropEdit` フック + ネイティブ `<dialog>` |
-| .ini(ズーム・表示トグル) | localStorage |
-| 60 秒自動バックアップ | OPFS 世代保存(編集契機、原典仕様踏襲) |
+| ダイヤ削除時のサブ Doc 強制クローズ                              | ストア購読でビュー記述子の整合性検証 → 自動クローズ                        |
+| DcDrawLib(IfDcdTarget / IfDcDraw / CGdiCache)                    | render パッケージの Canvas プリミティブ + 座標変換層                       |
+| CPropEditUi2(StartEdit / OnUiChanged / EndEdit)                  | `usePropEdit` フック + ネイティブ `<dialog>`                               |
+| .ini(ズーム・表示トグル)                                         | localStorage                                                               |
+| 60 秒自動バックアップ                                            | OPFS 世代保存(編集契機、原典仕様踏襲)                                      |
 
 ### 3.5 リリース段階
 
@@ -244,7 +244,7 @@ function executeCommand(cmd: EditCommand): void {
 
 ```typescript
 interface HistoryEntry {
-  command: EditCommand;          // コマンド型 + パラメータ(ビュー更新ヒント・将来の操作ログ)
+  command: EditCommand; // コマンド型 + パラメータ(ビュー更新ヒント・将来の操作ログ)
   patches: Patch[];
   inversePatches: Patch[];
 }
@@ -276,12 +276,12 @@ interface HistoryEntry {
 
 `<canvas>` を 4 枚重ね、更新頻度の異なる描画を分離する。
 
-| レイヤ | 内容 | 再描画契機 |
-|---|---|---|
-| 1(最背面) | 背景色(基本 + 駅間個別)・縦罫線(8 択テーブル {1,2,5,10,15,20,30,60 分}、bold/middle/dot)・横罫線(主要駅 = 太線)・時ラベル・駅名欄 | スクロール・ズーム・リサイズ・駅/表示設定変更 |
-| 2 | スジ(列車線)・在線表運用線 | レイアウト再計算・スクロール・ズーム・リサイズ |
-| 3 | 列車ラベル(回転)・停車駅明示 ○・入出区記号 | 同上 |
-| 4(最前面) | 選択・ホバーのオーバレイ | ポインタ移動(このレイヤのみ高頻度) |
+| レイヤ    | 内容                                                                                                                              | 再描画契機                                     |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| 1(最背面) | 背景色(基本 + 駅間個別)・縦罫線(8 択テーブル {1,2,5,10,15,20,30,60 分}、bold/middle/dot)・横罫線(主要駅 = 太線)・時ラベル・駅名欄 | スクロール・ズーム・リサイズ・駅/表示設定変更  |
+| 2         | スジ(列車線)・在線表運用線                                                                                                        | レイアウト再計算・スクロール・ズーム・リサイズ |
+| 3         | 列車ラベル(回転)・停車駅明示 ○・入出区記号                                                                                        | 同上                                           |
+| 4(最前面) | 選択・ホバーのオーバレイ                                                                                                          | ポインタ移動(このレイヤのみ高頻度)             |
 
 各 Canvas はビューポートサイズ(ダイヤ全体サイズの巨大 Canvas は作らない)とするため、スクロール / ズーム / リサイズは L1〜L3 全レイヤの再描画契機になる(詳細は 06_rendering §1.2)。
 
@@ -342,12 +342,12 @@ DOM 仮想化グリッドは不採用とし、CWndDcdGrid 相当の Canvas グ�
 
 ### 6.2 文字コード
 
-| 方向 | 形式 | 実装 |
-|---|---|---|
-| 読み | UTF-8(BOM 有)/ Shift_JIS(BOM 無) | BOM の有無で判定(拡張子でなく)。デコードはブラウザ標準 `TextDecoder('shift_jis')` / `TextDecoder('utf-8')` |
-| .oud2 書き | UTF-8 + BOM + CRLF | 標準 API(TextEncoder + BOM 前置) |
-| .oud 書き | Shift_JIS + BOM なし + CRLF | encoding-japanese(MIT)。ブラウザに SJIS エンコーダがないため |
-| CSV 書き | UTF-8 + BOM + CRLF を既定。設定で Shift_JIS も選択可 | 既定は標準 API。SJIS 選択時のみ encoding-japanese |
+| 方向       | 形式                                                 | 実装                                                                                                       |
+| ---------- | ---------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| 読み       | UTF-8(BOM 有)/ Shift_JIS(BOM 無)                     | BOM の有無で判定(拡張子でなく)。デコードはブラウザ標準 `TextDecoder('shift_jis')` / `TextDecoder('utf-8')` |
+| .oud2 書き | UTF-8 + BOM + CRLF                                   | 標準 API(TextEncoder + BOM 前置)                                                                           |
+| .oud 書き  | Shift_JIS + BOM なし + CRLF                          | encoding-japanese(MIT)。ブラウザに SJIS エンコーダがないため                                               |
+| CSV 書き   | UTF-8 + BOM + CRLF を既定。設定で Shift_JIS も選択可 | 既定は標準 API。SJIS 選択時のみ encoding-japanese                                                          |
 
 .oud 書き出しは FileType=OuDia.1.02 の最小キー集合(Operation・番線・Canceled 等は喪失、Kyoukaisen は隣接駅の着形式から自動生成)とし、保存前に**機能喪失警告ダイアログ(文言も原典踏襲)**を出す。
 
@@ -377,13 +377,13 @@ DOM 仮想化グリッドは不採用とし、CWndDcdGrid 相当の Canvas グ�
 
 ### 7.2 レイヤ別テスト
 
-| 対象 | 手段 | 内容 |
-|---|---|---|
-| format | Vitest(Node) | 黄金テスト、文法パーサ単体(エスケープ・ディレクトリ判定・CR 除去・BOM 判定・0x5C ハック)、EkiJikoku/Operation スキャナ、テーブル駆動出力条件の網羅、CSV 往復 |
-| domain | Vitest(Node) | 時刻演算(循環比較・decode・±12h 差)、コマンドレデューサ単体、**整合カスケードのプロパティベーステスト**(任意の駅追加削除・種別入替・番線再マップ後に「全列車の駅時刻数 = 駅数」「参照 index の全域有効性」等の不変条件を常設)、Undo/Redo(patch 適用の対称性、変更カウンタ仕様) |
-| derive | Vitest(Node) | `computeDiagramLayout` の座標スナップショット(60 秒閾値・長時間停車補完・線形補間・日跨ぎの各境界ケース)、`cellSpec` スナップショット、**運用探索は Windows 版と同一入力 → 同一 OperationTableContent 出力の比較テストを移植前に用意**、交差支障の時隔窓判定 |
-| render | Vitest + Canvas スナップショット | 主要ビューのピクセル/描画コマンド列スナップショット(回帰検知用、厳密一致は求めない) |
-| apps/web | Playwright | **キーボード操作 E2E**(v0.4 で整備): 連続入力モード、時補完、繰上げ/繰下げ、Ctrl+J(−1分し次へ)/ Ctrl+L(+1分し次へ)/ Ctrl+K(フォーカスを次へ)、ピリオド再実行、コピペと貼り付け移動量。PWA インストール時/タブ表示時の両キーマップモードを検証。ファイル開閉・タブ管理・クラッシュ復元 |
+| 対象     | 手段                             | 内容                                                                                                                                                                                                                                                                                  |
+| -------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| format   | Vitest(Node)                     | 黄金テスト、文法パーサ単体(エスケープ・ディレクトリ判定・CR 除去・BOM 判定・0x5C ハック)、EkiJikoku/Operation スキャナ、テーブル駆動出力条件の網羅、CSV 往復                                                                                                                          |
+| domain   | Vitest(Node)                     | 時刻演算(循環比較・decode・±12h 差)、コマンドレデューサ単体、**整合カスケードのプロパティベーステスト**(任意の駅追加削除・種別入替・番線再マップ後に「全列車の駅時刻数 = 駅数」「参照 index の全域有効性」等の不変条件を常設)、Undo/Redo(patch 適用の対称性、変更カウンタ仕様)        |
+| derive   | Vitest(Node)                     | `computeDiagramLayout` の座標スナップショット(60 秒閾値・長時間停車補完・線形補間・日跨ぎの各境界ケース)、`cellSpec` スナップショット、**運用探索は Windows 版と同一入力 → 同一 OperationTableContent 出力の比較テストを移植前に用意**、交差支障の時隔窓判定                          |
+| render   | Vitest + Canvas スナップショット | 主要ビューのピクセル/描画コマンド列スナップショット(回帰検知用、厳密一致は求めない)                                                                                                                                                                                                   |
+| apps/web | Playwright                       | **キーボード操作 E2E**(v0.4 で整備): 連続入力モード、時補完、繰上げ/繰下げ、Ctrl+J(−1分し次へ)/ Ctrl+L(+1分し次へ)/ Ctrl+K(フォーカスを次へ)、ピリオド再実行、コピペと貼り付け移動量。PWA インストール時/タブ表示時の両キーマップモードを検証。ファイル開閉・タブ管理・クラッシュ復元 |
 
 ### 7.3 テスト運用方針
 
@@ -397,14 +397,14 @@ DOM 仮想化グリッドは不採用とし、CWndDcdGrid 相当の Canvas グ�
 
 ### 8.1 性能目標
 
-| 項目 | 目標 | 手段 |
-|---|---|---|
-| 対象規模 | 数百列車 × 数十駅のダイヤ | — |
-| ダイヤグラムのスクロール/ズーム | 60fps | 4 レイヤ分離・ビューポートカリング・rAF |
-| 時刻表グリッドのスクロール/編集反映 | 60fps / 編集反映 16ms 以内 | Canvas グリッド・可視域のみ ColSpec 遅延評価・コマンド型による列単位差分更新 |
-| ファイル読込(数 MB 級 oud2) | 1 秒以内 | 逐次スキャンパーサ(正規表現多用を避ける) |
-| 編集コマンド実行 | 通常操作 16ms 以内 | Immer 構造共有。一括操作のホットパスは実測の上で手書き更新に差し替え可能な構造(§4.3) |
-| 運用探索 | UI 非ブロック(数百 ms 許容) | Worker 実行 + 前回結果表示 |
+| 項目                                | 目標                        | 手段                                                                                 |
+| ----------------------------------- | --------------------------- | ------------------------------------------------------------------------------------ |
+| 対象規模                            | 数百列車 × 数十駅のダイヤ   | —                                                                                    |
+| ダイヤグラムのスクロール/ズーム     | 60fps                       | 4 レイヤ分離・ビューポートカリング・rAF                                              |
+| 時刻表グリッドのスクロール/編集反映 | 60fps / 編集反映 16ms 以内  | Canvas グリッド・可視域のみ ColSpec 遅延評価・コマンド型による列単位差分更新         |
+| ファイル読込(数 MB 級 oud2)         | 1 秒以内                    | 逐次スキャンパーサ(正規表現多用を避ける)                                             |
+| 編集コマンド実行                    | 通常操作 16ms 以内          | Immer 構造共有。一括操作のホットパスは実測の上で手書き更新に差し替え可能な構造(§4.3) |
+| 運用探索                            | UI 非ブロック(数百 ms 許容) | Worker 実行 + 前回結果表示                                                           |
 
 性能は推測でなく実測で管理する: 代表規模(500 列車 × 50 駅)のベンチマークフィクスチャを用意し、レイアウト計算・全再描画・コマンド実行の所要時間を CI で追跡する。
 
@@ -416,12 +416,12 @@ DOM 仮想化グリッドは不採用とし、CWndDcdGrid 相当の Canvas グ�
 
 ### 8.3 対応ブラウザ
 
-| ブラウザ | 対応レベル |
-|---|---|
-| Chrome / Edge(Chromium 系、最新 2 メジャー) | フル機能。File System Access API による上書き保存・最近使ったファイル |
-| Firefox(最新 2 メジャー) | フル機能(保存はダウンロード方式)。OPFS 自動バックアップは対応 |
-| Safari 17+ | フル機能(保存はダウンロード方式)。OPFS・`TextDecoder('shift_jis')` 対応を前提 |
-| モバイル(iOS Safari / Android Chrome) | v0.1 ビューア機能を第一級サポート(「スマホでダイヤが見られる」価値)。編集はキーボード前提のためベストエフォート |
+| ブラウザ                                    | 対応レベル                                                                                                      |
+| ------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Chrome / Edge(Chromium 系、最新 2 メジャー) | フル機能。File System Access API による上書き保存・最近使ったファイル                                           |
+| Firefox(最新 2 メジャー)                    | フル機能(保存はダウンロード方式)。OPFS 自動バックアップは対応                                                   |
+| Safari 17+                                  | フル機能(保存はダウンロード方式)。OPFS・`TextDecoder('shift_jis')` 対応を前提                                   |
+| モバイル(iOS Safari / Android Chrome)       | v0.1 ビューア機能を第一級サポート(「スマホでダイヤが見られる」価値)。編集はキーボード前提のためベストエフォート |
 
 「上書き保存の快適性は Chromium 系限定」であることをドキュメントに明記する。全ブラウザで「保存し忘れてもデータが残る」体験(OPFS バックアップ + クラッシュ復元)を保証する。
 
@@ -496,13 +496,13 @@ ID 化を捨てた代償として、駅・種別・番線の増減のたびに�
 
 ## 付録: 参照ドキュメント
 
-| ドキュメント | 内容 |
-|---|---|
-| `docs/analysis/01_codebase-overview.md` | コードベース全体・Hidemdi・コマンドパターン・描画抽象 |
-| `docs/analysis/02_domain-model.md` | エンティティカタログ(entDed/entDgr)・index 体系・整合処理 |
-| `docs/analysis/03_file-format.md` | .oud2/.oud 形式仕様・§5 キー仕様表・世代差分 |
-| `docs/analysis/04_view-jikokuhyou.md` | 時刻表ビュー・入力効率機能・駅時刻表ビュー |
-| `docs/analysis/05_view-diagram.md` | ダイヤグラムビュー・entDgr パイプライン |
-| `docs/analysis/06_view-others.md` | 路線・駅・種別・コメント・リンクコードビュー |
-| `docs/analysis/07_view-operation.md` | 運用機能・運用探索・交差支障チェック |
-| `docs/analysis/08_manual-features.md` | 機能インベントリ・Tier 分類・用語対応表 |
+| ドキュメント                            | 内容                                                      |
+| --------------------------------------- | --------------------------------------------------------- |
+| `docs/analysis/01_codebase-overview.md` | コードベース全体・Hidemdi・コマンドパターン・描画抽象     |
+| `docs/analysis/02_domain-model.md`      | エンティティカタログ(entDed/entDgr)・index 体系・整合処理 |
+| `docs/analysis/03_file-format.md`       | .oud2/.oud 形式仕様・§5 キー仕様表・世代差分              |
+| `docs/analysis/04_view-jikokuhyou.md`   | 時刻表ビュー・入力効率機能・駅時刻表ビュー                |
+| `docs/analysis/05_view-diagram.md`      | ダイヤグラムビュー・entDgr パイプライン                   |
+| `docs/analysis/06_view-others.md`       | 路線・駅・種別・コメント・リンクコードビュー              |
+| `docs/analysis/07_view-operation.md`    | 運用機能・運用探索・交差支障チェック                      |
+| `docs/analysis/08_manual-features.md`   | 機能インベントリ・Tier 分類・用語対応表                   |
