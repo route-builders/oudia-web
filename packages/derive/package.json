@@ -12,7 +12,8 @@
     }
   },
   "dependencies": {
-    "@oudia/domain": "workspace:*"
+    "@oudia/domain": "workspace:*",
+    "@oudia/format": "workspace:*"
   },
   "scripts": {
     "build": "tsc --build"

@@ -50,6 +50,9 @@ importers:
       '@oudia/domain':
         specifier: workspace:*
         version: link:../domain
+      '@oudia/format':
+        specifier: workspace:*
+        version: link:../format
 
   packages/domain:
     dependencies:
