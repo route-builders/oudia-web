@@ -9,13 +9,31 @@
 ```
 fixtures/
 ├── current/     現行世代(そのままバイト一致対象。T1)
-│   ├── sample.oud2    原典 manual 同梱(1.17, 約1.1MB — 大規模・性能ベンチ兼用)
-│   └── sample2.oud2   原典 manual 同梱(1.17, 約98KB — 運用・番線・作業入れ子を含む)
+│   ├── sample.oud2    原典 manual 同梱(1.17, 約1.1MB — 大規模・性能ベンチ兼用。環状/隠し種別)
+│   └── sample2.oud2   原典 manual 同梱(1.17, 約98KB — 運用・番線・分岐・平面交差・作業入れ子)
+├── roundtrip/   実ファイルをモデル経由でライター正準化した機能別派生(モデル T1 コーパス)
+│   ├── canonical-sample2.oud2   sample2 の正準形(= 元ファイルと一致)
+│   ├── canceled.oud2            運休(Canceled)
+│   ├── next-eki-distance.oud2   駅間距離(NextEkiDistance)
+│   ├── loop-hidden.oud2         環状線 + 隠し種別 + パターンダイヤ(sample 由来)
+│   ├── empty-comment.oud2       空コメント・別名なし
+│   ├── no-window-placement.oud2 WindowPlacement 欠落
+│   └── no-app-comment.oud2      FileTypeAppComment 欠落
 └── synthetic/   境界ケースを人工生成(バイト一致 T1 / 冪等 T3)
     ├── escape.oud2         値中の \n・\\(ライターが生成し得る正規形エスケープのみ)
-    ├── minimal.oud2        最小構造(空ディレクトリ・空値・末尾行)
+    ├── future-unknown.oud2 未知キー(root/Rosen/DispProp)保全の往復検証
+    ├── minimal.oud2        最小構造(空ディレクトリ・空値・末尾行。ノードレベルのみ)
     └── unclosed-dir.oud2   閉じ忘れディレクトリ(EOF 受理挙動の確認)
 ```
+
+## roundtrip/ の由来
+
+`current/sample2.oud2` / `sample.oud2`(実 OuDiaSecond 出力)をモデル
+(`RosenFileData`)へ読み込み、機能フラグを設定し、ライター(`writeOud2`)で
+書き出して生成した。ライター出力は定義上**正準形**であり、モデルレベル T1
+(`readRosenFile → writeOud2 → バイト一致`)が必ず成立する。バイト一致 CI ゲート
+(`golden-corpus.test.ts`)のモデルコーパスを構成する。元ファイルが GPLv3 側か FDL 側か
+未確定のため、下記 current/ と同じライセンス課題を引き継ぐ。
 
 ## current/ の由来とライセンス(⚠️ 未確定)
 

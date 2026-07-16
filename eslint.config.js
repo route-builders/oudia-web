@@ -56,4 +56,14 @@ export default [
       globals: { ...globals.node, module: 'readonly', require: 'readonly' },
     },
   },
+  {
+    // ビルド/CI 補助スクリプト(ESM の .mjs)。型情報なし + Node グローバル。
+    files: ['scripts/**/*.mjs', 'scripts/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+    },
+  },
 ];

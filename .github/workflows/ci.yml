@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 oudia-second-web contributors
+#
+# CI 必須ゲート。全 PR がこれを通過しなければマージできない(roadmap M2 完了条件 #1)。
+# 最重要は「読込 → 無編集 → 書出 → バイト一致」黄金テスト(architecture §7.1)。
+
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# 同一 PR/ブランチの古い実行はキャンセルして最新のみ走らせる。
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality-gate:
+    name: 品質ゲート(typecheck / lint / test / format)
+    runs-on: ubuntu-latest
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+
+      - name: pnpm セットアップ
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Node セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 依存インストール(ロックファイル固定)
+        run: pnpm install --frozen-lockfile
+
+      - name: 型チェック
+        run: pnpm typecheck
+
+      - name: Lint(ESLint + 依存方向)
+        run: pnpm lint
+
+      - name: フォーマット検査
+        run: pnpm format:check
+
+      # 黄金テストを含む全テスト。バイト一致ゲートはここで強制される。
+      - name: テスト(バイト一致黄金テスト含む)
+        run: pnpm test
+
+  license-check:
+    name: ライセンス検査(GPLv3 非互換依存の混入防止)
+    runs-on: ubuntu-latest
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+
+      - name: pnpm セットアップ
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Node セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 依存インストール(ロックファイル固定)
+        run: pnpm install --frozen-lockfile
+
+      - name: ライセンス検査
+        run: pnpm license-check
