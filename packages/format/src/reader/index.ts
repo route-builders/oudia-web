@@ -9,7 +9,8 @@
  * CconvCDedRosenFileData::CDedRosenFileData_From_OuPropertiesText)。
  *
  * 読込順(原典): FileType 判定 → Rosen.(必須)→ DispProp.(必須)→ WindowPlacement.(任意)。
- * FileType は sourceFileType として保持、FileTypeAppComment は読み捨てる(書き出しで再生成)。
+ * FileType は sourceFileType、FileTypeAppComment は sourceFileTypeAppComment として保持する
+ * (バイト一致 T1 のため読込値をそのまま往復させる)。
  * WindowPlacement は解釈せず RawEntry[] で透過保持する(architecture §4.5)。
  */
 
@@ -78,8 +79,9 @@ export function readRosenFile(root: PtDirectory): ReadRosenFileResult {
     });
   }
 
-  // FileTypeAppComment は読み捨てる(消費だけして破棄)。
-  cur.value('FileTypeAppComment');
+  // FileTypeAppComment(ルート最終行)。読込値を保持し書き戻す(T1)。欠落時 null。
+  const appComment = cur.value('FileTypeAppComment');
+  const sourceFileTypeAppComment = appComment ?? null;
 
   // Rosen.(必須)
   const rosenDir = cur.directory('Rosen');
@@ -108,6 +110,7 @@ export function readRosenFile(root: PtDirectory): ReadRosenFileResult {
     rosen,
     dispProp,
     windowPlacement,
+    sourceFileTypeAppComment,
     ...(unknownEntries.length > 0 ? { unknownEntries } : {}),
   };
 

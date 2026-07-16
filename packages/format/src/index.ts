@@ -60,6 +60,9 @@ export type { ReadRosenFileResult } from './reader/index.js';
 export { fileTypeGroup, ReadContext, ReadError } from './reader/index.js';
 export type { FileTypeGroup } from './reader/index.js';
 
+// ---- 現行世代ライター(RosenFileData → ノードツリー → bytes)----
+export { writeRosenFile, writeOud2, WriteError } from './writer/index.js';
+
 /** bytes → ノードツリー(decode + parse)。デコード情報も返す。 */
 export type ParseNodeTreeResult =
   | {

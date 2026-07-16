@@ -14,6 +14,7 @@ import type {
   Ekikibo,
   SenStyle,
   StopMarkDrawType,
+  TrackType,
 } from '../model/enums.js';
 
 // ---- Ekijikokukeisiki(駅時刻形式)----
@@ -81,4 +82,19 @@ export const STOPMARK_TO_FILE: Record<StopMarkDrawType, string> = {
   drawOnStop: 'EStopMarkDrawType_DrawOnStop',
   nothing: 'EStopMarkDrawType_Nothing',
   drawOnPass: 'EStopMarkDrawType_DrawOnPass',
+};
+
+// ---- TrackType(平面交差の番線種別。数値コード)----
+// 原典 ETrackType: 0=駅番線 / 1=起点側 / 2=終点側 / 3=路線外(analysis §03 §5.7)。
+export const TRACKTYPE_BY_CODE: Record<number, TrackType> = {
+  0: 'track',
+  1: 'origin',
+  2: 'terminal',
+  3: 'outer',
+};
+export const TRACKTYPE_TO_CODE: Record<TrackType, number> = {
+  track: 0,
+  origin: 1,
+  terminal: 2,
+  outer: 3,
 };
