@@ -19,12 +19,26 @@ fixtures/
 │   ├── empty-comment.oud2       空コメント・別名なし
 │   ├── no-window-placement.oud2 WindowPlacement 欠落
 │   └── no-app-comment.oud2      FileTypeAppComment 欠落
-└── synthetic/   境界ケースを人工生成(バイト一致 T1 / 冪等 T3)
-    ├── escape.oud2         値中の \n・\\(ライターが生成し得る正規形エスケープのみ)
-    ├── future-unknown.oud2 未知キー(root/Rosen/DispProp)保全の往復検証
-    ├── minimal.oud2        最小構造(空ディレクトリ・空値・末尾行。ノードレベルのみ)
-    └── unclosed-dir.oud2   閉じ忘れディレクトリ(EOF 受理挙動の確認)
+├── synthetic/   境界ケースを人工生成(バイト一致 T1 / 冪等 T3)
+│   ├── escape.oud2         値中の \n・\\(ライターが生成し得る正規形エスケープのみ)
+│   ├── future-unknown.oud2 未知キー(root/Rosen/DispProp)保全の往復検証
+│   ├── minimal.oud2        最小構造(空ディレクトリ・空値・末尾行。ノードレベルのみ)
+│   └── unclosed-dir.oud2   閉じ忘れディレクトリ(EOF 受理挙動の確認)
+└── oldgen/      旧世代リーダーの読込検証(往復対象外。読込結果のモデルを検証)
+    ├── oudiasecond-1.09.oud2  S09(現行のサブセット。$番線・欠落キー既定)
+    ├── oudiasecond-1.05.oud2  S05(1 起点番線・RessyaTrack= マージ・EnableOperation)
+    ├── oudiasecond-1.00.oud2  S00(空 Ekimei→"00"・番線なし・keisiki 導出)
+    └── oudia-1.02.oud         OuDia.1.02(SJIS 無 BOM・S00 経路・分岐推定)
 ```
+
+## oldgen/ の由来
+
+いずれも本プロジェクトで手作り(原典由来ではない)。GPLv3 で公開する。各世代の変換規則
+(S09/S05/S00 の CconvCentDedS* 仕様、M1 プランの変換表)を検証できる最小有効ツリー。
+旧世代は現行 FileType でしか書き出せないためバイト一致(往復)は対象外で、読込結果のモデル
+(番線 index・keisiki 導出フラグ・分岐推定等)を assert する。`.oud2` は UTF-8+BOM、
+`.oud` は Shift-JIS 無 BOM(SJIS デコード経路の検証)。将来 Windows 実機の実ファイルで
+再検証できれば差し替える。
 
 ## roundtrip/ の由来
 

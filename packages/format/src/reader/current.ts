@@ -43,7 +43,7 @@ import type { PtDirectory, PtNode } from '../node/types.js';
 import { NodeCursor } from '../node/cursor.js';
 import type { UnconsumedNode } from '../node/cursor.js';
 import { decodeColor } from '../value/color.js';
-import { decodeEkiJikoku, splitEkiJikokuList } from '../value/ekiJikoku.js';
+import { splitEkiJikokuList } from '../value/ekiJikoku.js';
 import type { DecodedEkiJikoku } from '../value/ekiJikoku.js';
 import { decodeFont } from '../value/font.js';
 import { decodeAfterOperationCont, decodeBeforeOperationCont } from '../value/operation.js';
@@ -55,6 +55,8 @@ import {
   decodeTrackOmit,
 } from './composite.js';
 import type { ReadContext } from './context.js';
+import type { ReaderProfile } from './profile.js';
+import { CURRENT_PROFILE } from './profile.js';
 import { createDefaultDispProp, COLOR_BLACK, COLOR_WHITE } from './defaults.js';
 import {
   DIAGRAM_RESSYAJOUHOU_FROM_FILE,
@@ -222,7 +224,7 @@ function readCrossingCheckRule(dir: PtDirectory): CrossingCheckRule {
 
 // ---- Eki(駅)----
 
-function readEki(dir: PtDirectory, id: number, ctx: ReadContext): Eki {
+function readEki(dir: PtDirectory, id: number, ctx: ReadContext, profile: ReaderProfile): Eki {
   const cur = new NodeCursor(dir);
 
   const ekimei = readStr(cur, 'Ekimei');
@@ -238,8 +240,8 @@ function readEki(dir: PtDirectory, id: number, ctx: ReadContext): Eki {
     cur,
     'DiagramRessyajouhouHyoujiNobori',
   );
-  const downMain = readInt(cur, 'DownMain', 0);
-  const upMain = readInt(cur, 'UpMain', 0);
+  // DownMain / UpMain は世代で読み方が異なる(S05 は −1、S00 は既定 0/1)。
+  const { downMain, upMain } = profile.readMainTracks(cur);
 
   // Brunch/Loop: 空 → null。opposite は index >= 0 のときのみ読む(原典)。
   const brunchCoreEkiIndex = readIndexOrNull(cur, 'BrunchCoreEkiIndex');
@@ -382,7 +384,9 @@ function readEki(dir: PtDirectory, id: number, ctx: ReadContext): Eki {
     jikokuhyouOuterDisplayKudari,
     jikokuhyouOuterDisplayNobori,
   };
-  return allUnknown.length === 0 ? base : { ...base, unknownEntries: allUnknown };
+  const eki = allUnknown.length === 0 ? base : { ...base, unknownEntries: allUnknown };
+  // 旧世代は keisiki からの表示フラグ導出・空 Ekimei 補完などをフックで適用する。
+  return profile.fixupEki === undefined ? eki : profile.fixupEki(eki, cur);
 }
 
 /** 作業欄数の生読み(空 → 0、1..3 以外 → 0。原典 stoi + 範囲チェック)。 */
@@ -479,7 +483,7 @@ function makeOperationStore(cur: NodeCursor): OperationKeyStore {
   };
 }
 
-function readRessya(dir: PtDirectory, orderCtx: EkiOrderContext): Ressya {
+function readRessya(dir: PtDirectory, orderCtx: EkiOrderContext, profile: ReaderProfile): Ressya {
   const cur = new NodeCursor(dir);
 
   // Houkou: 不正・欠落 → isNull(この列車に関する記述なし)。
@@ -513,14 +517,19 @@ function readRessya(dir: PtDirectory, orderCtx: EkiOrderContext): Ressya {
   const opStore = makeOperationStore(cur);
   const ekiJikokuValue = cur.value('EkiJikoku') ?? '';
   const elements = splitEkiJikokuList(ekiJikokuValue);
+  // S05 は番線を兄弟キー RessyaTrack= の対応要素から得る(それ以外の世代は無視)。
+  const trackElements = profile.readsRessyaTrack
+    ? splitEkiJikokuList(cur.value('RessyaTrack') ?? '')
+    : [];
   const orderMax = Math.min(elements.length, orderCtx.ekiTrack2Count.length);
   const ekiJikokuCont: EkiJikoku[] = [];
   for (let order = 0; order < orderMax; order++) {
     const el = elements[order] ?? '';
+    const trackEl = trackElements[order] ?? '';
     const trackCount = orderCtx.ekiTrack2Count[order] ?? 0;
     const main = orderCtx.mainTrack[order] ?? 0;
     const outerCount = orderCtx.outerTerminalCount[order] ?? 0;
-    const decoded: DecodedEkiJikoku = decodeEkiJikoku(el, trackCount, main);
+    const decoded: DecodedEkiJikoku = profile.decodeEkiJikokuElement(el, trackEl, trackCount, main);
     const beforeOperationCont = decodeBeforeOperationCont(
       opStore,
       `${String(order)}B`,
@@ -563,7 +572,7 @@ function readRessya(dir: PtDirectory, orderCtx: EkiOrderContext): Ressya {
 
 // ---- Dia(ダイヤ)----
 
-function readDia(dir: PtDirectory, ekiCont: Eki[]): Dia {
+function readDia(dir: PtDirectory, ekiCont: Eki[], profile: ReaderProfile): Dia {
   const cur = new NodeCursor(dir);
   const name = readStr(cur, 'DiaName');
   const mainBackColorIndex = readInt(cur, 'MainBackColorIndex', 0);
@@ -576,8 +585,8 @@ function readDia(dir: PtDirectory, ekiCont: Eki[]): Dia {
   const noboriCtx = buildEkiOrderContext(ekiCont, RESSYAHOUKOU_NOBORI);
 
   const midUnknown: UnknownEntry[] = [];
-  const kudariList = readRessyaCont(cur, 'Kudari', kudariCtx, midUnknown);
-  const noboriList = readRessyaCont(cur, 'Nobori', noboriCtx, midUnknown);
+  const kudariList = readRessyaCont(cur, 'Kudari', kudariCtx, midUnknown, profile);
+  const noboriList = readRessyaCont(cur, 'Nobori', noboriCtx, midUnknown, profile);
 
   const directUnknown = collectUnknown(cur.unconsumed()) ?? [];
   const allUnknown = [...directUnknown, ...midUnknown];
@@ -600,11 +609,12 @@ function readRessyaCont(
   containerName: 'Kudari' | 'Nobori',
   orderCtx: EkiOrderContext,
   midUnknown: UnknownEntry[],
+  profile: ReaderProfile,
 ): Ressya[] {
   const dir = cur.directory(containerName);
   if (dir === undefined) return [];
   const inner = new NodeCursor(dir);
-  const list = inner.directories('Ressya').map((rDir) => readRessya(rDir, orderCtx));
+  const list = inner.directories('Ressya').map((rDir) => readRessya(rDir, orderCtx, profile));
   for (const { index, node } of inner.unconsumed()) {
     midUnknown.push(unknownEntryOf(index, node, `${containerName}.`));
   }
@@ -614,7 +624,11 @@ function readRessyaCont(
 // ---- Rosen(路線)----
 
 /** Rosen. ノードを読む。原典 CentDedRosen_From_OuPropertiesText の読込順に従う。 */
-export function readRosen(dir: PtDirectory, ctx: ReadContext): Rosen {
+export function readRosen(
+  dir: PtDirectory,
+  ctx: ReadContext,
+  profile: ReaderProfile = CURRENT_PROFILE,
+): Rosen {
   const cur = new NodeCursor(dir);
 
   const rosenmei = readStr(cur, 'Rosenmei');
@@ -622,13 +636,15 @@ export function readRosen(dir: PtDirectory, ctx: ReadContext): Rosen {
   const noboriDiaAlias = readStr(cur, 'NoboriDiaAlias');
 
   // Eki[](駅Index 順)。id は読込順に自動採番(§1.4)。
-  const ekiCont: Eki[] = cur.directories('Eki').map((ekiDir, i) => readEki(ekiDir, i, ctx));
+  const ekiCont: Eki[] = cur
+    .directories('Eki')
+    .map((ekiDir, i) => readEki(ekiDir, i, ctx, profile));
 
   const ressyasyubetsuCont: Ressyasyubetsu[] = cur
     .directories('Ressyasyubetsu')
     .map((rsDir) => readRessyasyubetsu(rsDir));
 
-  const diaCont: Dia[] = cur.directories('Dia').map((diaDir) => readDia(diaDir, ekiCont));
+  const diaCont: Dia[] = cur.directories('Dia').map((diaDir) => readDia(diaDir, ekiCont, profile));
 
   const kitenJikoku = readJikokuProp(cur, 'KitenJikoku');
   const diagramDgrYZahyouKyoriDefault = readInt(cur, 'DiagramDgrYZahyouKyoriDefault', 60);
@@ -660,7 +676,12 @@ export function readRosen(dir: PtDirectory, ctx: ReadContext): Rosen {
     disableHiddenSyubetsu,
     comment,
   };
-  return unknownEntries === undefined ? base : { ...base, unknownEntries };
+  let rosen = unknownEntries === undefined ? base : { ...base, unknownEntries };
+  // 旧世代の Rosen 補正(S05: EnableOperation 非空→2)。
+  if (profile.fixupRosen !== undefined) rosen = profile.fixupRosen(rosen, cur);
+  // 旧世代の全体後処理(S00: Kyoukaisen からの分岐駅推定)。
+  if (profile.postProcess !== undefined) rosen = profile.postProcess(rosen);
+  return rosen;
 }
 
 function toEnableOperation(n: number): 0 | 1 | 2 {

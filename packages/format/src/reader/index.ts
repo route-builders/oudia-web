@@ -21,13 +21,17 @@ import type { PtDirectory, PtNode } from '../node/types.js';
 import { ReadContext, ReadError } from './context.js';
 import { readDispProp, readRosen } from './current.js';
 import { fileTypeGroup } from './fileType.js';
+import { CURRENT_PROFILE } from './profile.js';
+import type { ReaderProfile } from './profile.js';
+import { S05_PROFILE } from './s05.js';
+import { createS00Profile } from './s00.js';
 
 /** 読込エラーコード(原典の負コード体系。file-io §3.7)。 */
 export const ReaderErrorCode = {
   FileTypeInvalid: -1, // FileType が正しくありません
   RosenNotFound: -2, // Rosen ディレクトリが見つかりません
   DispPropNotFound: -3, // DispProp ディレクトリが見つかりません
-  UnsupportedGeneration: -1100, // 旧世代(M1 未対応)
+  UnsupportedGeneration: -1100, // 予約(現状 S00〜現行の全世代を読めるため未使用)
 } as const;
 
 /** 読込結果(モデル + 蓄積した警告)。 */
@@ -71,13 +75,10 @@ export function readRosenFile(root: PtDirectory): ReadRosenFileResult {
       entries: [{ key: 'FileType', value: fileType }],
     });
   }
-  if (group !== 5) {
-    // 旧世代リーダーは後続タスク。M1 は現行世代のみ。
-    throw new ReadError(ReaderErrorCode.UnsupportedGeneration, {
-      reason: 'unsupportedGeneration',
-      entries: [{ key: 'FileType', value: fileType }],
-    });
-  }
+  // 世代別リーダーのプロファイルを選ぶ。5/4 = 現行、3 = S05、2/1(OuDia.1.02 含む)= S00。
+  // グループ 4(S09)は現行世代の厳密なサブセットなので現行リーダーで読める。
+  const profile: ReaderProfile =
+    group === 5 || group === 4 ? CURRENT_PROFILE : group === 3 ? S05_PROFILE : createS00Profile();
 
   // FileTypeAppComment(ルート最終行)。読込値を保持し書き戻す(T1)。欠落時 null。
   const appComment = cur.value('FileTypeAppComment');
@@ -88,7 +89,7 @@ export function readRosenFile(root: PtDirectory): ReadRosenFileResult {
   if (rosenDir === undefined) {
     throw new ReadError(ReaderErrorCode.RosenNotFound);
   }
-  const rosen = readRosen(rosenDir, ctx);
+  const rosen = readRosen(rosenDir, ctx, profile);
 
   // DispProp.(必須)
   const dispPropDir = cur.directory('DispProp');
