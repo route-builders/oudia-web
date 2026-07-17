@@ -240,3 +240,87 @@ body {
   padding: 24px;
   color: #9c2b2b;
 }
+
+/* ---- プロパティ編集ダイアログ(design §05 5.1)---- */
+.prop-dialog {
+  border: 1px solid #888;
+  border-radius: 6px;
+  padding: 0;
+  min-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+}
+.prop-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.3);
+}
+.prop-dialog .dialog-title {
+  font-weight: 600;
+  padding: 10px 14px;
+  border-bottom: 1px solid #ddd;
+  background: #f5f5f5;
+}
+.prop-dialog .dialog-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.prop-dialog .dialog-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+.prop-dialog fieldset.dialog-field {
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 6px 10px;
+  flex-direction: row;
+  gap: 14px;
+  align-items: center;
+}
+.prop-dialog fieldset.dialog-field legend {
+  font-size: 12px;
+  color: #666;
+}
+.prop-dialog .dialog-field input[type='text'],
+.prop-dialog .dialog-field select {
+  padding: 4px 6px;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  font-size: 13px;
+}
+.prop-dialog .dialog-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+}
+.prop-dialog .dialog-error {
+  color: #9c2b2b;
+  font-size: 12px;
+  margin: 0;
+}
+.prop-dialog .dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid #ddd;
+}
+.prop-dialog .dialog-footer button {
+  padding: 5px 16px;
+  border: 1px solid #999;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+}
+.prop-dialog .dialog-ok {
+  background: #1d5fb0;
+  color: #fff;
+  border-color: #1d5fb0;
+}
+.prop-dialog .dialog-ok:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
