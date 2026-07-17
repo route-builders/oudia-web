@@ -10,6 +10,7 @@
   },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
+    "dev": "pnpm --filter @oudia/web dev",
     "build": "pnpm -r run build",
     "typecheck": "tsc --build",
     "lint": "pnpm run lint:eslint && pnpm run lint:deps",
