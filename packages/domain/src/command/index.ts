@@ -24,6 +24,13 @@ export type {
 export { commandReducers, applyCommand, normalizeToLf } from './reducers.js';
 export { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
 export {
+  copyRessyaToClipboard,
+  computePasteTrains,
+  addToTrailingNumber,
+  NO_PASTE_IDOURYOU,
+} from './clipboard.js';
+export type { RessyaClipboard, PasteIdouryou } from './clipboard.js';
+export {
   createDocumentState,
   executeCommand,
   undo,
