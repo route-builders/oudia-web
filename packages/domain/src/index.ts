@@ -14,3 +14,6 @@ export type * from '@oudia/format';
 // ---- 時刻演算・index 変換(domain 実装)----
 export * from './jikoku.js';
 export * from './ekiOrder.js';
+
+// ---- 編集コマンド基盤(executeCommand / patch Undo/Redo / 変更カウンタ)----
+export * from './command/index.js';

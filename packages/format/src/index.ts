@@ -63,6 +63,12 @@ export type { FileTypeGroup } from './reader/index.js';
 // ---- 現行世代ライター(RosenFileData → ノードツリー → bytes)----
 export { writeRosenFile, writeOud2, WriteError } from './writer/index.js';
 
+// ---- CSV 直列化・時刻整形(時刻表 CSV / 駅時刻表 CSV の低レベル基盤)----
+export { encodeCsvCell, encodeCsvDocument } from './csv/document.js';
+export type { CsvCell, CsvRow, CsvDocument, CsvEncodeOptions } from './csv/document.js';
+export { encodeJikokuCsv } from './csv/jikokuConv.js';
+export type { JikokuConvOptions } from './csv/jikokuConv.js';
+
 /** bytes → ノードツリー(decode + parse)。デコード情報も返す。 */
 export type ParseNodeTreeResult =
   | {

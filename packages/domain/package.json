@@ -12,7 +12,8 @@
     }
   },
   "dependencies": {
-    "@oudia/format": "workspace:*"
+    "@oudia/format": "workspace:*",
+    "immer": "^11.1.11"
   },
   "scripts": {
     "build": "tsc --build"

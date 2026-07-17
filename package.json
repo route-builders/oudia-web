@@ -19,7 +19,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "bench": "vitest bench --run"
+    "bench": "vitest bench --run",
+    "license-check": "node scripts/license-check.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
