@@ -39,6 +39,15 @@ body {
 .file-name .warn {
   color: #a0600c;
 }
+.sw-update {
+  margin-left: auto;
+  padding: 4px 10px;
+  background: #1d5fb0;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
 .app-error {
   padding: 6px 12px;
   background: #fbe3e3;

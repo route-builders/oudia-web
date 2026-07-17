@@ -27,6 +27,10 @@ interface DocState {
   tabs: OpenTab[];
   /** アクティブタブのキー(null = ホーム)。 */
   activeKey: string | null;
+  /** SW 更新が利用可能なら reload コールバック(null = なし)。 */
+  swReload: (() => void) | null;
+  /** オフライン利用可能になったか。 */
+  offlineReady: boolean;
 
   /** ファイルを読み込む(タブは初期化)。 */
   loadData: (data: RosenFileData, fileName: string, warningCount: number) => void;
@@ -36,6 +40,10 @@ interface DocState {
   closeTab: (key: string) => void;
   /** アクティブタブを切り替える。 */
   setActive: (key: string | null) => void;
+  /** SW 更新利用可を通知(reload コールバックを保持)。 */
+  setSwUpdate: (reload: () => void) => void;
+  /** オフライン準備完了を通知。 */
+  setOfflineReady: () => void;
 }
 
 export const useDocStore = create<DocState>((set) => ({
@@ -44,6 +52,8 @@ export const useDocStore = create<DocState>((set) => ({
   warningCount: 0,
   tabs: [],
   activeKey: null,
+  swReload: null,
+  offlineReady: false,
 
   loadData: (data, fileName, warningCount) => {
     set({ data, fileName, warningCount, tabs: [], activeKey: null });
@@ -76,5 +86,13 @@ export const useDocStore = create<DocState>((set) => ({
 
   setActive: (key) => {
     set({ activeKey: key });
+  },
+
+  setSwUpdate: (reload) => {
+    set({ swReload: reload });
+  },
+
+  setOfflineReady: () => {
+    set({ offlineReady: true });
   },
 }));

@@ -12,6 +12,7 @@ import { computeDiagramLayout } from '@oudia/derive';
 import { createViewTransform, drawL1, drawL2, drawL3, DEFAULT_PX_PER_SEC } from '@oudia/render';
 import type { DiagramTheme } from '@oudia/render';
 import { useCanvas2d } from '../hooks/useCanvas2d.js';
+import { pinchToStep, touchDistance, dominantPinchAxis } from '../input/pinch.js';
 
 const THEME: DiagramTheme = {
   axisColor: 'rgb(192,192,192)',
@@ -29,10 +30,15 @@ function syubetsuLabelColor(i: number): string {
   return PALETTE[i % PALETTE.length] ?? '#000000';
 }
 
+/** 離散ズーム段階(√2 倍ずつ)。 */
+const ZOOM_FACTOR = Math.SQRT2;
+
 export function DiagramView(props: { data: RosenFileData; diaIndex: number }): React.ReactElement {
   const { data, diaIndex } = props;
   const [content, setContent] = useState({ x: 0, y: 0 });
+  const [scale, setScale] = useState({ x: 1, y: 1 });
   const dragRef = useRef<{ startX: number; startY: number; cx: number; cy: number } | null>(null);
+  const pinchRef = useRef<{ dist: number } | null>(null);
 
   const result = useMemo(() => computeDiagramLayout(data, diaIndex), [data, diaIndex]);
 
@@ -40,7 +46,12 @@ export function DiagramView(props: { data: RosenFileData; diaIndex: number }): R
     (ctx, size) => {
       if (!result.ok) return;
       const view = {
-        transform: createViewTransform(content.x, content.y),
+        transform: createViewTransform(
+          content.x,
+          content.y,
+          DEFAULT_PX_PER_SEC * scale.x,
+          DEFAULT_PX_PER_SEC * scale.y,
+        ),
         viewW: size.w,
         viewH: size.h,
         vlineMode: 1,
@@ -52,7 +63,7 @@ export function DiagramView(props: { data: RosenFileData; diaIndex: number }): R
       drawL2(ctx, result.layout, view, syubetsuStyle);
       drawL3(ctx, result.layout, view, THEME, syubetsuLabelColor);
     },
-    [result, content],
+    [result, content, scale],
   );
 
   if (!result.ok) {
@@ -71,8 +82,8 @@ export function DiagramView(props: { data: RosenFileData; diaIndex: number }): R
         onPointerMove={(e) => {
           const d = dragRef.current;
           if (d === null) return;
-          const dx = (e.clientX - d.startX) / DEFAULT_PX_PER_SEC;
-          const dy = (e.clientY - d.startY) / DEFAULT_PX_PER_SEC;
+          const dx = (e.clientX - d.startX) / (DEFAULT_PX_PER_SEC * scale.x);
+          const dy = (e.clientY - d.startY) / (DEFAULT_PX_PER_SEC * scale.y);
           setContent({ x: d.cx - dx, y: d.cy - dy });
         }}
         onPointerUp={(e) => {
@@ -80,7 +91,33 @@ export function DiagramView(props: { data: RosenFileData; diaIndex: number }): R
           dragRef.current = null;
         }}
         onWheel={(e) => {
-          setContent((c) => ({ x: c.x, y: c.y + e.deltaY / DEFAULT_PX_PER_SEC }));
+          setContent((c) => ({ x: c.x, y: c.y + e.deltaY / (DEFAULT_PX_PER_SEC * scale.y) }));
+        }}
+        onTouchStart={(e) => {
+          const a = e.touches[0];
+          const b = e.touches[1];
+          if (a !== undefined && b !== undefined) {
+            pinchRef.current = { dist: touchDistance(a, b) };
+          }
+        }}
+        onTouchMove={(e) => {
+          const p = pinchRef.current;
+          const a = e.touches[0];
+          const b = e.touches[1];
+          if (p === null || a === undefined || b === undefined) return;
+          const dist = touchDistance(a, b);
+          const step = pinchToStep(
+            dist / p.dist,
+            dominantPinchAxis(b.clientX - a.clientX, b.clientY - a.clientY),
+          );
+          if (step.dir !== 'none') {
+            const f = step.dir === 'in' ? ZOOM_FACTOR : 1 / ZOOM_FACTOR;
+            setScale((s) => (step.axis === 'x' ? { x: s.x * f, y: s.y } : { x: s.x, y: s.y * f }));
+            pinchRef.current = { dist };
+          }
+        }}
+        onTouchEnd={() => {
+          pinchRef.current = null;
         }}
       />
     </div>

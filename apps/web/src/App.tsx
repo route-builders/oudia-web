@@ -21,6 +21,7 @@ export function App(): React.ReactElement {
   const tabs = useDocStore((s) => s.tabs);
   const activeKey = useDocStore((s) => s.activeKey);
   const loadData = useDocStore((s) => s.loadData);
+  const swReload = useDocStore((s) => s.swReload);
   const [error, setError] = useState<string | null>(null);
 
   const openPicker = useCallback(() => {
@@ -72,6 +73,16 @@ export function App(): React.ReactElement {
             {fileName}
             {warningCount > 0 && <span className="warn"> (警告 {warningCount})</span>}
           </span>
+        )}
+        {swReload !== null && (
+          <button
+            className="sw-update"
+            onClick={() => {
+              swReload();
+            }}
+          >
+            更新があります(再読み込み)
+          </button>
         )}
       </header>
 
