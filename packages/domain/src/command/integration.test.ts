@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia/format';
 import { createDocumentState, executeCommand, markSaved, undo } from './index.js';
+import type { EditCommand } from './types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 // domain/src/command → リポジトリの packages/format/fixtures を参照。
@@ -73,5 +74,91 @@ describe('コマンド基盤 × format ライターの結合', () => {
     });
     expect(s1.changeCount).toBe(1);
     expect(markSaved(s1).changeCount).toBe(0);
+  });
+});
+
+// M3 編集コマンドのバイト一致検証(完了条件 #2 の土台)。
+// 決定論的なコマンド(none→run で基準番線探索を要しないもの)について、
+// 編集 → Undo → writeOud2 が元ファイルとバイト一致することを検証する。
+describe('M3 編集 → Undo でバイト一致(黄金 T1 discipline)', () => {
+  const ORIGINAL = new Uint8Array(readFileSync(join(fixtures, 'current', 'sample2.oud2')));
+
+  function editUndoBytes(cmd: EditCommand): Uint8Array {
+    const parsed = parseNodeTree(ORIGINAL);
+    if (!parsed.ok) throw new Error('parse');
+    const s0 = createDocumentState(readRosenFile(parsed.root).data);
+    const s2 = undo(executeCommand(s0, cmd));
+    return writeOud2(s2.rosenFileData);
+  }
+
+  const CASES: { name: string; cmd: EditCommand }[] = [
+    {
+      name: 'ressya/setProp(列車番号)',
+      cmd: {
+        type: 'ressya/setProp',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndex: 0,
+        prop: { key: 'ressyabangou', value: 'ZZZ' },
+      },
+    },
+    {
+      name: 'ressya/setCanceled',
+      cmd: {
+        type: 'ressya/setCanceled',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        canceled: true,
+      },
+    },
+    {
+      name: 'ressya/swap',
+      cmd: { type: 'ressya/swap', diaIndex: 0, houkou: 0, indexA: 0, sizeA: 1, indexB: 1 },
+    },
+    {
+      name: 'ressya/setSihatsuEki',
+      cmd: {
+        type: 'ressya/setSihatsuEki',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        ekiOrder: 2,
+      },
+    },
+    {
+      name: 'ekiJikoku/clear(着)',
+      cmd: {
+        type: 'ekiJikoku/clear',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        ekiOrder: 5,
+        target: 'chaku',
+      },
+    },
+  ];
+
+  for (const c of CASES) {
+    it(`${c.name} → Undo でバイト一致`, () => {
+      const out = editUndoBytes(c.cmd);
+      expect(Buffer.from(out).equals(Buffer.from(ORIGINAL))).toBe(true);
+    });
+  }
+
+  it('ressya/setProp → writeOud2 → 再読込で編集が反映される', () => {
+    const parsed = parseNodeTree(ORIGINAL);
+    if (!parsed.ok) throw new Error('parse');
+    const s1 = executeCommand(createDocumentState(readRosenFile(parsed.root).data), {
+      type: 'ressya/setProp',
+      diaIndex: 0,
+      houkou: 0,
+      ressyaIndex: 0,
+      prop: { key: 'bikou', value: 'M3備考' },
+    });
+    const reparsed = parseNodeTree(writeOud2(s1.rosenFileData));
+    if (!reparsed.ok) throw new Error('re-parse');
+    const reread = readRosenFile(reparsed.root).data;
+    expect(reread.rosen.diaCont[0]!.ressyaCont[0][0]!.bikou).toBe('M3備考');
   });
 });

@@ -3,8 +3,26 @@
 
 /** 編集コマンド基盤の公開 API(architecture §4.3–§4.4)。 */
 
-export type { EditCommand, EditCommandType, CommentSetCommand, HistoryEntry } from './types.js';
+export type {
+  EditCommand,
+  EditCommandType,
+  CommentSetCommand,
+  RessyaReplaceRangeCommand,
+  RessyaSwapCommand,
+  RessyaSetPropCommand,
+  RessyaSetCanceledCommand,
+  RessyaSetSihatsuEkiCommand,
+  RessyaSetSyuuchakuEkiCommand,
+  EkiJikokuSetChakuCommand,
+  EkiJikokuSetHatsuCommand,
+  EkiJikokuSetTrackCommand,
+  EkiJikokuClearCommand,
+  EkiJikokuToggleTsuukaCommand,
+  EkiJikokuSetKeiyunasiCommand,
+  HistoryEntry,
+} from './types.js';
 export { commandReducers, applyCommand, normalizeToLf } from './reducers.js';
+export { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
 export {
   createDocumentState,
   executeCommand,
