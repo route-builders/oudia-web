@@ -15,11 +15,12 @@
  * 直列化はバイト一致のため **UTF-8 BOM + CRLF** で行う(原典 _tfopen_s("w , ccs=UTF-8"))。
  */
 
-import type { Dia, Eki, RosenFileData, Ressya, Ressyahoukou, Rosen } from '@oudia/format';
+import type { Dia, Eki, RosenFileData, Ressyahoukou, Rosen } from '@oudia/format';
 import { encodeCsvDocument, RESSYAHOUKOU_KUDARI } from '@oudia/format';
 import { ekiIndexOfEkiOrder } from '@oudia/domain';
 import { getEkimeiJikokuhyouRyaku, getTrackRyakusyou } from './ekiDisplay.js';
-import { getValidSihatsuEki, getValidSyuuchakuEki, getSyuuchakuEki } from './runRange.js';
+import { deriveEkiJikokuhyou } from '../ekiJikokuhyou/deriveEkiJikokuhyou.js';
+import type { EkiJikokuhyouContent } from '../ekiJikokuhyou/deriveEkiJikokuhyou.js';
 
 const NAME_EKI = '駅';
 const NAME_JIKOKUHYOU = '時刻表';
@@ -28,16 +29,6 @@ const NAME_NOBORI_JIKOKUHYOU = '上り時刻表';
 const NAME_IS_SHIHATSU = '●'; // U+25CF 当駅始発
 const NAME_LOOP = '環状'; // iSyuuchakuEkiOrder == -1
 const NAME_FOR_LOOP = '環状線'; // iSyuuchakuEkiOrder == -2
-
-/** 1 列車ぶんの発車内容(原典 EkiJikokuhyouContent の M2 サブセット)。 */
-interface EkiJikokuhyouContent {
-  readonly minute: number;
-  readonly syubetsuIndex: number;
-  /** 終着駅Order(-1=環状 / -2=環状線)。M2 は getValidSyuuchakuEki の値。 */
-  readonly syuuchakuEkiOrder: number;
-  readonly ressyaTrackIndex: number | null;
-  readonly isShihatsu: boolean;
-}
 
 export interface EkiTimetableCsvOptions {
   readonly displayParentSyubetsu: boolean;
@@ -81,66 +72,6 @@ function directionLabel(rosen: Rosen, houkou: Ressyahoukou): string {
     : rosen.noboriDiaAlias + NAME_JIKOKUHYOU;
 }
 
-/**
- * 対象駅・方向の発車内容を時バケットへ導出する(原典 CWndDcdGridEkiJikokuhyouList の
- * プレーン版。運用連結なし)。除外規則:運休 / 隠し種別 / 当駅非停車 / 発時刻 null /
- * 当駅止まり。バケット内は発車分の昇順(挿入ソート)。
- */
-function deriveContent(
-  data: RosenFileData,
-  dia: Dia,
-  houkou: Ressyahoukou,
-  ekiOrder: number,
-): Map<number, EkiJikokuhyouContent[]> {
-  const buckets = new Map<number, EkiJikokuhyouContent[]>();
-  const cont = dia.ressyaCont[houkou];
-  for (const ressya of cont) {
-    if (ressya.isNull) continue;
-    if (ressya.isCanceled) continue;
-    const syubetsu = data.rosen.ressyasyubetsuCont[ressya.syubetsuIndex];
-    if (syubetsu !== undefined && syubetsu.hidden && !data.rosen.disableHiddenSyubetsu) continue;
-    const ej = ressya.ekiJikokuCont[ekiOrder];
-    if (ej === undefined) continue;
-    if (ej.ekiatsukai !== 'teisya') continue;
-    if (ej.hatsuJikoku === null) continue;
-    // 当駅止まり(この先へ運行しない)を除外。
-    if (getSyuuchakuEki(ressya) <= ekiOrder) continue;
-
-    const total = ej.hatsuJikoku;
-    const hour = Math.floor(total / 3600) % 24;
-    const minute = Math.floor((total % 3600) / 60);
-    const content: EkiJikokuhyouContent = {
-      minute,
-      syubetsuIndex: ressya.syubetsuIndex,
-      syuuchakuEkiOrder: syuuchakuOrderOf(ressya),
-      ressyaTrackIndex: ej.ressyaTrackIndex,
-      isShihatsu: getValidSihatsuEki(ressya) === ekiOrder,
-    };
-    insertSorted(buckets, hour, content);
-  }
-  return buckets;
-}
-
-/** 終着駅Order(M2 は getValidSyuuchakuEki。-1/-2 の環状ケースは M7)。 */
-function syuuchakuOrderOf(ressya: Ressya): number {
-  return getValidSyuuchakuEki(ressya);
-}
-
-function insertSorted(
-  buckets: Map<number, EkiJikokuhyouContent[]>,
-  hour: number,
-  content: EkiJikokuhyouContent,
-): void {
-  let list = buckets.get(hour);
-  if (list === undefined) {
-    list = [];
-    buckets.set(hour, list);
-  }
-  let i = 0;
-  while (i < list.length && (list[i]?.minute ?? Infinity) <= content.minute) i++;
-  list.splice(i, 0, content);
-}
-
 export type BuildEkiTimetableCsvResult =
   { readonly ok: true; readonly csv: string } | { readonly ok: false; readonly code: -1 };
 
@@ -158,7 +89,7 @@ export function buildEkiTimetableCsv(
   const eki = ekiCont[ekiIndexOfEkiOrder(ekiOrder, ekiCount, houkou)];
   if (eki === undefined) return { ok: false, code: -1 };
 
-  const buckets = deriveContent(data, dia, houkou, ekiOrder);
+  const { buckets } = deriveEkiJikokuhyou(data, dia, houkou, ekiOrder);
   const rows: string[][] = [];
 
   if (params.resume === true) rows.push([]); // ブロック区切りの空行

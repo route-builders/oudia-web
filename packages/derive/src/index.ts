@@ -39,3 +39,8 @@ export type {
   BuildEkiTimetableCsvParams,
   BuildEkiTimetableCsvResult,
 } from './csv/ekiTimetableCsv.js';
+export { deriveEkiJikokuhyou } from './ekiJikokuhyou/deriveEkiJikokuhyou.js';
+export type {
+  EkiJikokuhyouContent,
+  EkiJikokuhyouViewModel,
+} from './ekiJikokuhyou/deriveEkiJikokuhyou.js';
