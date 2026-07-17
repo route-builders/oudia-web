@@ -70,6 +70,10 @@ importers:
       '@oudia/derive':
         specifier: workspace:*
         version: link:../derive
+    devDependencies:
+      '@oudia/format':
+        specifier: workspace:*
+        version: link:../format
 
 packages:
 
