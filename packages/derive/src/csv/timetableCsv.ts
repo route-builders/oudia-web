@@ -26,7 +26,7 @@ import {
   getValidSihatsuEki,
   getValidSyuuchakuEki,
   isRunBetweenNextEki,
-} from './runRange.js';
+} from '@oudia/domain';
 
 // ---- 固定文字列リテラル(原典 DiagramEdit.rc STRINGTABLE、CconvJikokuhyouCsv.cpp)----
 const NAME_FILE_TYPE = 'FileType';

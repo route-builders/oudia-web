@@ -20,13 +20,14 @@ export {
   getTrackRyakusyou,
   getEkimeiJikokuhyouRyaku,
 } from './csv/ekiDisplay.js';
+// 運行範囲導出は domain へ移設。derive 公開 API 後方互換のため re-export する。
 export {
   getSihatsuEki,
   getSyuuchakuEki,
   getValidSihatsuEki,
   getValidSyuuchakuEki,
   isRunBetweenNextEki,
-} from './csv/runRange.js';
+} from '@oudia/domain';
 export { buildTimetableCsv, defaultTimetableCsvOptions } from './csv/timetableCsv.js';
 export type {
   TimetableCsvOptions,

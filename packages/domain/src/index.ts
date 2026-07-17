@@ -15,5 +15,8 @@ export type * from '@oudia/format';
 export * from './jikoku.js';
 export * from './ekiOrder.js';
 
+// ---- 列車の運行範囲導出(getSihatsuEki 系。derive から移設)----
+export * from './runRange.js';
+
 // ---- 編集コマンド基盤(executeCommand / patch Undo/Redo / 変更カウンタ)----
 export * from './command/index.js';
