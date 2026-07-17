@@ -4,6 +4,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import globals from 'globals';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
   {
@@ -33,15 +34,24 @@ export default [
     },
   },
   {
+    // React コンポーネント・フック(apps/web の .ts / .tsx)。Hooks ルールを適用する。
+    files: ['apps/**/*.ts', 'apps/**/*.tsx'],
+    plugins: { 'react-hooks': reactHooks },
+    rules: {
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
+    },
+  },
+  {
     // テストファイルは非 null アサーション等をやや緩める(可読性優先)。
-    files: ['**/*.test.ts', '**/*.bench.ts'],
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/*.bench.ts'],
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
   {
-    // ルート直下のツール設定ファイル(型情報なしで軽く検査する)。
-    files: ['*.config.ts', '*.config.js', 'eslint.config.js'],
+    // ツール設定ファイル(型情報なしで軽く検査する)。vite.config.ts 含む。
+    files: ['*.config.ts', '*.config.js', 'eslint.config.js', '**/vite.config.ts'],
     languageOptions: {
       globals: { ...globals.node },
     },
