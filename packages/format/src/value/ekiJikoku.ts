@@ -25,7 +25,8 @@ export interface DecodedEkiJikoku {
   ressyaTrackIndex: number;
 }
 
-const EKIATSUKAI_BY_CODE: Record<number, Ekiatsukai> = {
+/** 駅扱コード(0/1/2)→ Ekiatsukai。旧世代リーダーと共有する。 */
+export const EKIATSUKAI_BY_CODE: Record<number, Ekiatsukai> = {
   0: 'none',
   1: 'teisya',
   2: 'tsuuka',
@@ -36,7 +37,7 @@ function ekiatsukaiToCode(a: Ekiatsukai): number {
 }
 
 /** 時刻を寛容に読む(decode エラー時は null 扱い。原典は CdDedJikoku(str) で Null に落ちる)。 */
-function readJikokuLenient(s: string): Jikoku {
+export function readJikokuLenient(s: string): Jikoku {
   if (s === '') return null;
   const r = decodeJikoku(s);
   if (isJikokuDecodeError(r)) return null;
@@ -105,6 +106,68 @@ export function decodeEkiJikoku(
   // 番線: _ttoi(空 → 0)。範囲外 → 主本線。
   let track = strTrack === '' ? 0 : Number.parseInt(strTrack, 10);
   if (Number.isNaN(track) || track < 0 || track >= ekiTrack2Count) track = mainTrack;
+
+  return {
+    ekiatsukai: EKIATSUKAI_BY_CODE[code] ?? 'none',
+    chakuJikoku: readJikokuLenient(strChaku),
+    hatsuJikoku: readJikokuLenient(strHatsu),
+    ressyaTrackIndex: track,
+  };
+}
+
+/**
+ * S05 世代(OuDiaSecond.1.01〜1.05)の EkiJikoku 1 要素を decode する。
+ * 原典 CconvCentDedS05 の CentDedEkiJikoku_From_string(S05.cpp:1033-1123)。
+ *
+ * S05 は `$番線` を持たず、番線は兄弟キー `RessyaTrack=` の対応要素から来る。
+ * eki 要素の文法は `駅扱[;着時刻/発時刻]`($ なし)。
+ *
+ * @param ekiElem       EkiJikoku 要素(`駅扱[;着/発]`)
+ * @param trackElem     RessyaTrack 要素(1 起点の番線番号。`;` 以降は M1 では無視)。
+ *                      対応要素が無い(OOB)場合は空文字列を渡す(→ 主本線)。
+ * @param ekiTrack2Size その駅の番線数
+ * @param mainTrack     その駅・方向の主本線 index(0 起点。範囲外番線の補正先)
+ */
+export function decodeEkiJikokuS05(
+  ekiElem: string,
+  trackElem: string,
+  ekiTrack2Size: number,
+  mainTrack: number,
+): DecodedEkiJikoku {
+  // Part A: eki 要素($ なし)。
+  let strEkiatsukai = '';
+  let strChaku = '';
+  let strHatsu = '';
+  const semi = ekiElem.indexOf(';');
+  if (semi !== -1) {
+    strEkiatsukai = ekiElem.slice(0, semi);
+    const restA = ekiElem.slice(semi + 1);
+    const slash = restA.indexOf('/');
+    if (slash !== -1) {
+      strChaku = restA.slice(0, slash);
+      strHatsu = restA.slice(slash + 1);
+    } else {
+      strHatsu = restA;
+    }
+  } else {
+    strEkiatsukai = ekiElem;
+  }
+
+  // Part B: 番線を trackElem から解決。`;` 以降(始発/終着作業)は M1 では無視。
+  const semiT = trackElem.indexOf(';');
+  const trackHead = semiT === -1 ? trackElem : trackElem.slice(0, semiT);
+  let track: number;
+  if (trackHead === '') {
+    track = mainTrack;
+  } else {
+    const n = Number.parseInt(trackHead, 10);
+    // 1 起点 → 0 起点。範囲外(0=旧主本線 / n>size / NaN)は主本線。
+    track = !Number.isNaN(n) && n >= 1 && n <= ekiTrack2Size ? n - 1 : mainTrack;
+  }
+
+  // Part C: 駅扱(旧 3 = 経由なし → none)。
+  let code = strEkiatsukai === '' ? 0 : Number.parseInt(strEkiatsukai, 10);
+  if (Number.isNaN(code) || !(code >= 0 && code < 3)) code = 0;
 
   return {
     ekiatsukai: EKIATSUKAI_BY_CODE[code] ?? 'none',
