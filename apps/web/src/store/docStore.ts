@@ -20,7 +20,7 @@ import {
   canUndo as canUndoState,
   canRedo as canRedoState,
 } from '@oudia/domain';
-import type { DocumentState, EditCommand } from '@oudia/domain';
+import type { DocumentState, EditCommand, RessyaClipboard } from '@oudia/domain';
 import type { ViewDescriptor } from '../tabs/viewDescriptor.js';
 import { descriptorKey } from '../tabs/viewDescriptor.js';
 
@@ -42,6 +42,8 @@ interface DocState {
   tabs: OpenTab[];
   /** アクティブタブのキー(null = ホーム)。 */
   activeKey: string | null;
+  /** 列車クリップボード(アプリ内。null = 空)。貼り付け移動量の累積を保持する。 */
+  clipboard: RessyaClipboard | null;
   /** SW 更新が利用可能なら reload コールバック(null = なし)。 */
   swReload: (() => void) | null;
   /** オフライン利用可能になったか。 */
@@ -57,6 +59,8 @@ interface DocState {
   redo: () => void;
   /** 保存済みとしてマークする(変更カウンタを 0 に)。 */
   markSaved: () => void;
+  /** 列車クリップボードを設定(コピー/切り取り時。累積は 0 リセット済みで渡す)。 */
+  setClipboard: (clip: RessyaClipboard | null) => void;
   /** ビューを開く(重複は既存タブをアクティブ化)。 */
   openView: (descriptor: ViewDescriptor) => void;
   /** タブを閉じる。 */
@@ -76,6 +80,7 @@ export const useDocStore = create<DocState>((set) => ({
   warningCount: 0,
   tabs: [],
   activeKey: null,
+  clipboard: null,
   swReload: null,
   offlineReady: false,
 
@@ -121,6 +126,10 @@ export const useDocStore = create<DocState>((set) => ({
       const next = markSavedState(s.docState);
       return { docState: next, data: next.rosenFileData };
     });
+  },
+
+  setClipboard: (clip) => {
+    set({ clipboard: clip });
   },
 
   openView: (descriptor) => {

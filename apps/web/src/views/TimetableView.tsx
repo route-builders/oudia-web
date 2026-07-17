@@ -22,6 +22,9 @@ import { hitTestCell, cellViewRect } from '../grid/hitTest.js';
 import { resolveCellTarget } from '../grid/cellSemantics.js';
 import { getSelectedRessyaIndices } from '../grid/selection.js';
 import { referJikokuFor } from '../grid/referJikoku.js';
+import { resolveEditAction, detectKeymapMode } from '../grid/keymap.js';
+import { useTimetableCommands } from '../grid/useTimetableCommands.js';
+import { TrainSearchBar } from '../grid/TrainSearchBar.js';
 import { EkiJikokuDialog } from '../dialog/EkiJikokuDialog.js';
 import type { EkiJikokuDialogTarget } from '../dialog/EkiJikokuDialog.js';
 import { RessyaPropDialog } from '../dialog/RessyaPropDialog.js';
@@ -81,6 +84,16 @@ export function TimetableView(props: {
     () => ({ scrollX: scroll.x, scrollY: scroll.y, fixedCols: FIXED_COLS, fixedRows: FIXED_ROWS }),
     [scroll.x, scroll.y],
   );
+
+  const keymapMode = useMemo(() => detectKeymapMode(), []);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const runCommand = useTimetableCommands({
+    data,
+    grid: grid ?? emptyGrid,
+    diaIndex,
+    houkou,
+    selection: sel.selection,
+  });
 
   // ダイアログを開く(セル target → 具体的ダイアログ)。
   const openDialogForCell = useCallback(
@@ -147,6 +160,17 @@ export function TimetableView(props: {
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent): void => {
       if (grid === null) return;
+
+      // 1) 編集アクション(キーマップ)を最優先で解決(Ctrl/Alt 系・Del・テンキー等)。
+      const action = resolveEditAction(e, keymapMode);
+      if (action !== null) {
+        e.preventDefault();
+        if (action === 'search') setSearchOpen(true);
+        else runCommand(action);
+        return;
+      }
+
+      // 2) ナビゲーション・既定アクション。
       switch (e.key) {
         case 'ArrowUp':
           e.preventDefault();
@@ -172,13 +196,13 @@ export function TimetableView(props: {
         default:
           break;
       }
-      // printable キー(1 文字・修飾なし)→ キー転送ダイアログ。
+      // 3) printable キー(1 文字・修飾なし)→ キー転送ダイアログ。
       if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
         e.preventDefault();
         openDialogForCell(sel.selection.focus.row, sel.selection.focus.col, e.key);
       }
     },
-    [grid, sel, openDialogForCell],
+    [grid, sel, openDialogForCell, keymapMode, runCommand],
   );
 
   const selectedRessya = useMemo(
@@ -209,6 +233,28 @@ export function TimetableView(props: {
     [grid, geom, scroll, sel.selection, selectedRessya],
   );
 
+  // 列車番号検索: query に一致する列車列へフォーカスを移す(fromCol より右で最初の一致、
+  // 末尾まで無ければ先頭から)。ヒットしなければ false。
+  const searchTrain = useCallback(
+    (query: string, fromCol: number): boolean => {
+      if (grid === null || query === '') return false;
+      const q = query.toLowerCase();
+      const n = grid.columns.length;
+      for (let step = 1; step <= n; step++) {
+        const c = (fromCol + step) % n;
+        const col = grid.columns[c];
+        if (col?.type !== 'ressya') continue;
+        const ressya = data.rosen.diaCont[diaIndex]?.ressyaCont[houkou][col.ressyaIndex];
+        if (ressya?.ressyabangou.toLowerCase().includes(q) === true) {
+          sel.focusCell({ row: sel.selection.focus.row, col: c });
+          return true;
+        }
+      }
+      return false;
+    },
+    [grid, data, diaIndex, houkou, sel],
+  );
+
   if (grid === null || geom === null) {
     return <div className="view-error">時刻表を生成できませんでした。</div>;
   }
@@ -216,6 +262,15 @@ export function TimetableView(props: {
   return (
     <div className="grid-root" ref={rootRef} tabIndex={0} onKeyDown={onKeyDown}>
       <canvas ref={canvasRef} className="grid-content" />
+      {searchOpen && (
+        <TrainSearchBar
+          onSearch={(q) => searchTrain(q, sel.selection.focus.col)}
+          onClose={() => {
+            setSearchOpen(false);
+            rootRef.current?.focus();
+          }}
+        />
+      )}
       <div
         ref={scrollerRef}
         className="grid-scroller"
