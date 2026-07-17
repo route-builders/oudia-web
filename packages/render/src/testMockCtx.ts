@@ -13,12 +13,12 @@ export interface RecordedCall {
 
 export class MockCtx implements RenderContext2D {
   readonly calls: RecordedCall[] = [];
-  strokeStyle = '';
-  fillStyle = '';
+  strokeStyle: string | CanvasGradient | CanvasPattern = '';
+  fillStyle: string | CanvasGradient | CanvasPattern = '';
   lineWidth = 1;
   font = '';
-  textAlign = '';
-  textBaseline = '';
+  textAlign: CanvasTextAlign = 'left';
+  textBaseline: CanvasTextBaseline = 'alphabetic';
 
   private rec(op: string, ...args: unknown[]): void {
     this.calls.push({ op, args });

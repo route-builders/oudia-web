@@ -6,9 +6,23 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "dependencies": {
-    "@oudia/render": "workspace:*"
+    "@oudia/derive": "workspace:*",
+    "@oudia/domain": "workspace:*",
+    "@oudia/format": "workspace:*",
+    "@oudia/render": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
   },
   "scripts": {
-    "build": "tsc --build"
+    "build": "tsc --build && vite build",
+    "dev": "vite",
+    "preview": "vite preview"
   }
 }

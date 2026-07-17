@@ -39,12 +39,14 @@ export interface RenderContext2D {
   rotate(angle: number): void;
   measureText(text: string): { width: number };
   setLineDash(segments: number[]): void;
-  strokeStyle: string;
-  fillStyle: string;
+  // 実 CanvasRenderingContext2D と代入互換にするため union を許容する
+  // (render 側は常に string を代入する)。
+  strokeStyle: string | CanvasGradient | CanvasPattern;
+  fillStyle: string | CanvasGradient | CanvasPattern;
   lineWidth: number;
   font: string;
-  textAlign: string;
-  textBaseline: string;
+  textAlign: CanvasTextAlign;
+  textBaseline: CanvasTextBaseline;
 }
 
 export class RenderTarget {

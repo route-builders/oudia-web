@@ -1,0 +1,233 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+
+* {
+  box-sizing: border-box;
+}
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+}
+body {
+  font-family: 'Meiryo UI', Meiryo, 'Hiragino Sans', sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #ccc;
+  background: #f4f4f4;
+  flex: none;
+}
+.open-btn {
+  padding: 4px 12px;
+  cursor: pointer;
+}
+.file-name {
+  color: #444;
+}
+.file-name .warn {
+  color: #a0600c;
+}
+.app-error {
+  padding: 6px 12px;
+  background: #fbe3e3;
+  color: #9c2b2b;
+  border-bottom: 1px solid #e0b0b0;
+}
+.app-empty {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  color: #777;
+  padding: 24px;
+  text-align: center;
+}
+
+.app-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.app-sidebar {
+  width: 220px;
+  flex: none;
+  overflow: auto;
+  border-right: 1px solid #ccc;
+  background: #fafafa;
+}
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ツリー */
+.rosen-tree {
+  padding: 8px;
+}
+.rosen-name {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.dia-node {
+  margin-bottom: 8px;
+}
+.dia-name {
+  font-weight: 600;
+  color: #333;
+}
+.view-list,
+.eki-list {
+  list-style: none;
+  margin: 2px 0 0;
+  padding-left: 12px;
+}
+.eki-list {
+  max-height: 240px;
+  overflow: auto;
+}
+.view-list button,
+.eki-list button {
+  background: none;
+  border: none;
+  color: #1d5fb0;
+  cursor: pointer;
+  padding: 2px 0;
+  text-align: left;
+  font: inherit;
+}
+.view-list button:hover,
+.eki-list button:hover {
+  text-decoration: underline;
+}
+
+/* タブ */
+.tab-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 4px 4px 0;
+  border-bottom: 1px solid #ccc;
+  background: #eee;
+  flex: none;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  background: #ddd;
+  border: 1px solid #bbb;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+}
+.tab.active {
+  background: #fff;
+  font-weight: 600;
+}
+.tab-label {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  cursor: pointer;
+  font: inherit;
+}
+.tab-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0 6px;
+  color: #888;
+}
+.tab-close:hover {
+  color: #333;
+}
+
+.view-container {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+/* ダイヤグラム */
+.diagram-root,
+.diagram-canvas {
+  position: absolute;
+  inset: 0;
+}
+.diagram-canvas {
+  touch-action: none;
+  cursor: grab;
+}
+
+/* 時刻表グリッド */
+.grid-root {
+  position: absolute;
+  inset: 0;
+}
+.grid-content {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.grid-scroller {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+}
+
+/* 駅時刻表 */
+.eki-jikokuhyou {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+  padding: 8px;
+}
+.eki-jikokuhyou table {
+  border-collapse: collapse;
+}
+.eki-jikokuhyou th.hour {
+  width: 32px;
+  text-align: center;
+  vertical-align: top;
+  border: 1px solid #ccc;
+  background: #f0f0f0;
+  padding: 2px 4px;
+}
+.eki-jikokuhyou td {
+  border: 1px solid #ccc;
+  padding: 2px 4px;
+}
+.eki-jikokuhyou .dep {
+  display: inline-block;
+  margin-right: 10px;
+  white-space: nowrap;
+}
+.eki-jikokuhyou .min {
+  font-weight: 600;
+}
+.eki-jikokuhyou .syubetsu {
+  color: #1d5fb0;
+  margin: 0 2px;
+  font-size: 11px;
+}
+.eki-jikokuhyou .dest {
+  color: #555;
+  font-size: 11px;
+}
+
+.view-error {
+  padding: 24px;
+  color: #9c2b2b;
+}
