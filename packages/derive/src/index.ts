@@ -44,3 +44,15 @@ export type {
   EkiJikokuhyouContent,
   EkiJikokuhyouViewModel,
 } from './ekiJikokuhyou/deriveEkiJikokuhyou.js';
+
+// ---- ダイヤグラム(スジ図)レイアウト ----
+export { computeDiagramLayout } from './layout/computeDiagramLayout.js';
+export type { ComputeDiagramLayoutResult } from './layout/computeDiagramLayout.js';
+export { buildDiaLayoutFrame, findEkikanSaisyouSec } from './layout/ekiLayout.js';
+export type {
+  DiagramLayout,
+  DiaLayoutFrame,
+  EkiLayout,
+  RessyaLayout,
+  Ressyasen,
+} from './layout/types.js';
