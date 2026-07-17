@@ -57,3 +57,42 @@ describe('docStore(タブ dedup・クローズ)', () => {
     expect(s.warningCount).toBe(2);
   });
 });
+
+describe('docStore(コマンドエンジン接続)', () => {
+  const FRESH = (): RosenFileData => ({ rosen: { comment: '初期' } }) as unknown as RosenFileData;
+
+  beforeEach(() => {
+    useDocStore.getState().loadData(FRESH(), 'edit.oud2', 0);
+  });
+
+  it('dispatch で data が更新され、変更カウンタが 1 になる', () => {
+    useDocStore.getState().dispatch({ type: 'comment/set', comment: '編集後' });
+    const s = useDocStore.getState();
+    expect(s.data!.rosen.comment).toBe('編集後');
+    expect(s.docState!.changeCount).toBe(1);
+  });
+
+  it('undo で元に戻り、変更カウンタが 0 になる', () => {
+    const { dispatch, undo } = useDocStore.getState();
+    dispatch({ type: 'comment/set', comment: '編集後' });
+    undo();
+    const s = useDocStore.getState();
+    expect(s.data!.rosen.comment).toBe('初期');
+    expect(s.docState!.changeCount).toBe(0);
+  });
+
+  it('redo で編集後に戻る', () => {
+    const { dispatch, undo, redo } = useDocStore.getState();
+    dispatch({ type: 'comment/set', comment: '編集後' });
+    undo();
+    redo();
+    expect(useDocStore.getState().data!.rosen.comment).toBe('編集後');
+  });
+
+  it('markSaved で変更カウンタが 0 になる', () => {
+    const { dispatch, markSaved } = useDocStore.getState();
+    dispatch({ type: 'comment/set', comment: 'x' });
+    markSaved();
+    expect(useDocStore.getState().docState!.changeCount).toBe(0);
+  });
+});

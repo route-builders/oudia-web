@@ -2,12 +2,25 @@
 // Copyright (C) 2026 oudia-second-web contributors
 
 /**
- * ドキュメントストア(Zustand)。M1 は読み取り専用: 読み込んだ RosenFileData + タブ状態のみ。
- * M2 のコマンドエンジン(executeCommand)接続は M3 で行う(architecture §4.3-4.4)。
+ * ドキュメントストア(Zustand)。M3 で domain のコマンドエンジン(executeCommand /
+ * patch Undo/Redo / 変更カウンタ)へ接続する(architecture §4.3-4.4)。
+ *
+ * 状態変更は必ず dispatch(名前付きコマンド)経由。ビューは docState.rosenFileData を読む。
+ * 後方互換のため data セレクタ(= docState?.rosenFileData ?? null)を維持する。
  */
 
 import { create } from 'zustand';
 import type { RosenFileData } from '@oudia/format';
+import {
+  createDocumentState,
+  executeCommand,
+  undo as undoState,
+  redo as redoState,
+  markSaved as markSavedState,
+  canUndo as canUndoState,
+  canRedo as canRedoState,
+} from '@oudia/domain';
+import type { DocumentState, EditCommand } from '@oudia/domain';
 import type { ViewDescriptor } from '../tabs/viewDescriptor.js';
 import { descriptorKey } from '../tabs/viewDescriptor.js';
 
@@ -17,7 +30,9 @@ export interface OpenTab {
 }
 
 interface DocState {
-  /** 読み込んだファイル(null = 未読込)。 */
+  /** 編集状態(RosenFileData + 履歴 + 変更カウンタ)。null = 未読込。 */
+  docState: DocumentState | null;
+  /** 現在のドキュメント(null = 未読込)。docState.rosenFileData の別名(読取専用)。 */
   data: RosenFileData | null;
   /** 読み込んだファイル名(表示用)。 */
   fileName: string | null;
@@ -32,8 +47,16 @@ interface DocState {
   /** オフライン利用可能になったか。 */
   offlineReady: boolean;
 
-  /** ファイルを読み込む(タブは初期化)。 */
+  /** ファイルを読み込む(タブは初期化・履歴も初期化)。 */
   loadData: (data: RosenFileData, fileName: string, warningCount: number) => void;
+  /** コマンドを実行する(単一チョークポイント)。未読込なら no-op。 */
+  dispatch: (command: EditCommand) => void;
+  /** 直近コマンドを取り消す。 */
+  undo: () => void;
+  /** 取り消したコマンドをやり直す。 */
+  redo: () => void;
+  /** 保存済みとしてマークする(変更カウンタを 0 に)。 */
+  markSaved: () => void;
   /** ビューを開く(重複は既存タブをアクティブ化)。 */
   openView: (descriptor: ViewDescriptor) => void;
   /** タブを閉じる。 */
@@ -47,6 +70,7 @@ interface DocState {
 }
 
 export const useDocStore = create<DocState>((set) => ({
+  docState: null,
   data: null,
   fileName: null,
   warningCount: 0,
@@ -56,7 +80,47 @@ export const useDocStore = create<DocState>((set) => ({
   offlineReady: false,
 
   loadData: (data, fileName, warningCount) => {
-    set({ data, fileName, warningCount, tabs: [], activeKey: null });
+    const docState = createDocumentState(data);
+    set({
+      docState,
+      data: docState.rosenFileData,
+      fileName,
+      warningCount,
+      tabs: [],
+      activeKey: null,
+    });
+  },
+
+  dispatch: (command) => {
+    set((s) => {
+      if (s.docState === null) return s;
+      const next = executeCommand(s.docState, command);
+      return { docState: next, data: next.rosenFileData };
+    });
+  },
+
+  undo: () => {
+    set((s) => {
+      if (s.docState === null || !canUndoState(s.docState)) return s;
+      const next = undoState(s.docState);
+      return { docState: next, data: next.rosenFileData };
+    });
+  },
+
+  redo: () => {
+    set((s) => {
+      if (s.docState === null || !canRedoState(s.docState)) return s;
+      const next = redoState(s.docState);
+      return { docState: next, data: next.rosenFileData };
+    });
+  },
+
+  markSaved: () => {
+    set((s) => {
+      if (s.docState === null) return s;
+      const next = markSavedState(s.docState);
+      return { docState: next, data: next.rosenFileData };
+    });
   },
 
   openView: (descriptor) => {
