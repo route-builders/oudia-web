@@ -56,3 +56,22 @@ export type {
   RessyaLayout,
   Ressyasen,
 } from './layout/types.js';
+
+// ---- 通常時刻表グリッド(cellSpec / colSpec)----
+export { buildTimetableGrid, defaultTimetableGridOptions } from './grid/buildTimetableGrid.js';
+export type {
+  BuildTimetableGridOptions,
+  BuildTimetableGridResult,
+} from './grid/buildTimetableGrid.js';
+export { buildJikokuhyouRowSpec } from './grid/colSpec.js';
+export type { JikokuhyouRowSpec, JikokuhyouRowType } from './grid/colSpec.js';
+export { getKyoukaisen, chakuCell, hatsuCell, trackCell } from './grid/cellSpec.js';
+export { MARK_GLYPH } from './grid/types.js';
+export type {
+  CellKind,
+  MarkKind,
+  CellStyle,
+  CellSpec,
+  GridColumn,
+  TimetableGridSpec,
+} from './grid/types.js';
