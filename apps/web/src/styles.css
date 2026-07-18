@@ -29,6 +29,17 @@ body {
   background: #f4f4f4;
   flex: none;
 }
+.app-brand {
+  font-weight: 700;
+  font-size: 14px;
+  color: #1d5fb0;
+  white-space: nowrap;
+}
+.app-brand-stage {
+  font-weight: 400;
+  font-size: 12px;
+  color: #777;
+}
 .open-btn {
   padding: 4px 12px;
   cursor: pointer;
@@ -67,6 +78,29 @@ body {
   display: flex;
   flex: 1;
   min-height: 0;
+}
+.app-footer {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 4px 12px;
+  border-top: 1px solid #ccc;
+  background: #f4f4f4;
+  font-size: 11px;
+}
+.app-footer a {
+  color: #555;
+  text-decoration: none;
+}
+.app-footer a:hover {
+  text-decoration: underline;
+  color: #1d5fb0;
+}
+.app-footer-links {
+  margin-left: auto;
+  display: flex;
+  gap: 16px;
 }
 .app-sidebar {
   width: 220px;
