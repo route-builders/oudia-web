@@ -121,6 +121,35 @@ describe('findTrainToDirect + ressya/direct(直通化)', () => {
     expect(findTrainToDirect(list(split), 0, 8)).toBeNull();
   });
 
+  it('別駅接続(terminal < start): 間の駅は運行なし化・接続駅の番線は始発側', () => {
+    // 前半 = 駅 8 止まり、後半 = 駅 13 始発へ加工。後半の運行区間は駅 21 から
+    // (駅 14-20 は運行なし)なので runFirst = 21 が接続駅になる。
+    const split = run(base(), UNDIRECT_8, {
+      type: 'ressya/setSihatsuEki',
+      diaIndex: 0,
+      houkou: 0,
+      ressyaIndices: [1],
+      ekiOrder: 13,
+    });
+    const backTrack = list(split)[1]!.ekiJikokuCont[21]!.ressyaTrackIndex;
+    expect(findTrainToDirect(list(split), 0, 21)).toBe(1);
+    const joined = run(split, {
+      type: 'ressya/direct',
+      diaIndex: 0,
+      houkou: 0,
+      syuuchakuIndex: 0,
+      sihatsuIndex: 1,
+      ekiOrder: 21,
+    });
+    const r = list(joined)[0]!;
+    for (let o = 9; o <= 20; o++) expect(r.ekiJikokuCont[o]!.ekiatsukai).toBe('none'); // 間
+    expect(r.ekiJikokuCont[8]!.chakuJikoku).toBe(1320); // 前半の終着はそのまま
+    expect(r.ekiJikokuCont[21]!.chakuJikoku).toBeNull(); // this 側は none → 着なし
+    expect(r.ekiJikokuCont[21]!.hatsuJikoku).toBe(2130); // 発 = 始発側
+    expect(r.ekiJikokuCont[21]!.ressyaTrackIndex).toBe(backTrack); // 別駅接続 → 番線は始発側
+    expect(r.ekiJikokuCont[23]!.chakuJikoku).toBe(2460); // 以後は始発側のコピー
+  });
+
   it('列車情報は終着側優先(空のときだけ始発側を採用)', () => {
     const split = run(
       base(),
@@ -261,6 +290,29 @@ describe('ressya/unify(列車番号で一本化)', () => {
       targetIndices: null,
     });
     expect(list(unified).length).toBe(list(split).length);
+  });
+
+  it('運行範囲が重なるペアは追加条件なしで併合される(U 229/252 非該当経路)', () => {
+    // 列車 0 の複製を挿入(完全に重なる同番号・同種別ペア)→ 無条件併合で -1 本。
+    const d0 = base();
+    const dup = structuredClone(list(d0)[0]!);
+    const withDup = run(d0, {
+      type: 'ressya/replaceRange',
+      diaIndex: 0,
+      houkou: 0,
+      index: 1,
+      count: 0,
+      trains: [dup],
+    });
+    const before = list(withDup).length;
+    const unified = run(withDup, {
+      type: 'ressya/unify',
+      diaIndex: 0,
+      houkou: 0,
+      targetIndices: null,
+    });
+    expect(list(unified).length).toBe(before - 1);
+    expect(list(unified)[0]!.ekiJikokuCont[4]!.chakuJikoku).toBe(720); // 値は維持
   });
 
   it('Undo 1 回で全併合が戻る', () => {

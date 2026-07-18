@@ -39,7 +39,7 @@ import type { EkiJikokuDialogTarget } from '../dialog/EkiJikokuDialog.js';
 import { RessyaPropDialog } from '../dialog/RessyaPropDialog.js';
 import type { RessyaPropDialogTarget } from '../dialog/RessyaPropDialog.js';
 import { ModifyEkijikokuDialog, DEFAULT_MODIFY_OP2 } from '../dialog/ModifyEkijikokuDialog.js';
-import { getEffectiveRessyaIndices } from '../grid/selection.js';
+import { getCommandRessyaIndices } from '../grid/selection.js';
 import { ViewToggleMenu } from '../grid/ViewToggleMenu.js';
 
 const THEME: GridTheme = {
@@ -383,11 +383,13 @@ export function TimetableView(props: {
       const hit = hitFromEvent(e);
       if (hit === null) return;
       // 連続入力モード中はセル選択禁止(SelectMode_NONE)→ 修飾を無視した単一フォーカス移動。
+      // フォーカス移動で入力途中の分もクリアする(原典 OnSetFocusCell 1659-1668)。
       const inRenzoku = renzoku !== null;
       sel.clickCell(hit, {
         shift: !inRenzoku && e.shiftKey,
         ctrl: !inRenzoku && (e.ctrlKey || e.metaKey),
       });
+      if (inRenzoku) setRenzoku((r) => (r === null ? null : { ...r, minutes: '' }));
       rootRef.current?.focus();
     },
     [grid, hitFromEvent, sel, renzoku],
@@ -431,9 +433,11 @@ export function TimetableView(props: {
         if (action === 'search') setSearchOpen(true);
         else if (action === 'renzoku') tryEnterRenzoku();
         else if (action === 'modifyEkijikoku') {
-          // 有効条件: フォーカスが着/発の駅時刻行(原典 5915-5923)。
+          // 有効条件: フォーカスが着/発の駅時刻行 + createCmd(Select) 成立(原典 5908-5923)。
           const t = resolveCellTarget(grid, sel.selection.focus.row, sel.selection.focus.col);
-          if (t?.kind === 'ekiJikoku') setModifyDialogOpen(true);
+          if (t?.kind === 'ekiJikoku' && getCommandRessyaIndices(sel.selection, grid).length > 0) {
+            setModifyDialogOpen(true);
+          }
         } else runCommand(action);
         return;
       }
@@ -560,8 +564,10 @@ export function TimetableView(props: {
   return (
     <div className="timetable-view">
       <div className="grid-toolbar" role="toolbar" aria-label="時刻表コマンド">
+        {/* 連続入力モード中は他コマンド無効(原典: 許可 5 コマンド以外は -1)。 */}
         <button
           type="button"
+          disabled={renzoku !== null}
           onClick={() => {
             runToolbar('sort');
           }}
@@ -570,6 +576,7 @@ export function TimetableView(props: {
         </button>
         <button
           type="button"
+          disabled={renzoku !== null}
           onClick={() => {
             runToolbar('unify');
           }}
@@ -578,13 +585,19 @@ export function TimetableView(props: {
         </button>
         <button
           type="button"
+          disabled={renzoku !== null}
           onClick={() => {
             runToolbar('minJikan');
           }}
         >
           最小所要時間列車に移動
         </button>
-        <ViewToggleMenu />
+        <ViewToggleMenu
+          disabled={renzoku !== null}
+          onAfterChange={() => {
+            rootRef.current?.focus();
+          }}
+        />
       </div>
       <div className="grid-root" ref={rootRef} tabIndex={0} onKeyDown={onKeyDown}>
         <canvas ref={canvasRef} className="grid-content" />
@@ -650,7 +663,7 @@ export function TimetableView(props: {
               setModifyDialogOpen(false);
               const t = resolveCellTarget(grid, sel.selection.focus.row, sel.selection.focus.col);
               if (t?.kind !== 'ekiJikoku') return;
-              const targets = getEffectiveRessyaIndices(sel.selection, grid);
+              const targets = getCommandRessyaIndices(sel.selection, grid);
               if (targets.length === 0) return;
               // NULL 状態(変更しない + 駅扱変更なし)は記憶のみ更新(再実行が無効化される)。
               if (!op.setEkiatsukai && op.operation === 'nop') return;

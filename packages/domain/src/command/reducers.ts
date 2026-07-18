@@ -394,6 +394,7 @@ export const commandReducers: {
       const r = list[i];
       if (r === undefined) continue;
       r.syubetsuIndex = (((r.syubetsuIndex + cmd.step) % n) + n) % n; // 端でラップ
+      r.isNull = false; // 原典 setRessyasyubetsuIndex(219-222)
     }
   },
 
@@ -630,6 +631,9 @@ export const commandReducers: {
     const decHatsu = decodeJikokuWithHourCompletion(cmd.hatsuInput, decChaku ?? jikokuRev);
     if (decHatsu === 'invalid') return;
 
+    // 駅扱の同時変更(原典は EkiJikoku 全体を 1 回で書く。ダイアログ OK 1 回 = Undo 1 単位)。
+    if (cmd.ekiatsukai !== undefined) slot.ekiatsukai = cmd.ekiatsukai;
+
     const oldChaku = slot.chakuJikoku;
     const oldHatsu = slot.hatsuJikoku;
     slot.chakuJikoku = decChaku;
@@ -673,6 +677,7 @@ export const commandReducers: {
   'ekiJikoku/setTrack': (draft, cmd) => {
     const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
     slotAt(draft, r, cmd.ekiOrder).ressyaTrackIndex = cmd.ressyaTrackIndex;
+    r.isNull = false; // 原典 setCentDedEkiJikoku は書込みで m_bIsNull=false(256-258)
   },
 
   'ekiJikoku/clear': (draft, cmd) => {
@@ -686,6 +691,7 @@ export const commandReducers: {
       if (cmd.target === 'chaku') ej.chakuJikoku = null;
       else ej.hatsuJikoku = null;
       if (ej.chakuJikoku === null && ej.hatsuJikoku === null) clearToNone(ej); // 両 null → None
+      r.isNull = false; // 原典 setCentDedEkiJikoku(256-258)
     }
   },
 
@@ -769,6 +775,7 @@ export const commandReducers: {
       // 運行なし(経由なし)からの変更時のみ基準番線 [1](通過用)を設定。
       // 基準運転時分ダイヤ未対応(M7)の現段階では常に主本線。停車/通過からは番線維持。
       if (!wasRun) ej.ressyaTrackIndex = mainTrackOf(draft, cmd.houkou, cmd.ekiOrder);
+      r.isNull = false; // 原典 setCentDedEkiJikoku(256-258)
     }
   },
 
@@ -789,6 +796,7 @@ export const commandReducers: {
         ej.ekiatsukai = 'tsuuka';
         ej.ressyaTrackIndex = mainTrackOf(draft, cmd.houkou, cmd.ekiOrder);
       }
+      r.isNull = false; // 原典 setCentDedEkiJikoku(256-258)
     }
   },
 
@@ -796,7 +804,9 @@ export const commandReducers: {
     const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
-      if (r !== undefined) clearToNone(slotAt(draft, r, cmd.ekiOrder));
+      if (r === undefined) continue;
+      clearToNone(slotAt(draft, r, cmd.ekiOrder));
+      r.isNull = false; // 原典 setCentDedEkiJikoku(256-258)
     }
   },
 
@@ -814,6 +824,7 @@ export const commandReducers: {
       } else {
         ej.ekiatsukai = cmd.ekiatsukai; // teisya / tsuuka は時刻保持
       }
+      r.isNull = false; // 原典 setCentDedEkiJikoku(256-258)
     }
   },
 };

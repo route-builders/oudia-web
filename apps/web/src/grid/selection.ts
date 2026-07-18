@@ -132,9 +132,11 @@ export function getSelectedRessyaIndices(state: SelectionState, grid: TimetableG
 }
 
 /**
- * コマンドの実効対象となる列車 index(昇順)。原典 ECreateCmd_Select/Focus の解決:
+ * コマンドの実効対象となる列車 index(昇順)。
  * 明示選択があればそれを、無ければフォーカスセルの 1 列車を対象とする。
  * フォーカスが列車列でなく明示選択も無ければ空。
+ * ※原典 ECreateCmd_Select の「選択 1 列車のみは無効」規則は含まない
+ *   (それを要する経路は getCommandRessyaIndices を使う)。
  */
 export function getEffectiveRessyaIndices(
   state: SelectionState,
@@ -144,6 +146,32 @@ export function getEffectiveRessyaIndices(
   if (selected.length > 0) return selected;
   const fi = focusRessyaIndex(state, grid);
   return fi === null ? [] : [fi];
+}
+
+/**
+ * Select 系コマンドの対象列車(原典 createCmd(ECreateCmd_Select)、CWndJikokuhyou.cpp
+ * 2383-2500)。セル選択なし → フォーカス列車 1 本 / 選択あり → 選択列車が 2 本以上の
+ * ときのみ有効(1 本だけの選択はコマンド無効 = 空配列)。
+ */
+export function getCommandRessyaIndices(state: SelectionState, grid: TimetableGridSpec): number[] {
+  const selected = getSelectedRessyaIndices(state, grid);
+  if (selected.length === 1) return []; // 原典 2496: contiRessyaIndex.size() > 1 のみ成立
+  if (selected.length > 1) return selected;
+  const fi = focusRessyaIndex(state, grid);
+  return fi === null ? [] : [fi];
+}
+
+/**
+ * Focus 系コマンド(直通化/分断/時刻のみ貼り付け/連続入力)の対象列車
+ * (原典 createCmd(ECreateCmd_Focus)、CWndJikokuhyou.cpp 2346-2380)。
+ * セル選択が 1 つでもあれば無効(getSelectedCellCount()==0 必須)。
+ */
+export function getFocusCommandRessyaIndex(
+  state: SelectionState,
+  grid: TimetableGridSpec,
+): number | null {
+  if (getSelectedRessyaIndices(state, grid).length > 0) return null;
+  return focusRessyaIndex(state, grid);
 }
 
 /** フォーカスセルの列車 index(列車列でなければ null)。 */
@@ -191,14 +219,17 @@ export function moveFocusCellToNext(
   }
 
   if (row < begin) {
-    // 上部(列車プロパティ行)→ 最初の非番線の駅時刻行へ。
-    const target = scanRow(grid, begin, 1, end);
-    return target === null ? state : moveFocusKeepSelection(state, { row: target, col });
+    // 上部(列車プロパティ行)→ 先頭の駅時刻行へ直行(原典 1806-1816。番線行スキップなし)。
+    if (begin < end) return moveFocusKeepSelection(state, { row: begin, col });
+    return state;
   }
   if (row < end) {
     if (nextEkiOrder) {
-      // 次駅の着行(なければ同駅より後の最初の時刻行)へ。current の駅Order より大きい
-      // 最初の chaku/hatsu 行。無ければブロック直後の行へ。
+      // 原典 1828-1855: フォーカス行の時刻 Order(着/発行のみ非 null)が基準。
+      // 番線行では JikokuOrder が null → フォーカス不動(CdDedJikokuOrderOf 1677-1695)。
+      const curType = grid.rows[row]?.type;
+      if (curType !== 'chaku' && curType !== 'hatsu') return state;
+      // 次駅の着行(なければ発行)へ。無ければブロック直後の行へ。
       const curOrder = grid.rows[row]?.ekiOrder ?? null;
       for (let r = row + 1; r < end; r++) {
         const spec = grid.rows[r];

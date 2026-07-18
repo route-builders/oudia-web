@@ -38,10 +38,12 @@ export interface TransferSortInput {
 }
 
 const MAX_NORIKAE_SEC = 600; // 乗換 10 分
-const STAGES: { syuyouOnly: boolean; maxSec: number }[] = [
-  { syuyouOnly: true, maxSec: MAX_NORIKAE_SEC },
-  { syuyouOnly: false, maxSec: MAX_NORIKAE_SEC },
-  { syuyouOnly: false, maxSec: Number.MAX_SAFE_INTEGER },
+// 原典 3 段階(From 343-434 / To 469-551): (1) 主要駅のみ・600 秒 →
+// (2) 非主要駅のみ・600 秒 → (3) 全駅・無制限。
+const STAGES: { filter: 'syuyou' | 'nonSyuyou' | 'all'; maxSec: number }[] = [
+  { filter: 'syuyou', maxSec: MAX_NORIKAE_SEC },
+  { filter: 'nonSyuyou', maxSec: MAX_NORIKAE_SEC },
+  { filter: 'all', maxSec: Number.MAX_SAFE_INTEGER },
 ];
 
 /**
@@ -126,16 +128,17 @@ export function transferSortOrder(input: TransferSortInput): number[] {
         }
       }
       if (found === -1) continue;
-      // 挿入位置を左へ: 候補の着(発代替)が null または 移動列車の着以下 で止め、その直後。
+      // 挿入位置を左へ: 候補の着(代替なしの生値)が null なら停止、非 null なら
+      // 着(発代替)同士の比較で 候補 <= 移動列車 の位置で止め、その直後(原典 272-291)。
       const move = est(u)[o];
       const moveChaku = move === undefined ? null : (move.chaku ?? move.hatsu);
       let pos = found;
       while (pos - 1 >= 0) {
         const prev = sorted[pos - 1];
         const cand = prev === undefined ? undefined : est(prev)[o];
-        const candChaku = cand === undefined ? null : (cand.chaku ?? cand.hatsu);
+        if (cand?.chaku == null) break; // 生の着が null → 停止
+        const candChaku = cand.chaku;
         if (
-          candChaku === null ||
           moveChaku === null ||
           kitenCompareKey(candChaku, kiten) <= kitenCompareKey(moveChaku, kiten)
         ) {
@@ -168,16 +171,17 @@ export function transferSortOrder(input: TransferSortInput): number[] {
         }
       }
       if (found === -1) continue;
-      // 挿入位置を右へ: 候補の発(着代替)が null または 移動列車の発以下 まで進める。
+      // 挿入位置を右へ: 候補の発(代替なしの生値)が null なら停止、非 null なら
+      // 発(着代替)同士の比較で 移動列車 <= 候補 の位置まで進める(原典 161-177)。
       const move = est(u)[o];
       const moveHatsu = move === undefined ? null : (move.hatsu ?? move.chaku);
       let pos = found + 1;
       while (pos < sorted.length) {
         const cur = sorted[pos];
         const cand = cur === undefined ? undefined : est(cur)[o];
-        const candHatsu = cand === undefined ? null : (cand.hatsu ?? cand.chaku);
+        if (cand?.hatsu == null) break; // 生の発が null → 停止
+        const candHatsu = cand.hatsu;
         if (
-          candHatsu === null ||
           moveHatsu === null ||
           kitenCompareKey(moveHatsu, kiten) <= kitenCompareKey(candHatsu, kiten)
         ) {
@@ -199,7 +203,8 @@ export function transferSortOrder(input: TransferSortInput): number[] {
       while (moved) {
         moved = false;
         for (const o of orders) {
-          if (stage.syuyouOnly && isSyuyouByOrder[o] !== true) continue;
+          if (stage.filter === 'syuyou' && isSyuyouByOrder[o] !== true) continue;
+          if (stage.filter === 'nonSyuyou' && isSyuyouByOrder[o] === true) continue;
           moved =
             (kind === 'to' ? stationTo(o, stage.maxSec) : stationFrom(o, stage.maxSec)) || moved;
         }

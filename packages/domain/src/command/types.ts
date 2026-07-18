@@ -251,6 +251,12 @@ export interface EkiJikokuWriteJikokuCommand {
   hatsuInput: string;
   /** 繰上げ・繰下げ(ダイアログのチェック。原典既定 ON)。 */
   modify: boolean;
+  /**
+   * 駅扱の同時変更(teisya/tsuuka)。原典 UiDataToTarget は駅扱 + 着発を 1 つの
+   * EkiJikoku として書くため、ダイアログ OK 1 回 = Undo 1 単位になるようここで併走させる。
+   * none 化は時刻書込がないため別コマンド(setEkiatsukai)のまま。
+   */
+  ekiatsukai?: 'teisya' | 'tsuuka';
 }
 
 /**

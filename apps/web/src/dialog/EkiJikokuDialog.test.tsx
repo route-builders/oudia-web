@@ -156,17 +156,19 @@ describe('EkiJikokuDialog', () => {
     // エラー表示・非クローズに加え、setEkiatsukai も送られていないこと(部分確定の禁止)。
     expect(dispatch).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
-    // 入力を修正して OK し直すと、駅扱 + 時刻がそれぞれ 1 回ずつ dispatch される。
+    // 入力を修正して OK し直すと、駅扱 + 時刻が 1 コマンド(writeJikoku)で dispatch される
+    // (原典 UiDataToTarget は EkiJikoku 全体を 1 回で書く = Undo 1 単位)。
     fireEvent.change(screen.getByLabelText<HTMLInputElement>('発時刻'), {
       target: { value: '620' },
     });
     fireEvent.click(screen.getByText('OK'));
-    expect(dispatch).toHaveBeenCalledTimes(2);
+    expect(dispatch).toHaveBeenCalledTimes(1);
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/setEkiatsukai', ekiatsukai: 'tsuuka' }),
-    );
-    expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/writeJikoku', hatsuInput: '620' }),
+      expect.objectContaining({
+        type: 'ekiJikoku/writeJikoku',
+        ekiatsukai: 'tsuuka',
+        hatsuInput: '620',
+      }),
     );
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -246,12 +248,14 @@ describe('EkiJikokuDialog', () => {
     expect(chaku.value).toBe('6');
     fireEvent.change(chaku, { target: { value: '605' } });
     fireEvent.click(screen.getByText('OK'));
-    // 停車化 + 着時刻の両方が dispatch される。
+    // 停車化 + 着時刻が 1 コマンドで dispatch される(Undo 1 単位)。
+    expect(dispatch).toHaveBeenCalledTimes(1);
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/setEkiatsukai', ekiatsukai: 'teisya' }),
-    );
-    expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/writeJikoku', chakuInput: '605' }),
+      expect.objectContaining({
+        type: 'ekiJikoku/writeJikoku',
+        ekiatsukai: 'teisya',
+        chakuInput: '605',
+      }),
     );
   });
 
@@ -309,10 +313,11 @@ describe('EkiJikokuDialog', () => {
     expect(screen.getByLabelText<HTMLInputElement>('停車').checked).toBe(true);
     fireEvent.click(screen.getByText('OK'));
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/setEkiatsukai', ekiatsukai: 'teisya' }),
-    );
-    expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/writeJikoku', chakuInput: '605' }),
+      expect.objectContaining({
+        type: 'ekiJikoku/writeJikoku',
+        ekiatsukai: 'teisya',
+        chakuInput: '605',
+      }),
     );
   });
 
@@ -325,7 +330,25 @@ describe('EkiJikokuDialog', () => {
     });
     fireEvent.click(screen.getByText('OK'));
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/setEkiatsukai', ekiatsukai: 'teisya' }),
+      expect.objectContaining({ type: 'ekiJikoku/writeJikoku', ekiatsukai: 'teisya' }),
+    );
+  });
+
+  it('始発駅でも「着 = 絶対時刻・発 = 分 2 桁」を受理する(検証基準は新着。回帰)', () => {
+    const dispatch = vi.fn<(c: EditCommand) => void>();
+    const onClose = vi.fn();
+    const target = { ...makeTarget(), referJikoku: null }; // 始発駅(前駅の時刻なし)
+    render(<EkiJikokuDialog target={target} dispatch={dispatch} onClose={onClose} />);
+    fireEvent.change(screen.getByLabelText<HTMLInputElement>('着時刻'), {
+      target: { value: '800' },
+    });
+    fireEvent.change(screen.getByLabelText<HTMLInputElement>('発時刻'), {
+      target: { value: '05' }, // 分 2 桁 → 新着 8:00 を基準に 8:05
+    });
+    fireEvent.click(screen.getByText('OK'));
+    expect(onClose).toHaveBeenCalledOnce(); // 拒否されない
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ekiJikoku/writeJikoku', hatsuInput: '05' }),
     );
   });
 });

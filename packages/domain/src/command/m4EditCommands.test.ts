@@ -205,6 +205,26 @@ describe('ekiJikoku/shiftJikoku(modifyRessyaJikoku 忠実)', () => {
       next.rosen.diaCont[DIA]!.ressyaCont[DOWN][0]!.ekiJikokuCont[0]!.beforeOperationCont[0]!;
     if (out.kind === 'out') expect(out.outJikoku).toBe(0); // 1 回だけシフト(二重にならない)
   });
+
+  it('Rev の(有効終着駅, 着)基準では当駅の後作業もシフトされる(原典 784-791。二重にならない)', () => {
+    // 列車 0 の有効終着駅 = 駅 32(着 4230・前駅停車)。後作業 in(4290)。
+    const next = run(base(), {
+      type: 'ekiJikoku/shiftJikoku',
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndices: [0],
+      ekiOrder: 32,
+      item: 'chaku',
+      deltaSeconds: 60,
+      rev: true,
+    });
+    const cont = next.rosen.diaCont[DIA]!.ressyaCont[DOWN][0]!.ekiJikokuCont;
+    const inn = cont[32]!.afterOperationCont[0]!;
+    expect(inn.kind).toBe('in');
+    if (inn.kind === 'in') expect(inn.inJikoku).toBe(4290 + 60); // pre-step で 1 回だけ
+    expect(cont[32]!.chakuJikoku).toBe(4230 + 60);
+    expect(cont[0]!.hatsuJikoku).toBe(60); // 起点方向へ伝播
+  });
 });
 
 describe('ekiJikoku/writeJikoku(modifyCentDedEkiJikoku 忠実)', () => {
@@ -315,6 +335,145 @@ describe('ekiJikoku/writeJikoku(modifyCentDedEkiJikoku 忠実)', () => {
       hatsuInput: '015',
       modify: true,
     });
+  });
+
+  it('modify=true(発分岐): 有効始発駅では当駅の前作業も発差分でシフトされる(320-324)', () => {
+    // 駅 0 = 有効始発駅(発 0)。前作業 out(86340)。発 0 → 60(+60)。
+    const next = run(base(), {
+      type: 'ekiJikoku/writeJikoku',
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndex: 0,
+      ekiOrder: 0,
+      chakuInput: '',
+      hatsuInput: '001',
+      modify: true,
+    });
+    const out =
+      next.rosen.diaCont[DIA]!.ressyaCont[DOWN][0]!.ekiJikokuCont[0]!.beforeOperationCont[0]!;
+    if (out.kind === 'out') expect(out.outJikoku).toBe(0); // 86340 + 60 → wrap
+  });
+
+  it('modify=true(発分岐): 当駅の後作業は発差分でシフトされる(318-319)', () => {
+    // 駅 32 に発を作ってから(modify なし)、発を +60 変更 → 後作業 in(4290)がシフト。
+    const prep = run(base(), {
+      type: 'ekiJikoku/writeJikoku',
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndex: 0,
+      ekiOrder: 32,
+      chakuInput: '01103', // 4230 秒 = 1:10:30 → 現値維持
+      hatsuInput: '01113', // 発 1:11:30 を新設(modify=false 相当の置換)
+      modify: false,
+    });
+    const next = run(prep, {
+      type: 'ekiJikoku/writeJikoku',
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndex: 0,
+      ekiOrder: 32,
+      chakuInput: '01103',
+      hatsuInput: '01213', // 発 +60
+      modify: true,
+    });
+    const inn =
+      next.rosen.diaCont[DIA]!.ressyaCont[DOWN][0]!.ekiJikokuCont[32]!.afterOperationCont[0]!;
+    if (inn.kind === 'in') expect(inn.inJikoku).toBe(4290 + 60);
+  });
+
+  it('modify=true(着分岐): 発 null の駅では当駅の前作業が着差分でシフトされる(347-348)', () => {
+    // 駅 13: 着 1980・発 null・前作業 release(2040)。着 +60。
+    const next = run(base(), {
+      type: 'ekiJikoku/writeJikoku',
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndex: 0,
+      ekiOrder: 13,
+      chakuInput: '034', // 2040(旧 1980 = 0:33)
+      hatsuInput: '',
+      modify: true,
+    });
+    const rel =
+      next.rosen.diaCont[DIA]!.ressyaCont[DOWN][0]!.ekiJikokuCont[13]!.beforeOperationCont[0]!;
+    expect(rel.kind).toBe('release');
+    if (rel.kind === 'release') expect(rel.releaseJikoku).toBe(2040 + 60);
+  });
+
+  it('駅扱の同乗(ekiatsukai): 1 コマンドで駅扱 + 時刻が書かれ Undo 1 回で戻る', () => {
+    const s0 = createDocumentState(base());
+    const s1 = executeCommand(s0, {
+      type: 'ekiJikoku/writeJikoku',
+      ...target,
+      chakuInput: '012',
+      hatsuInput: '015',
+      modify: false,
+      ekiatsukai: 'tsuuka',
+    });
+    const ej = s1.rosenFileData.rosen.diaCont[DIA]!.ressyaCont[DOWN][0]!.ekiJikokuCont[4]!;
+    expect(ej.ekiatsukai).toBe('tsuuka');
+    expect(ej.hatsuJikoku).toBe(15 * 60);
+    const s2 = undo(s1);
+    expect(s2.rosenFileData).toEqual(s0.rosenFileData); // 1 Undo で全復元
+  });
+});
+
+describe('isNull の解除(原典 setCentDedEkiJikoku / setRessyasyubetsuIndex)', () => {
+  // 記述なし列車(isNull)へ駅扱系コマンドを実行すると実列車に昇格し、保存で消えない。
+  function withNullTrain(): RosenFileData {
+    const d = base();
+    const list = d.rosen.diaCont[DIA]!.ressyaCont[DOWN];
+    list.push({
+      isNull: true,
+      houkou: DOWN,
+      syubetsuIndex: 0,
+      ressyabangou: '',
+      ressyamei: '',
+      gousuu: '',
+      bikou: '',
+      isCanceled: false,
+      ekiJikokuCont: [],
+    });
+    return d;
+  }
+  const nullIdx = () => base().rosen.diaCont[DIA]!.ressyaCont[DOWN].length; // 追加位置
+
+  it.each([
+    ['ekiJikoku/toggleTsuuka', { ekiOrder: 4 }],
+    ['ekiJikoku/toggleTsuukaTeisya', { ekiOrder: 4 }],
+    ['ekiJikoku/setKeiyunasi', { ekiOrder: 4 }],
+    ['ekiJikoku/clear', { ekiOrder: 4, target: 'chaku' }],
+  ] as const)('%s で isNull が解除される', (type, extra) => {
+    const d = withNullTrain();
+    const i = nullIdx();
+    const next = run(d, {
+      type,
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndices: [i],
+      ...extra,
+    } as EditCommand);
+    expect(next.rosen.diaCont[DIA]!.ressyaCont[DOWN][i]!.isNull).toBe(false);
+  });
+
+  it('ressya/stepSyubetsu と setEkiatsukai でも解除される', () => {
+    const i = nullIdx();
+    const a = run(withNullTrain(), {
+      type: 'ressya/stepSyubetsu',
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndices: [i],
+      step: 1,
+    });
+    expect(a.rosen.diaCont[DIA]!.ressyaCont[DOWN][i]!.isNull).toBe(false);
+    const b = run(withNullTrain(), {
+      type: 'ekiJikoku/setEkiatsukai',
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndices: [i],
+      ekiOrder: 4,
+      ekiatsukai: 'teisya',
+    });
+    expect(b.rosen.diaCont[DIA]!.ressyaCont[DOWN][i]!.isNull).toBe(false);
   });
 });
 

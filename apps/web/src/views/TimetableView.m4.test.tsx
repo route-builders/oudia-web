@@ -213,6 +213,55 @@ describe('TimetableView(M4-1: 連続 1 分修正・通過-停車・運休)', () 
     expect(train(0).ekiJikokuCont[4]!.chakuJikoku).toBe(720 - 60);
   });
 
+  it('明示選択が 1 列車のみのとき Select 系コマンドは無効(原典 ECreateCmd_Select 2496)', () => {
+    const rows = gridRows();
+    const hatsuRow = rows.findIndex((r) => r.type === 'hatsu' && r.ekiOrder === 4);
+    const { root, scroller } = renderView();
+    // Ctrl+クリックで列車 1 を 1 本だけ明示選択(フォーカスは列車 1)。
+    fireEvent.click(scroller, {
+      clientX: EKIMEI_W + COL_W + 1 * COL_W + 5,
+      clientY: hatsuRow * ROW_H + 5,
+      ctrlKey: true,
+    });
+    const before = useDocStore.getState().data;
+    fireEvent.keyDown(root, { key: 'j', ctrlKey: true }); // -1 分し次へ
+    fireEvent.keyDown(root, { key: '-', code: 'NumpadSubtract' }); // 通過
+    fireEvent.keyDown(root, { key: 'b', altKey: true }); // 運休
+    expect(useDocStore.getState().data).toBe(before); // すべて no-op
+  });
+
+  it('選択が 1 つでもあると Focus 系(分断)は無効(原典 ECreateCmd_Focus)', () => {
+    const rows = gridRows();
+    const hatsuRow = rows.findIndex((r) => r.type === 'hatsu' && r.ekiOrder === 4);
+    const { root, scroller } = renderView();
+    fireEvent.click(scroller, {
+      clientX: EKIMEI_W + COL_W + 5,
+      clientY: hatsuRow * ROW_H + 5,
+      ctrlKey: true, // 列車 0 を明示選択(フォーカスも列車 0)
+    });
+    const before = data().rosen.diaCont[0]!.ressyaCont[0].length;
+    fireEvent.keyDown(root, { key: 'i', ctrlKey: true, shiftKey: true }); // 分断
+    expect(data().rosen.diaCont[0]!.ressyaCont[0].length).toBe(before); // no-op
+  });
+
+  it('全時刻表示 ON で追加された行でも編集コマンドの ekiOrder が正しい', () => {
+    useSettingsStore.getState().setJikokuhyouSetting('displayAllEkiJikoku', true);
+    // 全時刻表示のグリッドで、通常は行の無い駅 6 の着行を対象にする。
+    const built = buildTimetableGrid(data(), 0, {
+      ...defaultTimetableGridOptions(data(), 0),
+      displayAllEkiJikoku: true,
+    });
+    if (!built.ok) throw new Error('grid');
+    const chaku6 = built.grid.rows.findIndex((r) => r.type === 'chaku' && r.ekiOrder === 6);
+    expect(chaku6).toBeGreaterThan(-1);
+    const { root, scroller } = renderView();
+    clickCell(scroller, chaku6, 0);
+    fireEvent.keyDown(root, { key: 'l', ctrlKey: true, shiftKey: true }); // +1 分(移動なし)
+    // 着基準シフト → 駅 6 の発 1020 が +60(着は null のまま)。
+    expect(train(0).ekiJikokuCont[6]!.hatsuJikoku).toBe(1020 + 60);
+    expect(train(0).ekiJikokuCont[6]!.chakuJikoku).toBeNull();
+  });
+
   it('Ctrl+Del(時刻消去)後は同駅の発へフォーカスが進む(着 → 発の連続消去)', () => {
     const rows = gridRows();
     const chakuRow = rows.findIndex((r) => r.type === 'chaku' && r.ekiOrder === 4);

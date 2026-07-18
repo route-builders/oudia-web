@@ -136,6 +136,77 @@ describe('transferSortOrder', () => {
     expect(order.map((i) => items[i]!.ressyabangou)).toEqual(['U2', 'A', 'U1']);
   });
 
+  it('To 経路(着行): 乗継先の直前へ挿入される(u の着 → s の発)', () => {
+    // フォーカス駅 1(着行)。A は駅 1 発 1600。U は駅 1 運行なしではなく…
+    // U はフォーカス駅 1 が none でソート前、駅 0 で U の着 1500 → A の発 1600(100 秒)。
+    const items = [
+      ressya({ ressyabangou: 'A' }),
+      ressya({ ressyabangou: 'B' }),
+      ressya({ ressyabangou: 'U', slots: [ej(), ej({ ekiatsukai: 'none' }), ej()] }),
+    ];
+    const estimates: EstimateSlot[][] = [
+      [slot('teisya', null, 1600), slot('teisya', 1700, 1750), slot('none')],
+      [slot('teisya', null, 3000), slot('teisya', 3100, 3150), slot('none')],
+      [slot('teisya', 1500, null), slot('none'), slot('none')],
+    ];
+    const order = transferSortOrder({
+      items,
+      estimates,
+      ekiOrder: 1,
+      item: 'chaku', // 着行 → To(F..0) が先行
+      kiten: 0,
+      isSyuyouByOrder: syuyou3,
+    });
+    // U(着 1500)は駅 0 で A(発 1600)へ乗継 → A の直前へ。
+    expect(order.map((i) => items[i]!.ressyabangou)).toEqual(['U', 'A', 'B']);
+  });
+
+  it('発行(hatsu)では From が先行し、乗継元の直後へ挿入される', () => {
+    const items = [
+      ressya({ ressyabangou: 'A' }),
+      ressya({ ressyabangou: 'B' }),
+      ressya({ ressyabangou: 'U', slots: [ej({ ekiatsukai: 'none' }), ej(), ej()] }),
+    ];
+    const estimates: EstimateSlot[][] = [
+      [slot('teisya', null, 1000), slot('teisya', 1200, null), slot('none')],
+      [slot('teisya', null, 2000), slot('none'), slot('none')],
+      [slot('none'), slot('teisya', null, 1300), slot('teisya', 1400)],
+    ];
+    const order = transferSortOrder({
+      items,
+      estimates,
+      ekiOrder: 0,
+      item: 'hatsu', // 発行 → From(F..末尾) が先行
+      kiten: 0,
+      isSyuyouByOrder: syuyou3,
+    });
+    // A(駅 1 着 1200)→ U(駅 1 発 1300。100 秒)で A の直後へ。
+    expect(order.map((i) => items[i]!.ressyabangou)).toEqual(['A', 'U', 'B']);
+  });
+
+  it('第 2 段階は非主要駅のみ(主要駅の 600 秒超は第 3 段階まで残る)', () => {
+    // 駅 1 = 主要駅。A→U の乗継は 700 秒(600 超)なので第 1 段階では不成立、
+    // 第 2 段階(非主要のみ)でも駅 1 は走査されず、第 3 段階(無制限)で成立する。
+    // 挙動が原典と同じ「最終的には配置される」ことと、段階フィルタの存在を検証。
+    const items = [
+      ressya({ ressyabangou: 'A' }),
+      ressya({ ressyabangou: 'U', slots: [ej({ ekiatsukai: 'none' }), ej(), ej()] }),
+    ];
+    const estimates: EstimateSlot[][] = [
+      [slot('teisya', null, 1000), slot('teisya', 1200, null), slot('none')],
+      [slot('none'), slot('teisya', null, 1900), slot('teisya', 2000)],
+    ];
+    const order = transferSortOrder({
+      items,
+      estimates,
+      ekiOrder: 0,
+      item: 'hatsu',
+      kiten: 0,
+      isSyuyouByOrder: [false, true, false], // 駅 1 は主要駅
+    });
+    expect(order.map((i) => items[i]!.ressyabangou)).toEqual(['A', 'U']);
+  });
+
   it('isNull 列車は末尾へ、時刻 null のソート対象は後方', () => {
     const items = [
       ressya({ ressyabangou: 'A' }),

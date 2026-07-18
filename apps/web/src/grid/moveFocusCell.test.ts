@@ -75,6 +75,11 @@ describe('moveFocusCellToNext(下移動モード)', () => {
     expect(s.focus).toEqual({ row: 8, col: 2 });
   });
 
+  it('番線行 + nextEkiOrder=true ではフォーカス不動(原典: JikokuOrder null。1828-1831)', () => {
+    const stay = at(3, 2); // 番線行
+    expect(moveFocusCellToNext(stay, GRID, false, true)).toBe(stay);
+  });
+
   it('移動中は列車選択を保持する(箱型選択は randomCols へ畳む)', () => {
     const withBox: SelectionState = {
       focus: { row: 2, col: 3 },

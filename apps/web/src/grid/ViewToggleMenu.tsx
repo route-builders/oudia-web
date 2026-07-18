@@ -23,23 +23,51 @@ const TOGGLES = [
   { key: 'displayParentSyubetsu', label: '親種別を有効にする' },
 ] as const;
 
-export function ViewToggleMenu(props: { onAfterChange?: () => void }): React.ReactElement {
-  const { onAfterChange } = props;
+export function ViewToggleMenu(props: {
+  onAfterChange?: () => void;
+  /** 連続入力モード中などコマンド無効時。 */
+  disabled?: boolean;
+}): React.ReactElement {
+  const { onAfterChange, disabled = false } = props;
   const settings = useSettingsStore((s) => s.jikokuhyou);
   const setSetting = useSettingsStore((s) => s.setJikokuhyouSetting);
   const [open, setOpen] = useState(false);
 
+  const close = (): void => {
+    setOpen(false);
+    onAfterChange?.(); // グリッドへフォーカス復帰
+  };
+
   return (
-    <div className="toolbar-menu">
+    <div
+      className="toolbar-menu"
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && open) {
+          e.stopPropagation();
+          close();
+        }
+      }}
+    >
       <button
         type="button"
         aria-expanded={open}
+        disabled={disabled}
         onClick={() => {
-          setOpen((v) => !v);
+          if (open) close();
+          else setOpen(true);
         }}
       >
         表示 ▾
       </button>
+      {open && (
+        // 外側クリックで閉じる透明バックドロップ。
+        <div
+          className="toolbar-backdrop"
+          onClick={() => {
+            close();
+          }}
+        />
+      )}
       {open && (
         <div className="toolbar-dropdown" role="menu">
           {TOGGLES.map((t) => (

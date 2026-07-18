@@ -35,7 +35,8 @@ import { useDocStore } from '../store/docStore.js';
 import type { JikokuStepAction, ResolvedAction } from './keymap.js';
 import type { SelectionState } from './selection.js';
 import {
-  getEffectiveRessyaIndices,
+  getCommandRessyaIndices,
+  getFocusCommandRessyaIndex,
   getSelectedRessyaIndices,
   focusRessyaIndex,
   hasMultiSelection,
@@ -97,7 +98,8 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
       const dia = data.rosen.diaCont[diaIndex];
       if (dia === undefined) return;
       const list = dia.ressyaCont[houkou];
-      const targets = getEffectiveRessyaIndices(selection, grid);
+      // Select 系の対象(原典 ECreateCmd_Select: 選択 1 列車のみはコマンド無効)。
+      const targets = getCommandRessyaIndices(selection, grid);
       const focusTarget = resolveCellTarget(grid, selection.focus.row, selection.focus.col);
       // 駅時刻系アクションの ekiOrder(フォーカスが駅時刻/番線行のとき)。
       const ekiOrder =
@@ -199,7 +201,8 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
         }
 
         case 'paste': {
-          if (clipboard === null) return;
+          // 原典 ECreateCmd_NewItem: 複数選択中は不可。
+          if (clipboard === null || hasMultiSelection(selection, grid)) return;
           const result = computePasteTrains(clipboard);
           if (result === null) return;
           const insertAt = focusRessyaIndex(selection, grid) ?? list.length;
@@ -358,8 +361,8 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
         case 'tyokutsuu': {
           // 原典 OnJikokuhyouDirect(5284-5437): 複数選択中は不可(ECreateCmd_Focus)、
           // フォーカスは駅時刻/番線行かつ終着駅以降、相手不在なら無効。
-          if (ekiOrder === null || hasMultiSelection(selection, grid)) return;
-          const fi = focusRessyaIndex(selection, grid);
+          if (ekiOrder === null) return;
+          const fi = getFocusCommandRessyaIndex(selection, grid); // 選択ありは無効(Focus 系)
           if (fi === null) return;
           const focusTrain = list[fi];
           if (focusTrain === undefined) return;
@@ -381,8 +384,8 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
         case 'bundan': {
           // 原典 OnJikokuhyouUndirect(5438-5576): 始発 < フォーカス駅 < 終着(厳密)かつ
           // フォーカス駅に着か発の時刻があること。
-          if (ekiOrder === null || hasMultiSelection(selection, grid)) return;
-          const fi = focusRessyaIndex(selection, grid);
+          if (ekiOrder === null) return;
+          const fi = getFocusCommandRessyaIndex(selection, grid); // 選択ありは無効(Focus 系)
           if (fi === null) return;
           const focusTrain = list[fi];
           if (focusTrain === undefined) return;
@@ -399,8 +402,8 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
         case 'pasteJikokuOnly': {
           // 原典 OnEditPasteEkiJikoku(3881-3972): 内部形式のみ・先頭 1 本のみ使用・
           // フォーカス行の駅種別チェックなし・貼り付け移動量の累積なし・フォーカス移動なし。
-          if (clipboard === null || hasMultiSelection(selection, grid)) return;
-          const fi = focusRessyaIndex(selection, grid);
+          if (clipboard === null) return;
+          const fi = getFocusCommandRessyaIndex(selection, grid); // 選択ありは無効(Focus 系)
           if (fi === null) return;
           const src = clipboard.trains[0];
           if (src === undefined) return;
@@ -413,6 +416,7 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
           // 選択なし → 全列車、選択あり → 選択列車のみ。フォーカス移動なし。
           if (ekiOrder === null) return;
           const explicit = getSelectedRessyaIndices(selection, grid);
+          if (explicit.length === 1) return; // 原典 ECreateCmd_All: 選択 1 列は不成立(2496)
           dispatch({
             type: 'ressya/unify',
             diaIndex,

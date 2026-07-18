@@ -212,6 +212,33 @@ describe('TimetableView(連続入力モード)', () => {
     expect(document.querySelector('dialog')).toBeNull();
   });
 
+  it('[運行なし]は発着表示駅の発時刻行では no-op + フォーカス前進(＜12.3＞例外)', () => {
+    const rows = gridRows();
+    // 駅 4 は着・発の両行を持つ発着表示駅。発行(hatsu:4)へフォーカスして入場。
+    const hatsuRow = rows.findIndex((r) => r.type === 'hatsu' && r.ekiOrder === 4);
+    const { root, scroller } = renderView();
+    clickCell(scroller, hatsuRow, 0);
+    fireEvent.keyDown(root, { key: 't', altKey: true });
+    expect(indicator()).not.toBeNull();
+    // 運行なし(テンキー /)→ 駅 4 は変更されず、フォーカスは前進しモード継続。
+    fireEvent.keyDown(root, { key: '/', code: 'NumpadDivide' });
+    expect(train0().ekiJikokuCont[4]!.ekiatsukai).toBe('teisya'); // no-op
+    expect(train0().ekiJikokuCont[4]!.hatsuJikoku).toBe(780);
+    expect(indicator()).not.toBeNull();
+    // 前進している: 次の入力は駅 5(次の時刻行)に入る。
+    fireEvent.keyDown(root, { key: '2' });
+    fireEvent.keyDown(root, { key: '0' });
+    expect(train0().ekiJikokuCont[5]!.hatsuJikoku).toBe(20 * 60);
+
+    // 対照: 着行(発着表示駅の着)では例外に該当せず運行なし化が実行される。
+    fireEvent.keyDown(root, { key: 'Escape' });
+    const chakuRow = rows.findIndex((r) => r.type === 'chaku' && r.ekiOrder === 4);
+    clickCell(scroller, chakuRow, 0);
+    fireEvent.keyDown(root, { key: 't', altKey: true });
+    fireEvent.keyDown(root, { key: '/', code: 'NumpadDivide' });
+    expect(train0().ekiJikokuCont[4]!.ekiatsukai).toBe('none');
+  });
+
   it('運行なし駅への入力は停車化 + 基準番線(主本線)適用', () => {
     const rows = gridRows();
     const row14 = rows.findIndex((r) => r.type === 'hatsu' && r.ekiOrder === 14);

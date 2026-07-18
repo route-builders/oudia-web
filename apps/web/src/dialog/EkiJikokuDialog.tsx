@@ -108,29 +108,22 @@ export function EkiJikokuDialog(props: {
     // のみ UiDataToTarget を呼ぶ)。エラー時に一部の変更だけが store へ確定するのを防ぐ。
     const writesJikoku = finalAtsukai !== 'none' && timesEnabled;
     if (writesJikoku) {
-      // 着/発の decode 検証(時補完込み)。invalid ならエラー表示して閉じない(何も dispatch しない)。
+      // 着/発の decode 検証(時補完込み)。発の補完基準は(新)着 ?? 前駅の時刻
+      // (reducer の writeJikoku・原典 getJikokuFromUI と同じ解決順)。
       const decChaku = decodeJikokuWithHourCompletion(chaku, target.referJikoku);
-      const decHatsu = decodeJikokuWithHourCompletion(hatsu, target.referJikoku);
-      if (decChaku === 'invalid' || decHatsu === 'invalid') {
+      if (decChaku === 'invalid') {
+        setError('時刻の書式が不正です(例: 915 / 1315 / 131545)。');
+        return;
+      }
+      const decHatsu = decodeJikokuWithHourCompletion(hatsu, decChaku ?? target.referJikoku);
+      if (decHatsu === 'invalid') {
         setError('時刻の書式が不正です(例: 915 / 1315 / 131545)。');
         return;
       }
     }
 
-    // 1) 駅扱の変更(停車/通過/運行なし)。None 化の全消去はレデューサが持つ。
-    if (finalAtsukai !== ej.ekiatsukai) {
-      dispatch({
-        type: 'ekiJikoku/setEkiatsukai',
-        diaIndex: target.diaIndex,
-        houkou: target.houkou,
-        ressyaIndices: [target.ressyaIndex],
-        ekiOrder: target.ekiOrder,
-        ekiatsukai: finalAtsukai,
-      });
-    }
-
-    // 2) 時刻(運行なし以外。通過は通過時刻)。着発を一括で書く(原典 UiDataToTarget は
-    //    EkiJikoku 全体を modify/setCentDedEkiJikoku へ渡す)。繰上げ繰下げは modify で伝播。
+    // 原典 UiDataToTarget は駅扱 + 着発を 1 つの EkiJikoku として書く(OK 1 回 = Undo 1 単位)。
+    // 時刻書込がある場合は writeJikoku 1 コマンドに駅扱変更を同乗させる。
     if (writesJikoku && (chakuChanged || hatsuChanged)) {
       dispatch({
         type: 'ekiJikoku/writeJikoku',
@@ -141,6 +134,19 @@ export function EkiJikokuDialog(props: {
         chakuInput: chaku,
         hatsuInput: hatsu,
         modify: modifyEkijikoku,
+        ...(finalAtsukai !== ej.ekiatsukai && finalAtsukai !== 'none'
+          ? { ekiatsukai: finalAtsukai }
+          : {}),
+      });
+    } else if (finalAtsukai !== ej.ekiatsukai) {
+      // 時刻書込がない(無変更 or 運行なし化)ときは駅扱のみ。None 化の全消去はレデューサが持つ。
+      dispatch({
+        type: 'ekiJikoku/setEkiatsukai',
+        diaIndex: target.diaIndex,
+        houkou: target.houkou,
+        ressyaIndices: [target.ressyaIndex],
+        ekiOrder: target.ekiOrder,
+        ekiatsukai: finalAtsukai,
       });
     }
     onClose();
