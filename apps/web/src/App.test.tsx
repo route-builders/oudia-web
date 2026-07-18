@@ -38,6 +38,24 @@ describe('App(シェル end-to-end。sample2 を開いて各ビューを描画)'
     expect(screen.getByText(/ドロップ/)).toBeTruthy();
   });
 
+  it('ヘッダにアプリ名(oudia-web アルファ版)が出る', () => {
+    render(<App />);
+    expect(screen.getByText('oudia-web')).toBeTruthy();
+    expect(screen.getByText('(アルファ版)')).toBeTruthy();
+  });
+
+  it('フッタにコピーライト・注意事項・免責事項のリンクが出る', () => {
+    render(<App />);
+    const copyright = screen.getByRole('link', { name: /© 2026 up-tri\./ });
+    expect(copyright.getAttribute('href')).toBe('https://web.route.builders/');
+    const notice = screen.getByRole('link', { name: '注意事項' });
+    expect(notice.getAttribute('href')).toBe('https://web.route.builders/notice/');
+    const disclaimer = screen.getByRole('link', { name: '免責事項・ライセンス情報' });
+    expect(disclaimer.getAttribute('href')).toBe('https://web.route.builders/disclaimer/');
+    // 外部リンクは別タブで開く。
+    expect(copyright.getAttribute('target')).toBe('_blank');
+  });
+
   it('読込後は路線ツリー(ダイヤ名)が出る', () => {
     loadSampleIntoStore();
     render(<App />);

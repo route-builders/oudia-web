@@ -69,6 +69,9 @@ export function App(): React.ReactElement {
       }}
     >
       <header className="app-header">
+        <span className="app-brand">
+          oudia-web<span className="app-brand-stage">(アルファ版)</span>
+        </span>
         <button className="open-btn" onClick={openPicker}>
           ファイルを開く
         </button>
@@ -113,6 +116,20 @@ export function App(): React.ReactElement {
           </main>
         </div>
       )}
+
+      <footer className="app-footer">
+        <a href="https://web.route.builders/" target="_blank" rel="noreferrer">
+          &copy; 2026 up-tri.
+        </a>
+        <nav className="app-footer-links" aria-label="サイト情報">
+          <a href="https://web.route.builders/notice/" target="_blank" rel="noreferrer">
+            注意事項
+          </a>
+          <a href="https://web.route.builders/disclaimer/" target="_blank" rel="noreferrer">
+            免責事項・ライセンス情報
+          </a>
+        </nav>
+      </footer>
     </div>
   );
 }
