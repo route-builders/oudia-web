@@ -56,7 +56,7 @@ export function useCanvas2d(
     return () => {
       ro.disconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: deps に依存するのは draw のみで、draw は drawRef.current に格納されるので deps には含めない
   }, deps);
 
   return canvasRef;

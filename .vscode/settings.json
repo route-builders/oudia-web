@@ -3,6 +3,7 @@
   "biome.enabled": true,
   "eslint.enable": false,
   "prettier.enable": false,
+  "biome.lsp.bin": "node_modules/.bin/biome",
   "editor.codeActionsOnSave": {
     "source.fixAll.biome": "explicit"
   },
