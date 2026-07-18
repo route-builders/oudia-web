@@ -340,15 +340,28 @@ body {
   margin: 0 4px;
 }
 
+/* ---- 時刻表ビュー(ツールバー行 + グリッド)---- */
+.timetable-view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.timetable-view .grid-root {
+  position: relative;
+  inset: auto;
+  flex: 1;
+  min-height: 0;
+}
+
 /* ---- 時刻表ツールバー(ショートカットのないメニューコマンド)---- */
 .grid-toolbar {
-  position: absolute;
-  top: 8px;
-  left: 8px;
-  z-index: 9;
+  flex: none;
   display: flex;
   gap: 4px;
-  opacity: 0.85;
+  padding: 4px 8px;
+  background: #f4f4f4;
+  border-bottom: 1px solid #ccc;
 }
 .grid-toolbar button {
   padding: 3px 8px;

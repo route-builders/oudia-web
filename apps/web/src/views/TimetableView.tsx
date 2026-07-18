@@ -558,8 +558,7 @@ export function TimetableView(props: {
   };
 
   return (
-    <div className="grid-root" ref={rootRef} tabIndex={0} onKeyDown={onKeyDown}>
-      <canvas ref={canvasRef} className="grid-content" />
+    <div className="timetable-view">
       <div className="grid-toolbar" role="toolbar" aria-label="時刻表コマンド">
         <button
           type="button"
@@ -587,85 +586,91 @@ export function TimetableView(props: {
         </button>
         <ViewToggleMenu />
       </div>
-      {renzoku !== null && (
-        <div className="renzoku-indicator" role="status" aria-live="polite">
-          連続入力モード
+      <div className="grid-root" ref={rootRef} tabIndex={0} onKeyDown={onKeyDown}>
+        <canvas ref={canvasRef} className="grid-content" />
+        {renzoku !== null && (
+          <div className="renzoku-indicator" role="status" aria-live="polite">
+            連続入力モード
+          </div>
+        )}
+        {searchOpen && (
+          <TrainSearchBar
+            onSearch={(q) => searchTrain(q, sel.selection.focus.col)}
+            onClose={() => {
+              setSearchOpen(false);
+              rootRef.current?.focus();
+            }}
+          />
+        )}
+        <div
+          ref={scrollerRef}
+          className="grid-scroller"
+          onScroll={(e) => {
+            const el = e.currentTarget;
+            setScroll({ x: el.scrollLeft, y: el.scrollTop });
+          }}
+          onClick={onCanvasClick}
+          onDoubleClick={onCanvasDoubleClick}
+        >
+          <div
+            className="grid-spacer"
+            style={{ width: geom.totalWidth, height: geom.totalHeight }}
+          />
         </div>
-      )}
-      {searchOpen && (
-        <TrainSearchBar
-          onSearch={(q) => searchTrain(q, sel.selection.focus.col)}
-          onClose={() => {
-            setSearchOpen(false);
-            rootRef.current?.focus();
-          }}
-        />
-      )}
-      <div
-        ref={scrollerRef}
-        className="grid-scroller"
-        onScroll={(e) => {
-          const el = e.currentTarget;
-          setScroll({ x: el.scrollLeft, y: el.scrollTop });
-        }}
-        onClick={onCanvasClick}
-        onDoubleClick={onCanvasDoubleClick}
-      >
-        <div className="grid-spacer" style={{ width: geom.totalWidth, height: geom.totalHeight }} />
-      </div>
 
-      {dialog?.kind === 'ekiJikoku' && (
-        <EkiJikokuDialog
-          target={dialog.target}
-          {...(dialog.initial !== undefined ? { initialKeyString: dialog.initial } : {})}
-          initialField={dialog.field}
-          dispatch={dispatch}
-          onClose={() => {
-            setDialog(null);
-          }}
-        />
-      )}
-      {dialog?.kind === 'ressyaProp' && (
-        <RessyaPropDialog
-          target={dialog.target}
-          {...(dialog.initial !== undefined ? { initialKeyString: dialog.initial } : {})}
-          dispatch={dispatch}
-          onClose={() => {
-            setDialog(null);
-          }}
-        />
-      )}
-      {modifyDialogOpen && (
-        <ModifyEkijikokuDialog
-          ekiCont={data.rosen.ekiCont}
-          houkou={houkou}
-          initial={modifyOp2 ?? DEFAULT_MODIFY_OP2}
-          onOk={(op) => {
-            // 原典 5942-5963: 実行成否より先に記憶を更新 → 実行 → 成功時フォーカス前進。
-            setModifyOp2(viewKey, op);
-            setModifyDialogOpen(false);
-            const t = resolveCellTarget(grid, sel.selection.focus.row, sel.selection.focus.col);
-            if (t?.kind !== 'ekiJikoku') return;
-            const targets = getEffectiveRessyaIndices(sel.selection, grid);
-            if (targets.length === 0) return;
-            // NULL 状態(変更しない + 駅扱変更なし)は記憶のみ更新(再実行が無効化される)。
-            if (!op.setEkiatsukai && op.operation === 'nop') return;
-            dispatch({
-              type: 'ekiJikoku/modifyOperation2',
-              diaIndex,
-              houkou,
-              ressyaIndices: targets,
-              ekiOrder: t.ekiOrder,
-              item: t.target,
-              op,
-            });
-            moveNext(true);
-          }}
-          onClose={() => {
-            setModifyDialogOpen(false);
-          }}
-        />
-      )}
+        {dialog?.kind === 'ekiJikoku' && (
+          <EkiJikokuDialog
+            target={dialog.target}
+            {...(dialog.initial !== undefined ? { initialKeyString: dialog.initial } : {})}
+            initialField={dialog.field}
+            dispatch={dispatch}
+            onClose={() => {
+              setDialog(null);
+            }}
+          />
+        )}
+        {dialog?.kind === 'ressyaProp' && (
+          <RessyaPropDialog
+            target={dialog.target}
+            {...(dialog.initial !== undefined ? { initialKeyString: dialog.initial } : {})}
+            dispatch={dispatch}
+            onClose={() => {
+              setDialog(null);
+            }}
+          />
+        )}
+        {modifyDialogOpen && (
+          <ModifyEkijikokuDialog
+            ekiCont={data.rosen.ekiCont}
+            houkou={houkou}
+            initial={modifyOp2 ?? DEFAULT_MODIFY_OP2}
+            onOk={(op) => {
+              // 原典 5942-5963: 実行成否より先に記憶を更新 → 実行 → 成功時フォーカス前進。
+              setModifyOp2(viewKey, op);
+              setModifyDialogOpen(false);
+              const t = resolveCellTarget(grid, sel.selection.focus.row, sel.selection.focus.col);
+              if (t?.kind !== 'ekiJikoku') return;
+              const targets = getEffectiveRessyaIndices(sel.selection, grid);
+              if (targets.length === 0) return;
+              // NULL 状態(変更しない + 駅扱変更なし)は記憶のみ更新(再実行が無効化される)。
+              if (!op.setEkiatsukai && op.operation === 'nop') return;
+              dispatch({
+                type: 'ekiJikoku/modifyOperation2',
+                diaIndex,
+                houkou,
+                ressyaIndices: targets,
+                ekiOrder: t.ekiOrder,
+                item: t.target,
+                op,
+              });
+              moveNext(true);
+            }}
+            onClose={() => {
+              setModifyDialogOpen(false);
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }
