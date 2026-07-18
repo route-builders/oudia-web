@@ -6,6 +6,7 @@
 import { useCallback, useState } from 'react';
 import type { RosenFileData } from '@oudia/format';
 import { useDocStore } from './store/docStore.js';
+import { useUnsavedGuard } from './hooks/useUnsavedGuard.js';
 import { pickAndOpen, openFileObject } from './file/openFile.js';
 import { RosenTree } from './shell/RosenTree.js';
 import { TabBar } from './shell/TabBar.js';
@@ -23,6 +24,9 @@ export function App(): React.ReactElement {
   const loadData = useDocStore((s) => s.loadData);
   const swReload = useDocStore((s) => s.swReload);
   const [error, setError] = useState<string | null>(null);
+
+  // 未保存時の離脱保護(リロード/クローズで確認ダイアログ)+ タイトル * マーカー。
+  useUnsavedGuard();
 
   const openPicker = useCallback(() => {
     setError(null);

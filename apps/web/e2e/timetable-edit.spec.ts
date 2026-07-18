@@ -171,6 +171,30 @@ test('ダイアログを閉じるとフォーカスがグリッドへ戻り、�
   await expect(grid).toBeFocused();
 });
 
+test('未保存の編集があるとページ離脱時にブラウザ標準の確認ダイアログが出る', async ({
+  context,
+}) => {
+  // fixture の page とは別に専用ページを使う(runBeforeUnload でクローズするため)。
+  const page = await context.newPage();
+  await page.goto('/');
+  await dropFile(page, 'sample2.oud2');
+  await openTimetableDown(page);
+
+  // 編集して未保存状態にする。タイトルに * が付く。
+  await page.locator('.grid-root').press('Enter');
+  const dialog = page.locator('dialog.prop-dialog');
+  await dialog.getByLabel('列車番号').fill('DIRTY1');
+  await dialog.getByRole('button', { name: 'OK' }).click();
+  await expect(page).toHaveTitle(/^\* /);
+
+  // beforeunload ダイアログが発火することを検証(dismiss = 離脱の取りやめ)。
+  const dialogPromise = page.waitForEvent('dialog');
+  await page.close({ runBeforeUnload: true });
+  const unloadDialog = await dialogPromise;
+  expect(unloadDialog.type()).toBe('beforeunload');
+  await unloadDialog.dismiss();
+});
+
 test('駅時刻セルで数字キー入力を開始すると対象欄に入り、2 文字目以降も続けて入力できる', async ({
   page,
 }) => {
