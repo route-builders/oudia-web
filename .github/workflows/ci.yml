@@ -52,6 +52,42 @@ jobs:
       - name: テスト(バイト一致黄金テスト含む)
         run: pnpm test
 
+  e2e:
+    name: E2E(Playwright / Chromium・タブモード)
+    runs-on: ubuntu-latest
+    steps:
+      - name: チェックアウト
+        uses: actions/checkout@v4
+
+      - name: pnpm セットアップ
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - name: Node セットアップ
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 依存インストール(ロックファイル固定)
+        run: pnpm install --frozen-lockfile
+
+      # Chromium + OS 依存ライブラリを導入(--with-deps)。
+      - name: Playwright ブラウザ導入
+        run: pnpm --filter @oudia/web e2e:install
+
+      - name: E2E 実行
+        run: pnpm e2e
+
+      - name: レポート添付(失敗時)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: apps/web/playwright-report/
+          retention-days: 7
+
   license-check:
     name: ライセンス検査(GPLv3 非互換依存の混入防止)
     runs-on: ubuntu-latest

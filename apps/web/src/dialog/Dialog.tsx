@@ -41,6 +41,8 @@ export function Dialog(props: {
       ref={ref}
       className="prop-dialog"
       onKeyDown={(e) => {
+        // ダイアログ内のキーは背後のグリッド(.grid-root)へ伝播させない。
+        e.stopPropagation();
         // Enter = OK(textarea 内は改行を優先)。
         if (e.key === 'Enter' && !(e.target instanceof HTMLTextAreaElement)) {
           e.preventDefault();

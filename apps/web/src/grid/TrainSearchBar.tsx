@@ -40,12 +40,19 @@ export function TrainSearchBar(props: {
           setNotFound(false);
         }}
         onKeyDown={(e) => {
+          // 検索バー内のキーはグリッド(.grid-root)へ伝播させない
+          // (Enter がグリッドのダイアログ起動へ抜けるのを防ぐ)。
           if (e.key === 'Enter') {
             e.preventDefault();
+            e.stopPropagation();
             runSearch();
           } else if (e.key === 'Escape') {
             e.preventDefault();
+            e.stopPropagation();
             onClose();
+          } else {
+            // 文字入力などもグリッドのキーマップへ抜けないよう止める。
+            e.stopPropagation();
           }
         }}
       />
