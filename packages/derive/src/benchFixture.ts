@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 代表規模(500 列車 × 50 駅)のベンチ用合成フィクスチャ(architecture §8.1)。
 // 決定論的に生成し、レイアウト計算・グリッド構築・コマンド実行の所要時間を CI で追跡する。
 
-import { asSeconds } from '@oudia/format';
 import type {
-  Dia,
-  DispProp,
-  Eki,
-  EkiJikoku,
-  Ressya,
-  Ressyasyubetsu,
-  RosenFileData,
-} from '@oudia/format';
+    Dia,
+    DispProp,
+    Eki,
+    EkiJikoku,
+    Ressya,
+    Ressyasyubetsu,
+    RosenFileData,
+} from '@oudia-web/format';
+import { asSeconds } from '@oudia-web/format';
 
 function mkEki(i: number): Eki {
   return {

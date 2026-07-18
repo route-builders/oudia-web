@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -10,7 +10,7 @@
  * (解決済みピクセルではなくデータ)。色・フォントの解決は render 層の責務。
  */
 
-import type { Colorref } from '@oudia/format';
+import type { Colorref } from '@oudia-web/format';
 import type { JikokuhyouRowSpec } from './colSpec.js';
 
 /** 1 セルの意味づけ。テキスト自体は kind とは独立(マークも時刻も string)。 */

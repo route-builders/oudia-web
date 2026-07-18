@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -14,7 +14,7 @@
  * (ユーザ決定: 原典忠実)。運用番号・路線外・カスタマイズ行は M1 対象外。
  */
 
-import type { Eki, Ressyahoukou } from '@oudia/format';
+import type { Eki, Ressyahoukou } from '@oudia-web/format';
 import { buildColSpec } from '../csv/colSpec.js';
 
 export type JikokuhyouRowType =

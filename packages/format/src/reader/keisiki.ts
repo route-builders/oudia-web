@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -12,8 +12,8 @@
  * 旧世代はキーを持たず keisiki から機械的に導出していた。旧世代リーダーが同じ導出を再現する。
  */
 
-import type { Ekijikokukeisiki } from '../model/enums.js';
 import type { JikokuDisplay } from '../model/entities.js';
+import type { Ekijikokukeisiki } from '../model/enums.js';
 
 /**
  * keisiki → { 下り, 上り } の着発表示(原典の 4 ブール set*Display の対応)。

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 根拠: docs/analysis/03_file-format.md §2、docs/design/04_file-io.md §3.3
 // 原典: libs/OuLib/Str/OuPropertiesText/CConvNodeContainer.cpp (decodeNodeContainer / getLine)
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { parsePropertiesText } from './parse.js';
 import { serializePropertiesText } from './serialize.js';
-import { isDirectory, isProperty } from './types.js';
 import type { PtDirectory } from './types.js';
+import { isDirectory, isProperty } from './types.js';
 
 /** 入力を LF 区切りに正規化して parse する(テスト記述の便宜)。 */
 function parseOk(text: string): PtDirectory {

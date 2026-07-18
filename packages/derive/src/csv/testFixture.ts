@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // テスト用のフィクスチャ読込ヘルパ(実 OuDiaSecond ファイルを RosenFileData へ)。
 
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { parseNodeTree, readRosenFile } from '@oudia/format';
-import type { RosenFileData } from '@oudia/format';
+import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 // derive/src/csv → リポジトリの packages/format/fixtures を参照。

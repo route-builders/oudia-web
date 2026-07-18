@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -16,10 +16,9 @@
  * 上下余白 = 既定駅間幅 ×1 の最小構成で計算する。
  */
 
-import type { Ressya, Rosen } from '@oudia/format';
-import { RESSYAHOUKOU_NOBORI } from '@oudia/format';
-import { ekiOrderOfEkiIndex, subJikoku } from '@oudia/domain';
-import { getEkiJikoku } from '@oudia/domain';
+import { ekiOrderOfEkiIndex, getEkiJikoku, subJikoku } from '@oudia-web/domain';
+import type { Ressya, Rosen } from '@oudia-web/format';
+import { RESSYAHOUKOU_NOBORI } from '@oudia-web/format';
 import type { DiaLayoutFrame, EkiLayout } from './types.js';
 
 /**

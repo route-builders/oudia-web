@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 非正規形フィクスチャの読込スモーク。バイト一致 T1 の本体は golden-corpus.test.ts に
 // 集約済み(ノード/モデル両レベル + 冪等性 + コーパス 10 本以上)。ここでは T1 対象外の
 // 「閉じ忘れディレクトリ」パースが完走することのみ確認する。
 
-import { describe, it, expect } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { parseNodeTree } from './index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
-import { describe, it, expect, vi, afterEach, beforeAll, beforeEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import type { EditCommand } from '@oudia/domain';
-import type { EkiJikoku } from '@oudia/format';
-import { asSeconds } from '@oudia/format';
-import { useSettingsStore, DEFAULT_JIKOKUHYOU_SETTINGS } from '../store/settingsStore.js';
-import { EkiJikokuDialog } from './EkiJikokuDialog.js';
+import type { EditCommand } from '@oudia-web/domain';
+import type { EkiJikoku } from '@oudia-web/format';
+import { asSeconds } from '@oudia-web/format';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { DEFAULT_JIKOKUHYOU_SETTINGS, useSettingsStore } from '../store/settingsStore.js';
 import type { EkiJikokuDialogTarget } from './EkiJikokuDialog.js';
+import { EkiJikokuDialog } from './EkiJikokuDialog.js';
 
 beforeAll(() => {
   const proto = HTMLDialogElement.prototype as unknown as {

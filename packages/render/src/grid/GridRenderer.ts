@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -10,12 +10,12 @@
  * 可動ボディ)に分けてセル + 罫線を描く。CellSpec が意味を持ち、レンダラは機械的に描く。
  */
 
-import type { CellSpec, TimetableGridSpec } from '@oudia/derive';
-import { MARK_GLYPH } from '@oudia/derive';
-import type { RenderContext2D } from '../core/RenderTarget.js';
-import { colorrefToCss, fontString } from '../core/textStyle.js';
-import type { FontSpec } from '../core/textStyle.js';
+import type { CellSpec, TimetableGridSpec } from '@oudia-web/derive';
+import { MARK_GLYPH } from '@oudia-web/derive';
 import { drawVerticalText } from '../core/primitives.js';
+import type { RenderContext2D } from '../core/RenderTarget.js';
+import type { FontSpec } from '../core/textStyle.js';
+import { colorrefToCss, fontString } from '../core/textStyle.js';
 import { GridGeometry } from './GridGeometry.js';
 
 /** グリッド描画のテーマ(色・フォント)。 */

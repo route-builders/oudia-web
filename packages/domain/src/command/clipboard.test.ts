@@ -1,22 +1,22 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 列単位コピー/貼り付けの純ロジック(累積移動量)。原典 modifyRessyaBangou/Gou/RessyaJikoku 照合。
 
-import { describe, it, expect } from 'vitest';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia/format';
-import type { RosenFileData } from '@oudia/format';
-import { createDocumentState, executeCommand, undo } from './engine.js';
-import {
-  addToTrailingNumber,
-  copyRessyaToClipboard,
-  computePasteTrains,
-  NO_PASTE_IDOURYOU,
-} from './clipboard.js';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { getEkiJikoku } from '../runRange.js';
+import {
+    addToTrailingNumber,
+    computePasteTrains,
+    copyRessyaToClipboard,
+    NO_PASTE_IDOURYOU,
+} from './clipboard.js';
+import { createDocumentState, executeCommand, undo } from './engine.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(here, '..', '..', '..', 'format', 'fixtures');

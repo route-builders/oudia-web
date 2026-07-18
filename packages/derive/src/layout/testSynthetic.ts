@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // レイアウトテスト用の合成 RosenFileData ビルダー(最小構成)。
 
-import { asSeconds } from '@oudia/format';
-import type { Dia, Eki, EkiJikoku, Ressya, RosenFileData } from '@oudia/format';
+import type { Dia, Eki, EkiJikoku, Ressya, RosenFileData } from '@oudia-web/format';
+import { asSeconds } from '@oudia-web/format';
 
 /** EkiJikoku を簡潔に作る。 */
 export function ej(

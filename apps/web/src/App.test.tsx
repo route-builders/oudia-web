@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { render, screen, cleanup, fireEvent, within } from '@testing-library/react';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App.js';
-import { useDocStore } from './store/docStore.js';
 import { parseBytes } from './file/openFile.js';
+import { useDocStore } from './store/docStore.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 function loadSampleIntoStore(): void {

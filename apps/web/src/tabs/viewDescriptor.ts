@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * ビュー記述子(architecture §4.5)。1 ビュー = 1 記述子。同一記述子は二重に開かない

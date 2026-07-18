@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 根拠: docs/analysis/03_file-format.md §6.4、docs/design/04_file-io.md §3.5
 // 原典: entDed/CconvCentDed.cpp(CentDedBefore/AfterOperationCont_From/To_string)
 
-import { describe, it, expect } from 'vitest';
-import {
-  decodeAfterOperationCont,
-  decodeBeforeOperationCont,
-  encodeAfterOperationCont,
-  encodeBeforeOperationCont,
-} from './operation.js';
+import { describe, expect, it } from 'vitest';
 import type { OperationEntry, OperationKeyStore } from './operation.js';
+import {
+    decodeAfterOperationCont,
+    decodeBeforeOperationCont,
+    encodeAfterOperationCont,
+    encodeBeforeOperationCont,
+} from './operation.js';
 
 /** OperationEntry[] を側テーブルにする(encode → store → decode の往復テスト用)。 */
 function storeOf(entries: OperationEntry[]): OperationKeyStore {

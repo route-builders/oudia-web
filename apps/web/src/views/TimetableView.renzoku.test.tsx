@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
 // 連続入力モード(Alt+T)のビュー統合検証: 入場条件・分 2 桁入力・自動前進・BackSpace 2 段階・
 // Esc/終着自動終了・モード中の許可コマンド・列変更での自動退場(原典 CWjkState_Renzoku)。
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { render, cleanup, fireEvent, screen } from '@testing-library/react';
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
-import { TimetableView } from './TimetableView.js';
-import { useDocStore } from '../store/docStore.js';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
+import { useDocStore } from '../store/docStore.js';
+import { TimetableView } from './TimetableView.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROW_H = 20;

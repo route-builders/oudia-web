@@ -44,17 +44,17 @@ oudia-second-web/
 
 ## 4. 日常の開発コマンド
 
-| コマンド                            | 内容                                                  |
-| ----------------------------------- | ----------------------------------------------------- |
-| `pnpm dev`                          | 開発サーバ起動(apps/web、Vite)                        |
-| `pnpm build`                        | 全パッケージのビルド                                  |
-| `pnpm typecheck`                    | TypeScript 型検査(全 workspace)                       |
-| `pnpm lint`                         | ESLint + dependency-cruiser(依存方向チェック)         |
-| `pnpm format` / `pnpm format:check` | Prettier 適用 / 検査                                  |
-| `pnpm test`                         | Vitest 全件(ユニット + 黄金テスト + プロパティテスト) |
-| `pnpm test --filter @oudia/format`  | パッケージ単位のテスト                                |
-| `pnpm bench`                        | ベンチマーク(vitest bench)                            |
-| `pnpm e2e`                          | Playwright E2E(要 `pnpm exec playwright install`)     |
+| コマンド                               | 内容                                                  |
+| -------------------------------------- | ----------------------------------------------------- |
+| `pnpm dev`                             | 開発サーバ起動(apps/web、Vite)                        |
+| `pnpm build`                           | 全パッケージのビルド                                  |
+| `pnpm typecheck`                       | TypeScript 型検査(全 workspace)                       |
+| `pnpm lint`                            | ESLint + dependency-cruiser(依存方向チェック)         |
+| `pnpm format` / `pnpm format:check`    | Prettier 適用 / 検査                                  |
+| `pnpm test`                            | Vitest 全件(ユニット + 黄金テスト + プロパティテスト) |
+| `pnpm test --filter @oudia-web/format` | パッケージ単位のテスト                                |
+| `pnpm bench`                           | ベンチマーク(vitest bench)                            |
+| `pnpm e2e`                             | Playwright E2E(要 `pnpm exec playwright install`)     |
 
 コミット前に最低限 `pnpm typecheck && pnpm lint && pnpm test` を通すこと([definition-of-done.md](./definition-of-done.md))。
 

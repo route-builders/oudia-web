@@ -1,5 +1,5 @@
 {
-  "name": "@oudia/format",
+  "name": "@oudia-web/format",
   "version": "0.0.0",
   "private": true,
   "description": "oud2/oud のパース・シリアライズ・CSV(純文字列処理、DOM 非依存)",

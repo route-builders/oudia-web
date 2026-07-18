@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -15,12 +15,12 @@
  * 直列化はバイト一致のため **UTF-8 BOM + CRLF** で行う(原典 _tfopen_s("w , ccs=UTF-8"))。
  */
 
-import type { Dia, Eki, RosenFileData, Ressyahoukou, Rosen } from '@oudia/format';
-import { encodeCsvDocument, RESSYAHOUKOU_KUDARI } from '@oudia/format';
-import { ekiIndexOfEkiOrder } from '@oudia/domain';
-import { getEkimeiJikokuhyouRyaku, getTrackRyakusyou } from './ekiDisplay.js';
-import { deriveEkiJikokuhyou } from '../ekiJikokuhyou/deriveEkiJikokuhyou.js';
+import { ekiIndexOfEkiOrder } from '@oudia-web/domain';
+import type { Dia, Eki, Ressyahoukou, Rosen, RosenFileData } from '@oudia-web/format';
+import { encodeCsvDocument, RESSYAHOUKOU_KUDARI } from '@oudia-web/format';
 import type { EkiJikokuhyouContent } from '../ekiJikokuhyou/deriveEkiJikokuhyou.js';
+import { deriveEkiJikokuhyou } from '../ekiJikokuhyou/deriveEkiJikokuhyou.js';
+import { getEkimeiJikokuhyouRyaku, getTrackRyakusyou } from './ekiDisplay.js';
 
 const NAME_EKI = '駅';
 const NAME_JIKOKUHYOU = '時刻表';

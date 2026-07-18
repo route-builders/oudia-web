@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 
@@ -9,9 +9,9 @@
  * React 依存なし。ビュー(TimetableView)がキーイベントとフォーカス移動を配線する。
  */
 
-import type { Ressya } from '@oudia/format';
-import type { TimetableGridSpec } from '@oudia/derive';
-import { findRevJikokuItem } from '@oudia/domain';
+import type { TimetableGridSpec } from '@oudia-web/derive';
+import { findRevJikokuItem } from '@oudia-web/domain';
+import type { Ressya } from '@oudia-web/format';
 import { resolveCellTarget } from './cellSemantics.js';
 
 /** 連続入力モードの状態(null = 非アクティブ)。 */

@@ -70,7 +70,7 @@
 
 ```ts
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 ```
 
 原典からアルゴリズムを移植したファイルには原著作者クレジットを追記する:

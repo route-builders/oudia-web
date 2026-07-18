@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // ★ バイト一致 CI 必須ゲート(architecture §7.1、roadmap M2 完了条件 #1)★
 //
@@ -11,10 +11,10 @@
 //
 // このゲートは以後すべての PR のマージ条件。落ちる変更はマージ不可。
 
-import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { parseNodeTree, readRosenFile, roundtripOud2, writeOud2 } from './index.js';
 import { assertBytesEqual } from './testutil/byteDiff.js';
 

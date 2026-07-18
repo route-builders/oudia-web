@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -12,8 +12,8 @@
  * その 2 本の論理式を (keisiki, houkou) をキーにした純関数として移植する。
  */
 
-import type { Eki, Ekijikokukeisiki, Ressyahoukou } from '@oudia/format';
-import { RESSYAHOUKOU_KUDARI } from '@oudia/format';
+import type { Eki, Ekijikokukeisiki, Ressyahoukou } from '@oudia-web/format';
+import { RESSYAHOUKOU_KUDARI } from '@oudia-web/format';
 
 /**
  * 着時刻列を表示するか(原典 CdDedEki ctor 引数 2)。

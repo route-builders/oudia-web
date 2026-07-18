@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -20,9 +20,9 @@
 
 import type { Eki, Rosen } from '../model/entities.js';
 import type { NodeCursor } from '../node/cursor.js';
-import type { ReaderProfile } from './profile.js';
-import { deriveJikokuDisplayFromKeisiki, deriveJikokuhyouTrackOmit } from './keisiki.js';
 import { decodeEkiJikoku } from '../value/ekiJikoku.js';
+import { deriveJikokuDisplayFromKeisiki, deriveJikokuhyouTrackOmit } from './keisiki.js';
+import type { ReaderProfile } from './profile.js';
 
 /**
  * S00 プロファイルを生成する。読み取り 1 回ぶんの Kyoukaisen 状態(駅 id → 境界線)を

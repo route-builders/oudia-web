@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -8,9 +8,9 @@
  * 列車エンティティの構築ヘルパ。原典 CentDedRessya のコンストラクタ相当。
  */
 
-import type { Ressya, Ressyahoukou } from '@oudia/format';
-import { getEkiJikoku, getRunFirstEkiOrder, getRunLastEkiOrder } from './runRange.js';
+import type { Ressya, Ressyahoukou } from '@oudia-web/format';
 import { subJikokuWrapped } from './command/jikokuCompletion.js';
+import { getEkiJikoku, getRunFirstEkiOrder, getRunLastEkiOrder } from './runRange.js';
 
 /**
  * 空の列車を作る(原典 createNullRessya + 全長 all-none の駅時刻)。

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * ドキュメントストア(Zustand)。M3 で domain のコマンドエンジン(executeCommand /
@@ -9,23 +9,23 @@
  * 後方互換のため data セレクタ(= docState?.rosenFileData ?? null)を維持する。
  */
 
-import { create } from 'zustand';
-import type { RosenFileData } from '@oudia/format';
-import {
-  createDocumentState,
-  executeCommand,
-  undo as undoState,
-  redo as redoState,
-  markSaved as markSavedState,
-  canUndo as canUndoState,
-  canRedo as canRedoState,
-} from '@oudia/domain';
 import type {
-  DocumentState,
-  EditCommand,
-  EkijikokuModifyOperation2,
-  RessyaClipboard,
-} from '@oudia/domain';
+    DocumentState,
+    EditCommand,
+    EkijikokuModifyOperation2,
+    RessyaClipboard,
+} from '@oudia-web/domain';
+import {
+    canRedo as canRedoState,
+    canUndo as canUndoState,
+    createDocumentState,
+    executeCommand,
+    markSaved as markSavedState,
+    redo as redoState,
+    undo as undoState,
+} from '@oudia-web/domain';
+import type { RosenFileData } from '@oudia-web/format';
+import { create } from 'zustand';
 import type { ViewDescriptor } from '../tabs/viewDescriptor.js';
 import { descriptorKey } from '../tabs/viewDescriptor.js';
 

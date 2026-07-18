@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * ビューポート座標(px)→ グリッドセル (row, col) のヒットテスト。
@@ -7,7 +7,7 @@
  * (design §04 固定 2 列 + 固定ヘッダ)。GridRenderer の描画配置と対称。
  */
 
-import type { GridGeometry } from '@oudia/render';
+import type { GridGeometry } from '@oudia-web/render';
 
 export interface GridViewport {
   readonly scrollX: number;

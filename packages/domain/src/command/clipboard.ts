@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -18,8 +18,8 @@
  * ressya/replaceRange コマンド(count 0 の純挿入)に載せて executeCommand へ渡す。
  */
 
-import type { Jikoku, Ressya, Ressyahoukou } from '@oudia/format';
-import { asSeconds } from '@oudia/format';
+import type { Jikoku, Ressya, Ressyahoukou } from '@oudia-web/format';
+import { asSeconds } from '@oudia-web/format';
 
 const SEC_DAY = 86400;
 

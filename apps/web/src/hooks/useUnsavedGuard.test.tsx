@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
 // 離脱保護(design §6.5): 未保存時のみ beforeunload をブロックし、タイトルに * を付ける。
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { renderHook, cleanup, act } from '@testing-library/react';
-import type { RosenFileData } from '@oudia/format';
+import type { RosenFileData } from '@oudia-web/format';
+import { act, cleanup, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { useDocStore } from '../store/docStore.js';
 import { useUnsavedGuard } from './useUnsavedGuard.js';
 

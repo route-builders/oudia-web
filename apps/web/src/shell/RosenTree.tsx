@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * 路線ツリー(ナビゲーション専用)。ダイヤごとに ダイヤグラム / 下り・上り時刻表 /
  * 各駅の駅時刻表 を開くリンクを並べる(architecture §4.5)。
  */
 
+import type { RosenFileData } from '@oudia-web/format';
 import { useState } from 'react';
-import type { RosenFileData } from '@oudia/format';
 import { useDocStore } from '../store/docStore.js';
 
 export function RosenTree(props: { data: RosenFileData }): React.ReactElement {

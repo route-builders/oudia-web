@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '@oudia/format';
+import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
 import { buildEkiTimetableCsv } from './ekiTimetableCsv.js';
 import { loadFixture } from './testFixture.js';
 

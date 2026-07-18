@@ -1,5 +1,5 @@
 {
-  "name": "@oudia/domain",
+  "name": "@oudia-web/domain",
   "version": "0.0.0",
   "private": true,
   "description": "エンティティ・時刻演算・コマンドレデューサ・整合カスケード(DOM 非依存)",
@@ -12,7 +12,7 @@
     }
   },
   "dependencies": {
-    "@oudia/format": "workspace:*",
+    "@oudia-web/format": "workspace:*",
     "immer": "^11.1.11"
   },
   "scripts": {

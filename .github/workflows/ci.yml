@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-# Copyright (C) 2026 oudia-second-web contributors
+# Copyright (C) 2026 up-tri
 #
 # CI 必須ゲート。全 PR がこれを通過しなければマージできない(roadmap M2 完了条件 #1)。
 # 最重要は「読込 → 無編集 → 書出 → バイト一致」黄金テスト(architecture §7.1)。
@@ -75,7 +75,7 @@ jobs:
 
       # Chromium + OS 依存ライブラリを導入(--with-deps)。
       - name: Playwright ブラウザ導入
-        run: pnpm --filter @oudia/web e2e:install
+        run: pnpm --filter @oudia-web/web e2e:install
 
       - name: E2E 実行
         run: pnpm e2e

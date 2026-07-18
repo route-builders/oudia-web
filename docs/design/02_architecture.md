@@ -41,18 +41,18 @@
 
 ### 1.3 方式決定の一覧
 
-| 論点              | 決定                                                                                                     | 出所        |
-| ----------------- | -------------------------------------------------------------------------------------------------------- | ----------- |
-| 内部モデル        | index 参照モデル(ファイル同型)。駅作業のみ判別可能ユニオンへ正規化                                       | 案 3 + 案 2 |
-| Undo/Redo         | patch 方式。履歴に `{コマンド型, パラメータ, patches, inversePatches}` を保存                            | 案 2        |
-| ビュー差分更新    | 原典 pHint 同様「コマンド型」でディスパッチ(パッチのパス解析はしない)                                    | 統合案      |
-| ダイヤグラム描画  | Canvas 2D × 4 レイヤ + rAF 全再描画 + ビューポートカリング                                               | 案 2 + 案 3 |
-| entDgr レイアウト | 純関数 `computeDiagramLayout` として**仕様書通り忠実移植**(再発明しない)                                 | 案 3        |
-| 時刻表グリッド    | Canvas 自前グリッド(CWndDcdGrid 相当)。CCellBuilder 群 2.4 万行は `cellSpec` 純関数に圧縮                | 案 3 + 案 2 |
-| ファイル I/O      | 独立パッケージ `@oudia/format`。出力条件はテーブル駆動。SJIS 0x5C 救済ハック再現。未知キー保持・書き戻し | 案 2 + 案 1 |
-| WindowPlacement   | 読込時に保持し書き出し時に透過的に書き戻す(Windows 版との往復でファイルを壊さない)                       | 案 1        |
-| 運用探索          | Web Worker で忠実直訳(独自再設計しない)。導出値はストア外キャッシュに分離                                | 案 3 + 案 2 |
-| リリース          | v0.1 ビューア → v0.8 の 8 段階(§2.6 参照は本書 §3.5)                                                     | 案 3        |
+| 論点              | 決定                                                                                                         | 出所        |
+| ----------------- | ------------------------------------------------------------------------------------------------------------ | ----------- |
+| 内部モデル        | index 参照モデル(ファイル同型)。駅作業のみ判別可能ユニオンへ正規化                                           | 案 3 + 案 2 |
+| Undo/Redo         | patch 方式。履歴に `{コマンド型, パラメータ, patches, inversePatches}` を保存                                | 案 2        |
+| ビュー差分更新    | 原典 pHint 同様「コマンド型」でディスパッチ(パッチのパス解析はしない)                                        | 統合案      |
+| ダイヤグラム描画  | Canvas 2D × 4 レイヤ + rAF 全再描画 + ビューポートカリング                                                   | 案 2 + 案 3 |
+| entDgr レイアウト | 純関数 `computeDiagramLayout` として**仕様書通り忠実移植**(再発明しない)                                     | 案 3        |
+| 時刻表グリッド    | Canvas 自前グリッド(CWndDcdGrid 相当)。CCellBuilder 群 2.4 万行は `cellSpec` 純関数に圧縮                    | 案 3 + 案 2 |
+| ファイル I/O      | 独立パッケージ `@oudia-web/format`。出力条件はテーブル駆動。SJIS 0x5C 救済ハック再現。未知キー保持・書き戻し | 案 2 + 案 1 |
+| WindowPlacement   | 読込時に保持し書き出し時に透過的に書き戻す(Windows 版との往復でファイルを壊さない)                           | 案 1        |
+| 運用探索          | Web Worker で忠実直訳(独自再設計しない)。導出値はストア外キャッシュに分離                                    | 案 3 + 案 2 |
+| リリース          | v0.1 ビューア → v0.8 の 8 段階(§2.6 参照は本書 §3.5)                                                         | 案 3        |
 
 ---
 
@@ -80,7 +80,7 @@
 ### 3.1 モジュール構成(pnpm workspace)
 
 ```
-oudia-second-web/
+oudia-web/
 ├── packages/
 │   ├── format/    oud2/oud パース・シリアライズ・CSV 変換
 │   │              (純文字列処理、DOM 非依存)
@@ -101,9 +101,9 @@ oudia-second-web/
 
 ```mermaid
 graph LR
-    format["@oudia/format<br/>(ファイル形式)"] --> domain["@oudia/domain<br/>(エンティティ・コマンド)"]
-    domain --> derive["@oudia/derive<br/>(導出計算)"]
-    derive --> render["@oudia/render<br/>(Canvas 描画)"]
+    format["@oudia-web/format<br/>(ファイル形式)"] --> domain["@oudia-web/domain<br/>(エンティティ・コマンド)"]
+    domain --> derive["@oudia-web/derive<br/>(導出計算)"]
+    derive --> render["@oudia-web/render<br/>(Canvas 描画)"]
     render --> app["apps/web<br/>(React シェル)"]
 ```
 
@@ -317,7 +317,7 @@ DOM 仮想化グリッドは不採用とし、CWndDcdGrid 相当の Canvas グ�
 
 ## 6. ファイル I/O
 
-### 6.1 `@oudia/format` パッケージ
+### 6.1 `@oudia-web/format` パッケージ
 
 純文字列処理の独立パッケージ。構成:
 

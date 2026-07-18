@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // コマンド基盤の検証: comment/set 実行 → Undo → Redo → 保存 で
 // 変更カウンタが原典仕様通り遷移し、patch 適用が対称であることを確認する。
 // 根拠: docs/design/02_architecture.md §4.3–§4.4(完了条件 #3)
 
-import { describe, it, expect } from 'vitest';
-import type { RosenFileData, Rosen, DispProp } from '@oudia/format';
+import type { DispProp, Rosen, RosenFileData } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
 import {
-  canRedo,
-  canUndo,
-  createDocumentState,
-  executeCommand,
-  INT_MAX,
-  isDirty,
-  markSaved,
-  normalizeToLf,
-  redo,
-  undo,
+    canRedo,
+    canUndo,
+    createDocumentState,
+    executeCommand,
+    INT_MAX,
+    isDirty,
+    markSaved,
+    normalizeToLf,
+    redo,
+    undo,
 } from './index.js';
 
 /** テスト用の最小 Rosen(コメント編集に必要な部分のみ)。 */

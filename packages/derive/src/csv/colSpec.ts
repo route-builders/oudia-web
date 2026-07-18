@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -12,8 +12,8 @@
  * 追加する。ヘッダー行・各列車のセル埋めで同一のスペック列を使うため整合が自動で取れる。
  */
 
-import type { Eki, Ressyahoukou } from '@oudia/format';
-import { ekiIndexOfEkiOrder } from '@oudia/domain';
+import { ekiIndexOfEkiOrder } from '@oudia-web/domain';
+import type { Eki, Ressyahoukou } from '@oudia-web/format';
 import { getChakujikokuHyouji, getHatsujikokuHyouji, getTrackDisplay } from './ekiDisplay.js';
 
 export type CsvColumnType = 'chaku' | 'track' | 'hatsu';

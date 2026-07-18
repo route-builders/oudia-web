@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -12,7 +12,7 @@
  * デバイス座標(ピクセル)への線形変換は render 層の責務。
  */
 
-import type { Ressyahoukou } from '@oudia/format';
+import type { Ressyahoukou } from '@oudia-web/format';
 
 /** 駅 1 つの Y レイアウト(原典 CentDedDgrEki の Y 座標群。analysis §05 §2.2)。 */
 export interface EkiLayout {

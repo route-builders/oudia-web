@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { displayEkiRange, xZoneIntersects, enumShiftSeconds } from './culling.js';
+import { describe, expect, it } from 'vitest';
+import { displayEkiRange, enumShiftSeconds, xZoneIntersects } from './culling.js';
 
 describe('displayEkiRange(駅Order 範囲の二分探索)', () => {
   const ekiY = [0, 100, 200, 300, 400, 500];

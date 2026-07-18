@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // M4 編集コマンド(シフト伝播・writeJikoku 繰上げ繰下げ・通過-停車・運休独立トグル・
 // 種別/番号ステップ)のレデューサ検証。原典 CentDedRessya.cpp 284-1010 /
 // CWjkState_Ressyahensyu.cpp 4919-5042, 9942-9997, 14585-14621 準拠(抽出レポート引用)。
 
-import { describe, it, expect } from 'vitest';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { parseNodeTree, readRosenFile } from '@oudia/format';
-import type { RosenFileData } from '@oudia/format';
-import { createDocumentState, executeCommand, undo, redo } from './engine.js';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
+import { createDocumentState, executeCommand, redo, undo } from './engine.js';
 import type { EditCommand } from './types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

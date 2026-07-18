@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -19,61 +19,61 @@
 import type { Colorref, FontProp, Ressyahoukou, UnknownEntry } from '../model/basic.js';
 import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '../model/basic.js';
 import type {
-  CrossingCheckRule,
-  DiagramLineStyle,
-  DispProp,
-  Eki,
-  EkiJikoku,
-  EkiTrack2,
-  Dia,
-  OuterTerminal,
-  Ressya,
-  Ressyasyubetsu,
-  Rosen,
-  TrackContent,
+    CrossingCheckRule,
+    Dia,
+    DiagramLineStyle,
+    DispProp,
+    Eki,
+    EkiJikoku,
+    EkiTrack2,
+    OuterTerminal,
+    Ressya,
+    Ressyasyubetsu,
+    Rosen,
+    TrackContent,
 } from '../model/entities.js';
 import type {
-  DiagramRessyajouhouHyouji,
-  Ekijikokukeisiki,
-  Ekikibo,
-  SenStyle,
-  StopMarkDrawType,
+    DiagramRessyajouhouHyouji,
+    Ekijikokukeisiki,
+    Ekikibo,
+    SenStyle,
+    StopMarkDrawType,
 } from '../model/enums.js';
-import type { PtDirectory, PtNode } from '../node/types.js';
-import { NodeCursor } from '../node/cursor.js';
 import type { UnconsumedNode } from '../node/cursor.js';
+import { NodeCursor } from '../node/cursor.js';
+import type { PtDirectory, PtNode } from '../node/types.js';
 import { decodeColor } from '../value/color.js';
-import { splitEkiJikokuList } from '../value/ekiJikoku.js';
 import type { DecodedEkiJikoku } from '../value/ekiJikoku.js';
+import { splitEkiJikokuList } from '../value/ekiJikoku.js';
 import { decodeFont } from '../value/font.js';
-import { decodeAfterOperationCont, decodeBeforeOperationCont } from '../value/operation.js';
 import type { OperationKeyStore } from '../value/operation.js';
+import { decodeAfterOperationCont, decodeBeforeOperationCont } from '../value/operation.js';
 import {
-  decodeSyubetsuChangeDisplay,
-  decodeJikokuDisplay,
-  decodeOuterDisplay,
-  decodeTrackOmit,
+    decodeJikokuDisplay,
+    decodeOuterDisplay,
+    decodeSyubetsuChangeDisplay,
+    decodeTrackOmit,
 } from './composite.js';
 import type { ReadContext } from './context.js';
+import { COLOR_BLACK, COLOR_WHITE, createDefaultDispProp } from './defaults.js';
+import {
+    DIAGRAM_RESSYAJOUHOU_FROM_FILE,
+    EKIJIKOKUKEISIKI_FROM_FILE,
+    EKIKIBO_FROM_FILE,
+    SENSTYLE_FROM_FILE,
+    STOPMARK_FROM_FILE,
+    TRACKTYPE_BY_CODE,
+} from './enumMaps.js';
 import type { ReaderProfile } from './profile.js';
 import { CURRENT_PROFILE } from './profile.js';
-import { createDefaultDispProp, COLOR_BLACK, COLOR_WHITE } from './defaults.js';
 import {
-  DIAGRAM_RESSYAJOUHOU_FROM_FILE,
-  EKIJIKOKUKEISIKI_FROM_FILE,
-  EKIKIBO_FROM_FILE,
-  SENSTYLE_FROM_FILE,
-  STOPMARK_FROM_FILE,
-  TRACKTYPE_BY_CODE,
-} from './enumMaps.js';
-import {
-  readBool,
-  readColor,
-  readFont,
-  readIndexOrNull,
-  readInt,
-  readJikokuProp,
-  readStr,
+    readBool,
+    readColor,
+    readFont,
+    readIndexOrNull,
+    readInt,
+    readJikokuProp,
+    readStr,
 } from './props.js';
 
 // ---- 未知ノード保全 ----

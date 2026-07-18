@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * 離脱保護(design §6.5「変更状態と離脱保護」)。
@@ -13,8 +13,8 @@
  * ブロックすると煩わしいため(design どおり「未保存時」に限定)。
  */
 
+import { isDirty } from '@oudia-web/domain';
 import { useEffect } from 'react';
-import { isDirty } from '@oudia/domain';
 import { useDocStore } from '../store/docStore.js';
 
 const BASE_TITLE = 'OuDiaSecond Web ビューア';

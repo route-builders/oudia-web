@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -15,8 +15,8 @@
  * 変更カウンタを稼働させる。列車・駅・種別・ダイヤ編集は M3 以降で型を追加する。
  */
 
+import type { Ekiatsukai, Ressya, Ressyahoukou } from '@oudia-web/format';
 import type { Patch } from 'immer';
-import type { Ekiatsukai, Ressya, Ressyahoukou } from '@oudia/format';
 
 /** 路線コメントを設定する(原典 CRfEditCmd_Comment。改行は LF 正規化)。 */
 export interface CommentSetCommand {

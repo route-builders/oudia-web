@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -10,15 +10,15 @@
  * ストア非依存・入力は全部引数。L1/L2/L3 を個別に描けるようメソッドを分ける。
  */
 
-import type { DiagramLayout, RessyaLayout } from '@oudia/derive';
+import type { DiagramLayout, RessyaLayout } from '@oudia-web/derive';
 import type { RenderContext2D } from '../core/RenderTarget.js';
 import type { ViewTransform } from '../core/ViewTransform.js';
 import { xDgrToView, yDgrToView } from '../core/ViewTransform.js';
-import { colorrefToCss, fontString } from '../core/textStyle.js';
-import type { FontSpec } from '../core/textStyle.js';
 import { drawRotatedText, ressyaLabelDeg, strokeLine } from '../core/primitives.js';
-import { enumVlines, VLINE_TABLE, DEFAULT_VLINE_MODE } from './vlineTable.js';
+import type { FontSpec } from '../core/textStyle.js';
+import { colorrefToCss, fontString } from '../core/textStyle.js';
 import { enumShiftSeconds } from './culling.js';
+import { DEFAULT_VLINE_MODE, enumVlines, VLINE_TABLE } from './vlineTable.js';
 
 /** ダイヤグラム描画の見た目設定(色・フォント。render 独立)。 */
 export interface DiagramTheme {

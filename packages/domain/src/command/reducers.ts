@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -14,28 +14,28 @@
  */
 
 import type {
-  AfterOperation,
-  BeforeOperation,
-  EkiJikoku,
-  Jikoku,
-  Ressya,
-  Ressyahoukou,
-  RosenFileData,
-} from '@oudia/format';
-import { asSeconds } from '@oudia/format';
-import {
-  getEkiJikoku,
-  findRevJikokuItem,
-  getRunFirstEkiOrder,
-  getRunLastEkiOrder,
-  isRunBetweenNextEki,
-  getValidSihatsuEki,
-  getValidSyuuchakuEki,
-} from '../runRange.js';
+    AfterOperation,
+    BeforeOperation,
+    EkiJikoku,
+    Jikoku,
+    Ressya,
+    Ressyahoukou,
+    RosenFileData,
+} from '@oudia-web/format';
+import { asSeconds } from '@oudia-web/format';
 import { ekiIndexOfEkiOrder } from '../ekiOrder.js';
-import type { EditCommand } from './types.js';
-import { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
+import {
+    findRevJikokuItem,
+    getEkiJikoku,
+    getRunFirstEkiOrder,
+    getRunLastEkiOrder,
+    getValidSihatsuEki,
+    getValidSyuuchakuEki,
+    isRunBetweenNextEki,
+} from '../runRange.js';
 import { addToTrailingNumber } from './clipboard.js';
+import { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
+import type { EditCommand } from './types.js';
 
 /** 改行を LF に正規化する(原典 strLfOf。CRLF/CR → LF)。 */
 export function normalizeToLf(s: string): string {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { resolveEditAction } from './keymap.js';
+import { describe, expect, it } from 'vitest';
 import type { KeymapMode } from './keymap.js';
+import { resolveEditAction } from './keymap.js';
 
 const PWA: KeymapMode = { ctrlBindings: true };
 const TAB: KeymapMode = { ctrlBindings: false };

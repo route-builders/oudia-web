@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { RESSYAHOUKOU_KUDARI } from '@oudia/format';
-import type { EkiJikoku, Ressya, RosenFileData } from '@oudia/format';
+import type { EkiJikoku, Ressya, RosenFileData } from '@oudia-web/format';
+import { RESSYAHOUKOU_KUDARI } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
+import { loadFixture } from '../csv/testFixture.js';
 import { computeDiagramLayout } from './computeDiagramLayout.js';
 import { findEkikanSaisyouSec } from './ekiLayout.js';
-import { loadFixture } from '../csv/testFixture.js';
-import { makeSyntheticRosen, ej } from './testSynthetic.js';
+import { ej, makeSyntheticRosen } from './testSynthetic.js';
 
 describe('computeDiagramLayout(sample2 座標スナップショット)', () => {
   it('dia0 下りのフレーム + 先頭列車の列車線', () => {

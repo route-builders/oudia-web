@@ -20,7 +20,7 @@ OuPropertiesText の文法パーサと、ノードツリーをそのまま書き
 
 ## 背景・動機
 
-ロードマップ M0 のスパイク S1([design/07_roadmap.md](../design/07_roadmap.md) §2)。バイト一致がこの層で成立しないなら以後の全計画の前提が崩れるため、**S1 合格まで M1 に進まない**と定めている。このスパイクの成果物パーサは捨てずに `@oudia/format` の初版になる(唯一の「捨てないスパイク」)。
+ロードマップ M0 のスパイク S1([design/07_roadmap.md](../design/07_roadmap.md) §2)。バイト一致がこの層で成立しないなら以後の全計画の前提が崩れるため、**S1 合格まで M1 に進まない**と定めている。このスパイクの成果物パーサは捨てずに `@oudia-web/format` の初版になる(唯一の「捨てないスパイク」)。
 
 ## 要件
 
@@ -69,7 +69,7 @@ OuPropertiesText の文法パーサと、ノードツリーをそのまま書き
 - [x] 合格条件: `sample2.oud2`(および sample.oud2)のバイト一致。旧世代フィクスチャの現物読込は M0 フィクスチャ調達へ分離(下記進捗記録)
 - [x] 不合格の場合: 分析 §03 と原典 `CConvNodeContainer.cpp` の再照合による原因と修正の記録(→ 実装は初回で合格。原典 `vectorToFile.cpp` / `CConvNodeContainer.cpp` を直接照合して忠実移植した)
 - [x] 結果(合否・計測値・気づき)を本ドキュメントの進捗記録に記載
-- [x] パーサ/シリアライザを `@oudia/format` 初版として通常品質基準([definition-of-done.md](../definition-of-done.md))に引き上げ(SPDX ヘッダ・原典クレジット・typecheck/lint/format/test 全 green)
+- [x] パーサ/シリアライザを `@oudia-web/format` 初版として通常品質基準([definition-of-done.md](../definition-of-done.md))に引き上げ(SPDX ヘッダ・原典クレジット・typecheck/lint/format/test 全 green)
 
 ## リスクと対策
 
@@ -85,7 +85,7 @@ OuPropertiesText の文法パーサと、ノードツリーをそのまま書き
 
 **結果: 合格。** `sample2.oud2`(98KB)・`sample.oud2`(1.1MB)ともに「読込 → 書出 → 完全バイト一致」が成立した。本プロジェクトの互換戦略(ノードツリー ↔ バイト列の可逆性)が成立することを実証。**M1 へ進んでよい。**
 
-**実装(`@oudia/format` 初版):**
+**実装(`@oudia-web/format` 初版):**
 
 - `src/text/decodeOudText.ts` — `\0` 検査(-3)→ BOM 判定 → `TextDecoder` → 0x5C 救済ハック(SJIS 経路のみ)→ CR 除去。原典 `libs/OuLib/Str/vectorToFile.cpp` の `stringFromFile` を直接照合して移植。`Moji5c` 42 文字は原典から逐字コピー。
 - `src/text/encodeOudText.ts` — UTF-8 + BOM 前置(.oud/CSV の SJIS 書き出しは v0.2 スコープのため未実装)。

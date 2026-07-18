@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 根拠: docs/design/03_data-model.md §4.2、docs/glossary.md §2
 // 原典: entDed/CdDedJikoku.cpp(compare / subJikoku / adjustTotalSeconds)
 
-import { describe, it, expect } from 'vitest';
-import type { Seconds } from '@oudia/format';
+import type { Seconds } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
 import { addSeconds, compareJikoku, normalizeSeconds, subJikoku } from './jikoku.js';
 
 const sec = (h: number, m: number, s = 0): Seconds => (h * 3600 + m * 60 + s) as Seconds;

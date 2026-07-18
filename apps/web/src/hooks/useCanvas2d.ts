@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * Canvas 2D の生成・DPR 対応・リサイズ購読フック。描画関数を渡すと、サイズ変化・

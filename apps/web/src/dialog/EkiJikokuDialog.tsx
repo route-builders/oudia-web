@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -23,11 +23,11 @@
  *   writeJikoku の modify=true(原典 modifyCentDedEkiJikoku: 発差分を以後の駅へ伝播)。
  */
 
+import type { EditCommand } from '@oudia-web/domain';
+import { decodeJikokuWithHourCompletion } from '@oudia-web/domain';
+import type { EkiJikoku, Ekiatsukai, Jikoku } from '@oudia-web/format';
+import { encodeJikoku } from '@oudia-web/format';
 import { useEffect, useRef, useState } from 'react';
-import type { EkiJikoku, Ekiatsukai, Jikoku } from '@oudia/format';
-import { encodeJikoku } from '@oudia/format';
-import type { EditCommand } from '@oudia/domain';
-import { decodeJikokuWithHourCompletion } from '@oudia/domain';
 import { useSettingsStore } from '../store/settingsStore.js';
 import { Dialog } from './Dialog.js';
 

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 根拠: docs/analysis/03_file-format.md §2(値のエスケープ)
 // 原典: libs/OuLib/Str/OuPropertiesText/CConvNodeContainer.cpp
 //        (encodePropertyString_escapePropertyValue / decode..._unescapePropertyValue)
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { escapePropertyValue, unescapePropertyValue } from './escape.js';
 
 describe('escapePropertyValue', () => {

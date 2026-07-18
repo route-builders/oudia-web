@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 連続入力モード純ロジック(canEnter / calcCellToNext / 編集中マーク)の検証。
 
-import { describe, it, expect } from 'vitest';
-import type { TimetableGridSpec, JikokuhyouRowSpec } from '@oudia/derive';
-import type { EkiJikoku, Ressya } from '@oudia/format';
-import { asSeconds } from '@oudia/format';
+import type { JikokuhyouRowSpec, TimetableGridSpec } from '@oudia-web/derive';
+import type { EkiJikoku, Ressya } from '@oudia-web/format';
+import { asSeconds } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
 import {
-  canEnterRenzoku,
-  calcJikokuRowToNext,
-  renzokuEditMark,
-  isHatsuChakuHyouji,
+    calcJikokuRowToNext,
+    canEnterRenzoku,
+    isHatsuChakuHyouji,
+    renzokuEditMark,
 } from './renzoku.js';
 
 function r(type: JikokuhyouRowSpec['type'], ekiOrder: number | null = null): JikokuhyouRowSpec {

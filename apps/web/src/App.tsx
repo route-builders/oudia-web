@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /** アプリシェル。ファイルを開く・路線ツリー・タブ・アクティブビュー描画。 */
 
+import type { RosenFileData } from '@oudia-web/format';
 import { useCallback, useState } from 'react';
-import type { RosenFileData } from '@oudia/format';
-import { useDocStore } from './store/docStore.js';
+import { openFileObject, pickAndOpen } from './file/openFile.js';
 import { useUnsavedGuard } from './hooks/useUnsavedGuard.js';
-import { pickAndOpen, openFileObject } from './file/openFile.js';
 import { RosenTree } from './shell/RosenTree.js';
 import { TabBar } from './shell/TabBar.js';
-import { DiagramView } from './views/DiagramView.js';
-import { TimetableView } from './views/TimetableView.js';
-import { EkiJikokuhyouView } from './views/EkiJikokuhyouView.js';
+import { useDocStore } from './store/docStore.js';
 import type { ViewDescriptor } from './tabs/viewDescriptor.js';
+import { DiagramView } from './views/DiagramView.js';
+import { EkiJikokuhyouView } from './views/EkiJikokuhyouView.js';
+import { TimetableView } from './views/TimetableView.js';
 
 export function App(): React.ReactElement {
   const data = useDocStore((s) => s.data);

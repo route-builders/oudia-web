@@ -1,6 +1,6 @@
 # データモデル設計
 
-本書は Web 版 OuDiaSecond の内部データモデル(`@oudia/domain` パッケージの型定義)の設計書である。`docs/design/02_architecture.md` で確定した方針(index 参照モデル・patch 方式 Undo・導出値の型レベル分離・INT_MIN 全廃)を型として具体化する。
+本書は Web 版 OuDiaSecond の内部データモデル(`@oudia-web/domain` パッケージの型定義)の設計書である。`docs/design/02_architecture.md` で確定した方針(index 参照モデル・patch 方式 Undo・導出値の型レベル分離・INT_MIN 全廃)を型として具体化する。
 
 原典の根拠は `docs/analysis/02_domain-model.md`(以下「分析 §02」)、ファイル形式は `docs/analysis/03_file-format.md`(以下「分析 §03」)。本書に登場する C++ 名はすべて `origin/DiagramEdit/DiagramEdit/entDed/` のものである。
 
@@ -21,7 +21,7 @@
 | クラスのメソッド(`getSihatsuEki()` 等)              | domain の純関数(`getSihatsuEkiOrder(ressya)` 等)。データとロジックを分離    |
 | 汎用データスロット(BoolData1/IntData1/JikokuData1…) | 判別可能ユニオン(§2.7)。format 層がスロット列 ↔ ユニオンの変換を担う        |
 | `INT_MIN` = Null、`-1` = 無効                       | いずれも `null`(§1.3)                                                       |
-| 導出値スロット(※印)・Dia の導出コンテナ             | **ストアに持たない**。`@oudia/derive` の導出キャッシュ(§2.10)               |
+| 導出値スロット(※印)・Dia の導出コンテナ             | **ストアに持たない**。`@oudia-web/derive` の導出キャッシュ(§2.10)           |
 
 親逆参照を捨てられるのは、原典で親参照が必要だった局面(番線数の取得・種別の解決・起点時刻の参照)がすべて「ルートからの走査」で代替でき、かつ Web 版では変更が単一チョークポイント `executeCommand()` を通るため、部分木単独で整合を保つ必要がないからである。
 
@@ -71,7 +71,7 @@
 
 ## 2. TypeScript 型定義
 
-以下は `@oudia/domain` の公開型の全定義である(コメントに原典 C++ フィールド名を併記)。`tsconfig` は strict + `exactOptionalPropertyTypes` を前提とする。型は readonly 修飾なしで宣言し、ストア公開面では Immer の `Immutable<RosenFileData>` で包む(§7.2)。
+以下は `@oudia-web/domain` の公開型の全定義である(コメントに原典 C++ フィールド名を併記)。`tsconfig` は strict + `exactOptionalPropertyTypes` を前提とする。型は readonly 修飾なしで宣言し、ストア公開面では Immer の `Immutable<RosenFileData>` で包む(§7.2)。
 
 ### 2.1 基本型
 
@@ -587,7 +587,7 @@ export interface DispProp {
 export type SecondRound = 0 | 1 | 2;
 ```
 
-### 2.10 ストア外の導出型(`@oudia/derive`、参考)
+### 2.10 ストア外の導出型(`@oudia-web/derive`、参考)
 
 以下は `RosenFileData` には**含まれない**。derive パッケージの純関数の出力であり、apps/web が導出キャッシュとして保持する。詳細設計は derive の設計ドキュメントに委ねるが、ストアとの境界を確定するためここに形を示す。
 
@@ -903,7 +903,7 @@ export type CommandReducer<C extends EditCommand> = (draft: Draft<RosenFileData>
 
 ## 8. 整合性ルール(不変条件と整合カスケード)
 
-原典の「制約」「操作のエラー検査・修正」(分析 §02 §12)を、(a) **不変条件**(常に成立すべき述語)、(b) **整合カスケード**(構造編集コマンドのレデューサが必ず呼ぶ修正関数)、(c) **事前検証**(違反コマンドの拒否)に分類して実装する。すべて `@oudia/domain` に置く。
+原典の「制約」「操作のエラー検査・修正」(分析 §02 §12)を、(a) **不変条件**(常に成立すべき述語)、(b) **整合カスケード**(構造編集コマンドのレデューサが必ず呼ぶ修正関数)、(c) **事前検証**(違反コマンドの拒否)に分類して実装する。すべて `@oudia-web/domain` に置く。
 
 ### 8.1 不変条件(プロパティテストで常設検証)
 

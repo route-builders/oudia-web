@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
-import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
-import type { EditCommand } from '@oudia/domain';
-import type { Ressya, Ressyasyubetsu } from '@oudia/format';
-import { RessyaPropDialog } from './RessyaPropDialog.js';
+import type { EditCommand } from '@oudia-web/domain';
+import type { Ressya, Ressyasyubetsu } from '@oudia-web/format';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import type { RessyaPropDialogTarget } from './RessyaPropDialog.js';
+import { RessyaPropDialog } from './RessyaPropDialog.js';
 
 // happy-dom は <dialog>.showModal を実装しないためスタブ化。
 beforeAll(() => {

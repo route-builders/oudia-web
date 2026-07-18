@@ -1,61 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /** 編集コマンド基盤の公開 API(architecture §4.3–§4.4)。 */
 
-export type {
-  EditCommand,
-  EditCommandType,
-  CommentSetCommand,
-  RessyaReplaceRangeCommand,
-  RessyaSwapCommand,
-  RessyaSetPropCommand,
-  RessyaSetCanceledCommand,
-  RessyaToggleCanceledCommand,
-  RessyaStepSyubetsuCommand,
-  RessyaModifyBangouCommand,
-  RessyaSetSihatsuEkiCommand,
-  RessyaSetSyuuchakuEkiCommand,
-  RessyaDirectCommand,
-  RessyaUndirectCommand,
-  RessyaPasteEkiJikokuCommand,
-  RessyaUnifyCommand,
-  RessyaReorderCommand,
-  EkiJikokuSetChakuCommand,
-  EkiJikokuSetHatsuCommand,
-  EkiJikokuWriteJikokuCommand,
-  EkiJikokuShiftJikokuCommand,
-  EkiJikokuSetTrackCommand,
-  EkiJikokuClearCommand,
-  EkiJikokuRenzokuInputCommand,
-  EkiJikokuModifyOperation2Command,
-  EkijikokuModifyOperation2,
-  EkiJikokuToggleTsuukaCommand,
-  EkiJikokuToggleTsuukaTeisyaCommand,
-  EkiJikokuSetKeiyunasiCommand,
-  EkiJikokuSetEkiatsukaiCommand,
-  HistoryEntry,
-} from './types.js';
-export { isNullModifyOperation2 } from './types.js';
-export { commandReducers, applyCommand, normalizeToLf } from './reducers.js';
-export { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
 export {
-  copyRessyaToClipboard,
-  computePasteTrains,
-  addToTrailingNumber,
-  NO_PASTE_IDOURYOU,
+    NO_PASTE_IDOURYOU, addToTrailingNumber, computePasteTrains, copyRessyaToClipboard
 } from './clipboard.js';
-export type { RessyaClipboard, PasteIdouryou } from './clipboard.js';
+export type { PasteIdouryou, RessyaClipboard } from './clipboard.js';
 export {
-  createDocumentState,
-  executeCommand,
-  undo,
-  redo,
-  markSaved,
-  canUndo,
-  canRedo,
-  isDirty,
-  INT_MAX,
-  DEFAULT_UNDO_DEPTH,
+    DEFAULT_UNDO_DEPTH, INT_MAX, canRedo, canUndo, createDocumentState,
+    executeCommand, isDirty, markSaved, redo, undo
 } from './engine.js';
 export type { DocumentState } from './engine.js';
+export { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
+export { applyCommand, commandReducers, normalizeToLf } from './reducers.js';
+export { isNullModifyOperation2 } from './types.js';
+export type {
+    CommentSetCommand, EditCommand,
+    EditCommandType, EkiJikokuClearCommand, EkiJikokuModifyOperation2Command, EkiJikokuRenzokuInputCommand, EkiJikokuSetChakuCommand, EkiJikokuSetEkiatsukaiCommand, EkiJikokuSetHatsuCommand, EkiJikokuSetKeiyunasiCommand, EkiJikokuSetTrackCommand, EkiJikokuShiftJikokuCommand, EkiJikokuToggleTsuukaCommand,
+    EkiJikokuToggleTsuukaTeisyaCommand, EkiJikokuWriteJikokuCommand, EkijikokuModifyOperation2, HistoryEntry, RessyaDirectCommand, RessyaModifyBangouCommand, RessyaPasteEkiJikokuCommand, RessyaReorderCommand, RessyaReplaceRangeCommand, RessyaSetCanceledCommand, RessyaSetPropCommand, RessyaSetSihatsuEkiCommand,
+    RessyaSetSyuuchakuEkiCommand, RessyaStepSyubetsuCommand, RessyaSwapCommand, RessyaToggleCanceledCommand, RessyaUndirectCommand, RessyaUnifyCommand
+} from './types.js';
+

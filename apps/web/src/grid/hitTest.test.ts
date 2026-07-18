@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { GridGeometry } from '@oudia/render';
-import { hitTestCell, cellViewRect } from './hitTest.js';
+import { GridGeometry } from '@oudia-web/render';
+import { describe, expect, it } from 'vitest';
+import { cellViewRect, hitTestCell } from './hitTest.js';
 
 // 列幅 [40, 40, 60, 60](固定 2 列)、行高 [20, 20, 20, 20](固定 1 行)。
 const geom = new GridGeometry([40, 40, 60, 60], [20, 20, 20, 20]);

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // コマンド実行のベンチ(architecture §8.1 / M3 完了条件 #4「編集反映 16ms」の domain 部分)。
 // executeCommand は Immer produceWithPatches(構造共有 + patch 記録)がホット。
 // 大規模ファイル(sample.oud2 約 1.1MB)を土台に、代表的な編集コマンドの所要を測る。
 
-import { bench, describe } from 'vitest';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { parseNodeTree, readRosenFile } from '@oudia/format';
-import { createDocumentState, executeCommand } from './engine.js';
+import { fileURLToPath } from 'node:url';
+import { bench, describe } from 'vitest';
 import { createNullRessya } from '../ressya.js';
+import { createDocumentState, executeCommand } from './engine.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const bytes = new Uint8Array(

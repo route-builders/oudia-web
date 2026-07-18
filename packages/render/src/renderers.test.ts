@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // レンダラのスモークテスト(実 fixture → derive → render をモック ctx で記録)。
 // 描画コマンドが発行され、テキスト・線が破綻なく出ることを確認する(ピクセル比較はしない)。
 
-import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import { parseNodeTree, readRosenFile } from '@oudia/format';
-import type { RosenFileData } from '@oudia/format';
 import {
-  computeDiagramLayout,
-  buildTimetableGrid,
-  defaultTimetableGridOptions,
-} from '@oudia/derive';
-import { MockCtx } from './testMockCtx.js';
+    buildTimetableGrid,
+    computeDiagramLayout,
+    defaultTimetableGridOptions,
+} from '@oudia-web/derive';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { createViewTransform, viewTransformFromZone } from './core/ViewTransform.js';
-import { drawL1, drawL2, drawL3 } from './diagram/DiagramRenderer.js';
 import type { DiagramTheme, DiagramViewState } from './diagram/DiagramRenderer.js';
+import { drawL1, drawL2, drawL3 } from './diagram/DiagramRenderer.js';
 import { GridGeometry } from './grid/GridGeometry.js';
 import { drawGrid } from './grid/GridRenderer.js';
+import { MockCtx } from './testMockCtx.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 function loadSample(): RosenFileData {

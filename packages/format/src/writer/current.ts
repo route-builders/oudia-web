@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -20,36 +20,36 @@
 import type { UnknownEntry } from '../model/basic.js';
 import { RESSYAHOUKOU_KUDARI } from '../model/basic.js';
 import type {
-  CrossingCheckRule,
-  Dia,
-  DispProp,
-  Eki,
-  EkiJikoku,
-  EkiTrack2,
-  OuterTerminal,
-  Ressya,
-  Ressyasyubetsu,
-  Rosen,
-  TrackContent,
+    CrossingCheckRule,
+    Dia,
+    DispProp,
+    Eki,
+    EkiJikoku,
+    EkiTrack2,
+    OuterTerminal,
+    Ressya,
+    Ressyasyubetsu,
+    Rosen,
+    TrackContent,
 } from '../model/entities.js';
 import type { PtDirectory } from '../node/types.js';
 import {
-  encodeJikokuDisplay,
-  encodeOuterDisplay,
-  encodeSyubetsuChangeDisplay,
-  encodeTrackOmit,
+    encodeJikokuDisplay,
+    encodeOuterDisplay,
+    encodeSyubetsuChangeDisplay,
+    encodeTrackOmit,
 } from '../reader/composite.js';
 import {
-  DIAGRAM_RESSYAJOUHOU_TO_FILE,
-  EKIJIKOKUKEISIKI_TO_FILE,
-  EKIKIBO_TO_FILE,
-  SENSTYLE_TO_FILE,
-  STOPMARK_TO_FILE,
-  TRACKTYPE_TO_CODE,
+    DIAGRAM_RESSYAJOUHOU_TO_FILE,
+    EKIJIKOKUKEISIKI_TO_FILE,
+    EKIKIBO_TO_FILE,
+    SENSTYLE_TO_FILE,
+    STOPMARK_TO_FILE,
+    TRACKTYPE_TO_CODE,
 } from '../reader/enumMaps.js';
 import { encodeColor } from '../value/color.js';
-import { encodeEkiJikoku } from '../value/ekiJikoku.js';
 import type { DecodedEkiJikoku } from '../value/ekiJikoku.js';
+import { encodeEkiJikoku } from '../value/ekiJikoku.js';
 import { encodeFont } from '../value/font.js';
 import { encodeJikoku } from '../value/jikoku.js';
 import { encodeInt } from '../value/number.js';

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -13,20 +13,18 @@
  * 始発駅作業/終着駅作業の**ラベル行は原典が常に 2 行出力する**ため、空セルで整合を保つ。
  */
 
-import type { Eki, EkiJikoku, Jikoku, RosenFileData, Ressya, Ressyahoukou } from '@oudia/format';
-import { encodeCsvDocument, encodeJikokuCsv, RESSYAHOUKOU_KUDARI } from '@oudia/format';
-import type { JikokuConvOptions } from '@oudia/format';
-import { ekiIndexOfEkiOrder } from '@oudia/domain';
+import {
+    ekiIndexOfEkiOrder, getEkiJikoku,
+    getSihatsuEki,
+    getSyuuchakuEki,
+    getValidSihatsuEki,
+    getValidSyuuchakuEki,
+    isRunBetweenNextEki
+} from '@oudia-web/domain';
+import type { Eki, EkiJikoku, Jikoku, JikokuConvOptions, Ressya, Ressyahoukou, RosenFileData } from '@oudia-web/format';
+import { encodeCsvDocument, encodeJikokuCsv, RESSYAHOUKOU_KUDARI } from '@oudia-web/format';
 import { buildColSpec } from './colSpec.js';
 import { getEkimeiJikokuhyouRyaku, getTrackRyakusyou, isHatsuChakuHyouji } from './ekiDisplay.js';
-import {
-  getEkiJikoku,
-  getSihatsuEki,
-  getSyuuchakuEki,
-  getValidSihatsuEki,
-  getValidSyuuchakuEki,
-  isRunBetweenNextEki,
-} from '@oudia/domain';
 
 // ---- 固定文字列リテラル(原典 DiagramEdit.rc STRINGTABLE、CconvJikokuhyouCsv.cpp)----
 const NAME_FILE_TYPE = 'FileType';

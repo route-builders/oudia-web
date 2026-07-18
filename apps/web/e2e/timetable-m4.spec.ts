@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * M4 入力効率の E2E 回帰(原典マニュアル 2.3 章「列車のいろいろな入力方法」をシナリオの
@@ -13,8 +13,8 @@
  * 列車 0(001)は 駅 2 発 310 / 駅 4 着 720 発 780 を持つ。
  */
 
-import { test, expect } from '@playwright/test';
 import type { Page } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { dropFile, openTimetableDown } from './helpers.js';
 
 const COL_TRAIN0 = 170; // 駅名 96 + 着発 64 + セル内
@@ -167,7 +167,7 @@ test('表示メニュー: 全時刻を表示 ON で行数(総高さ)が増え、
     .toBeGreaterThan(heightBefore);
 
   const stored = await page.evaluate(() =>
-    localStorage.getItem('oudia-second-web:jikokuhyouSettings:v1'),
+    localStorage.getItem('oudia-web:jikokuhyouSettings:v1'),
   );
   expect(stored).toContain('"displayAllEkiJikoku":true');
 });

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
+import type { TimetableGridSpec } from '@oudia-web/derive';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { parseNodeTree, readRosenFile } from '@oudia/format';
-import type { TimetableGridSpec } from '@oudia/derive';
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { resolveCellTarget } from './cellSemantics.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

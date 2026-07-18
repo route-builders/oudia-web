@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 根拠: docs/analysis/03_file-format.md §6.5
 // 原典: libs/DcDrawLib/DcdCd/DcDrawProp/CconvDcDrawProp.cpp / OuLib/Str/CdConnectedString2.cpp
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { decodeFont, encodeFont } from './font.js';
 
 describe('font decode/encode', () => {

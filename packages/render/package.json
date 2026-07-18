@@ -1,5 +1,5 @@
 {
-  "name": "@oudia/render",
+  "name": "@oudia-web/render",
   "version": "0.0.0",
   "private": true,
   "description": "Canvas 描画(ダイヤグラム 4 レイヤ・時刻表グリッド)。描画入力は引数で受ける",
@@ -12,10 +12,10 @@
     }
   },
   "dependencies": {
-    "@oudia/derive": "workspace:*"
+    "@oudia-web/derive": "workspace:*"
   },
   "devDependencies": {
-    "@oudia/format": "workspace:*"
+    "@oudia-web/format": "workspace:*"
   },
   "scripts": {
     "build": "tsc --build"

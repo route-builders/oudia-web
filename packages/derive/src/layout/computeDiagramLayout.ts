@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -12,8 +12,8 @@
  * (ピクセル)への線形変換・色・線種・24 時間繰り返し描画は render 層の責務。
  */
 
-import type { RosenFileData } from '@oudia/format';
-import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '@oudia/format';
+import type { RosenFileData } from '@oudia-web/format';
+import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '@oudia-web/format';
 import { buildDiaLayoutFrame } from './ekiLayout.js';
 import { computeRessyaRessyasen, computeShouldRessyajouhouDraw } from './ressyaLayout.js';
 import type { DiagramLayout, RessyaLayout } from './types.js';

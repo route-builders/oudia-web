@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { VLINE_TABLE, DEFAULT_VLINE_MODE, vlineStyleAt, enumVlines } from './vlineTable.js';
+import { describe, expect, it } from 'vitest';
+import { DEFAULT_VLINE_MODE, enumVlines, VLINE_TABLE, vlineStyleAt } from './vlineTable.js';
 
 describe('VLINE_TABLE', () => {
   it('8 択、既定は mode 1(2 分/10 分/60 分)', () => {

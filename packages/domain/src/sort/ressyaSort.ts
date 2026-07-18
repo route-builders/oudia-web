@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -12,7 +12,7 @@
  * 文字列比較は UTF-16 コード単位の辞書順(原典 tstring::operator<)。
  */
 
-import type { Jikoku, Ressya } from '@oudia/format';
+import type { Jikoku, Ressya } from '@oudia-web/format';
 import { getEkiJikoku } from '../runRange.js';
 
 const SEC_DAY = 86400;

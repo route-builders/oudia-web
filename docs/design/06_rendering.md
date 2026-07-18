@@ -492,7 +492,7 @@ function cellSpec(vm: JikokuhyouViewModel, row: number, col: number): CellSpec;
 
 ### 5.4 CSV
 
-CSV 入出力(時刻表 / カスタマイズ / 運用表 / 駅時刻表)は `@oudia/format` の責務であり、描画エンジンは関与しない(参照: 02_architecture §6.1)。「表示設定込みの CSV」(原典 `CDlgOuJikokuhyouCsvExport`)は、グリッドのビューモデル + CellSpec のテキストを format の CSV エンコーダに渡す構成とし、書式ロジックの二重実装を避ける。
+CSV 入出力(時刻表 / カスタマイズ / 運用表 / 駅時刻表)は `@oudia-web/format` の責務であり、描画エンジンは関与しない(参照: 02_architecture §6.1)。「表示設定込みの CSV」(原典 `CDlgOuJikokuhyouCsvExport`)は、グリッドのビューモデル + CellSpec のテキストを format の CSV エンコーダに渡す構成とし、書式ロジックの二重実装を避ける。
 
 ---
 
