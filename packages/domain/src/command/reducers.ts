@@ -427,6 +427,28 @@ export const commandReducers: {
     }
   },
 
+  'ressya/reorder': (draft, cmd) => {
+    // 選択スロットへ permutation を適用(原典 CWjkState_Ressyahensyu.cpp 4479-4486)。
+    const cont = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    const n = cmd.targetIndices.length;
+    if (cmd.order.length !== n) throw new Error('ressya/reorder: order 長不一致');
+    const seen = new Set(cmd.order);
+    if (seen.size !== n || cmd.order.some((o) => o < 0 || o >= n)) {
+      throw new Error('ressya/reorder: order が permutation でない');
+    }
+    const picked = cmd.targetIndices.map((i) => {
+      const r = cont[i];
+      if (r === undefined) throw new Error(`ressya/reorder: 範囲外 ${String(i)}`);
+      return cloneRessyaPlain(r);
+    });
+    for (let k = 0; k < n; k++) {
+      const ti = cmd.targetIndices[k];
+      const src = picked[cmd.order[k] ?? -1];
+      if (ti === undefined || src === undefined) continue; // 検証済みのため到達しない
+      cont[ti] = src;
+    }
+  },
+
   'ressya/direct': (draft, cmd) => {
     // 原典 CentDedRessya::direct(1087-1241)+ OnJikokuhyouDirect(5361-5411)。
     const cont = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
@@ -836,6 +858,9 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'ressya/setSyuuchakuEki':
       commandReducers['ressya/setSyuuchakuEki'](draft, cmd);
+      return;
+    case 'ressya/reorder':
+      commandReducers['ressya/reorder'](draft, cmd);
       return;
     case 'ressya/direct':
       commandReducers['ressya/direct'](draft, cmd);

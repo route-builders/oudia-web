@@ -173,6 +173,23 @@ export interface RessyaUnifyCommand {
   targetIndices: number[] | null;
 }
 
+/**
+ * 選択スロット間の並べ替え適用(原典の並べ替えコマンド = CRfEditCmd_Ressya 範囲置換)。
+ * 並べ替えの計算(比較・乗継配置)は呼出側(domain/sort・derive)で行い、結果の
+ * permutation をここで適用する。targetIndices[k] の位置に、元の
+ * targetIndices[order[k]] の列車が入る。非連続選択では選択位置だけが入れ替わり、
+ * 間の非選択列車は絶対位置を維持する(原典 4479-4486)。
+ */
+export interface RessyaReorderCommand {
+  type: 'ressya/reorder';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  /** 並べ替え対象の実 index(昇順)。 */
+  targetIndices: number[];
+  /** targetIndices 内位置の permutation。 */
+  order: number[];
+}
+
 /** 当駅始発(原典 CentDedRessya::setSihatsuEki)。前方駅を全 None 化 + 発ありなら着消去。 */
 export interface RessyaSetSihatsuEkiCommand {
   type: 'ressya/setSihatsuEki';
@@ -395,6 +412,7 @@ export type EditCommand =
   | RessyaUndirectCommand
   | RessyaPasteEkiJikokuCommand
   | RessyaUnifyCommand
+  | RessyaReorderCommand
   | EkiJikokuSetChakuCommand
   | EkiJikokuSetHatsuCommand
   | EkiJikokuWriteJikokuCommand

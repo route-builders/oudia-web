@@ -21,5 +21,8 @@ export * from './runRange.js';
 // ---- 列車エンティティ構築・直通化相手探索 ----
 export { createNullRessya, findTrainToDirect } from './ressya.js';
 
+// ---- 列車の並べ替え・最小所要時間検索(CDedRessyaSoater 系)----
+export * from './sort/ressyaSort.js';
+
 // ---- 編集コマンド基盤(executeCommand / patch Undo/Redo / 変更カウンタ)----
 export * from './command/index.js';

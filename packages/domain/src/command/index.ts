@@ -20,6 +20,7 @@ export type {
   RessyaUndirectCommand,
   RessyaPasteEkiJikokuCommand,
   RessyaUnifyCommand,
+  RessyaReorderCommand,
   EkiJikokuSetChakuCommand,
   EkiJikokuSetHatsuCommand,
   EkiJikokuWriteJikokuCommand,

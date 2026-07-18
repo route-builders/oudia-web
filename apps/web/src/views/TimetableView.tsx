@@ -126,6 +126,23 @@ export function TimetableView(props: {
   const setModifyOp2 = useDocStore((s) => s.setModifyOp2);
   const [modifyDialogOpen, setModifyDialogOpen] = useState(false);
 
+  // 並べ替え設定(ビュー設定 m_eEkijikokuSort / m_bCompareBottom)。
+  const ekijikokuSort = useSettingsStore((s) => s.jikokuhyou.ekijikokuSort);
+  const compareBottom = useSettingsStore((s) => s.jikokuhyou.compareBottom);
+
+  // 最小所要時間列車に移動: 行は維持して列だけ移す。
+  const focusTrainCol = useCallback(
+    (ressyaIndex: number) => {
+      if (grid === null) return;
+      const col = grid.columns.findIndex(
+        (c) => c.type === 'ressya' && c.ressyaIndex === ressyaIndex,
+      );
+      if (col === -1) return;
+      sel.focusCell({ row: sel.selection.focus.row, col });
+    },
+    [grid, sel],
+  );
+
   const runCommand = useTimetableCommands({
     data,
     grid: grid ?? emptyGrid,
@@ -135,6 +152,9 @@ export function TimetableView(props: {
     moveNext,
     movePrev,
     modifyOp2,
+    ekijikokuSort,
+    compareBottom,
+    focusTrainCol,
   });
 
   // ---- 連続入力モード(原典 CWjkState_Renzoku、design §05 4.4)----
@@ -518,9 +538,41 @@ export function TimetableView(props: {
     return <div className="view-error">時刻表を生成できませんでした。</div>;
   }
 
+  // ツールバーコマンド(ショートカットのないメニュー相当。実行後はグリッドへフォーカス復帰)。
+  const runToolbar = (action: 'sort' | 'unify' | 'minJikan'): void => {
+    runCommand(action);
+    rootRef.current?.focus();
+  };
+
   return (
     <div className="grid-root" ref={rootRef} tabIndex={0} onKeyDown={onKeyDown}>
       <canvas ref={canvasRef} className="grid-content" />
+      <div className="grid-toolbar" role="toolbar" aria-label="時刻表コマンド">
+        <button
+          type="button"
+          onClick={() => {
+            runToolbar('sort');
+          }}
+        >
+          並べ替え
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            runToolbar('unify');
+          }}
+        >
+          列車番号で一本化
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            runToolbar('minJikan');
+          }}
+        >
+          最小所要時間列車に移動
+        </button>
+      </div>
       {renzoku !== null && (
         <div className="renzoku-indicator" role="status" aria-live="polite">
           連続入力モード

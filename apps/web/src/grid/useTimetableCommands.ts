@@ -17,7 +17,8 @@
 import { useCallback } from 'react';
 import type { RosenFileData } from '@oudia/format';
 import type { TimetableGridSpec } from '@oudia/derive';
-import type { EkijikokuModifyOperation2 } from '@oudia/domain';
+import { buildDiaLayoutFrame, computeEstimateJikoku, transferSortOrder } from '@oudia/derive';
+import type { EkijikokuModifyOperation2, SortMethod } from '@oudia/domain';
 import {
   copyRessyaToClipboard,
   computePasteTrains,
@@ -26,6 +27,9 @@ import {
   getEkiJikoku,
   getSihatsuEki,
   getSyuuchakuEki,
+  sortRessyaOrder,
+  findEkikanSaisyouSecIndex,
+  ekiIndexOfEkiOrder,
 } from '@oudia/domain';
 import { useDocStore } from '../store/docStore.js';
 import type { JikokuStepAction, ResolvedAction } from './keymap.js';
@@ -50,6 +54,12 @@ export interface TimetableCommandCtx {
   movePrev: () => void;
   /** 駅時刻変更の記憶(ビュー単位。null = 未実行 → 再実行無効)。 */
   modifyOp2: EkijikokuModifyOperation2 | null;
+  /** 駅時刻行の並べ替え方式(ビュー設定 m_eEkijikokuSort)。 */
+  ekijikokuSort: 'ekiatsukai' | 'transfer';
+  /** 並べ替えの末尾要素基準(ビュー設定 m_bCompareBottom)。 */
+  compareBottom: boolean;
+  /** 最小所要時間列車に移動: 見つかった列車の列へフォーカス(行は維持)。 */
+  focusTrainCol: (ressyaIndex: number) => void;
 }
 
 /** 列車番号/号数行の delta(原典対照表: Move=±1 / NoMove=±10 / Any1=±2 / Any2=±100)。 */
@@ -68,7 +78,19 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
   const clipboard = useDocStore((s) => s.clipboard);
   const setClipboard = useDocStore((s) => s.setClipboard);
 
-  const { data, grid, diaIndex, houkou, selection, moveNext, movePrev, modifyOp2 } = ctx;
+  const {
+    data,
+    grid,
+    diaIndex,
+    houkou,
+    selection,
+    moveNext,
+    movePrev,
+    modifyOp2,
+    ekijikokuSort,
+    compareBottom,
+    focusTrainCol,
+  } = ctx;
 
   return useCallback(
     (action: ResolvedAction) => {
@@ -400,6 +422,83 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
           return;
         }
 
+        case 'sort': {
+          // 原典 OnJikokuhyouSort(4260-4492): フォーカス行種別で方式決定。選択なし → 全列車、
+          // 選択あり → 選択列車のみ(1 本だけの選択は無効)。フォーカス移動なし。
+          if (focusTarget === null) return;
+          const explicit = getSelectedRessyaIndices(selection, grid);
+          if (explicit.length === 1) return; // 原典: 選択 1 列は不成立(2496)
+          const targetIndices = explicit.length > 0 ? explicit : list.map((_, i) => i);
+          const items = targetIndices
+            .map((i) => list[i])
+            .filter((r): r is NonNullable<typeof r> => r !== undefined);
+          if (items.length !== targetIndices.length || items.length === 0) return;
+          const kiten = (data.rosen.kitenJikoku as number | null) ?? 0;
+
+          let order: number[] | null = null;
+          if (focusTarget.kind === 'ekiJikoku') {
+            if (ekijikokuSort === 'transfer') {
+              // 乗継ソート: ダイヤグラムの推定時刻(列車線の交点)を使う。
+              const frame = buildDiaLayoutFrame(data.rosen, dia.ressyaCont[0], dia.ressyaCont[1]);
+              const estimates = items.map((r) => computeEstimateJikoku(r, frame, houkou));
+              const ekiCount = data.rosen.ekiCont.length;
+              const isSyuyouByOrder = Array.from(
+                { length: ekiCount },
+                (_, o) =>
+                  data.rosen.ekiCont[ekiIndexOfEkiOrder(o, ekiCount, houkou)]?.ekikibo === 'syuyou',
+              );
+              order = transferSortOrder({
+                items,
+                estimates,
+                ekiOrder: focusTarget.ekiOrder,
+                item: focusTarget.target,
+                kiten,
+                isSyuyouByOrder,
+              });
+            } else {
+              order = sortRessyaOrder(items, {
+                kind: 'ekiatsukai',
+                ekiOrder: focusTarget.ekiOrder,
+                item: focusTarget.target,
+                kiten,
+              });
+            }
+          } else if (focusTarget.kind === 'track') {
+            order = sortRessyaOrder(items, {
+              kind: 'track',
+              ekiOrder: focusTarget.ekiOrder,
+              kiten,
+            });
+          } else if (focusTarget.kind === 'ressyaProp') {
+            const rt = focusTarget.rowType;
+            const method: SortMethod | null =
+              rt === 'ressyasyubetsu'
+                ? { kind: 'ressyasyubetsu', compareBottom }
+                : rt === 'ressyamei' || rt === 'gousuu' || rt === 'gou'
+                  ? { kind: 'ressyamei', compareBottom }
+                  : rt === 'ressyabangou'
+                    ? { kind: 'ressyabangou', compareBottom }
+                    : rt === 'bikou'
+                      ? { kind: 'bikou' }
+                      : null;
+            if (method === null) return; // 駅名行等は無効(-1)
+            order = sortRessyaOrder(items, method);
+          }
+          if (order === null) return;
+          dispatch({ type: 'ressya/reorder', diaIndex, houkou, targetIndices, order });
+          return;
+        }
+
+        case 'minJikan': {
+          // 原典 OnJikokuhyouEKikanSaisyouSec(4147-4255): 着/発/番線行 + 終着駅行以外。
+          // 選択と無関係に全列車から検索し、見つかった列車の列へフォーカス(行は維持)。
+          if (ekiOrder === null || ekiOrder >= data.rosen.ekiCont.length - 1) return;
+          const idx = findEkikanSaisyouSecIndex(list, ekiOrder);
+          if (idx === null) return; // 原典はエラーダイアログ。フォーカス不動
+          focusTrainCol(idx);
+          return;
+        }
+
         case 'swapLeft':
         case 'swapRight': {
           const fi = focusRessyaIndex(selection, grid);
@@ -462,6 +561,9 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
       moveNext,
       movePrev,
       modifyOp2,
+      ekijikokuSort,
+      compareBottom,
+      focusTrainCol,
     ],
   );
 }

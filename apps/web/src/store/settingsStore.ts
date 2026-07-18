@@ -19,11 +19,17 @@ export interface JikokuhyouSettings {
   readonly modifyEkijikoku: boolean;
   /** フォーカス移動モード: true = 右移動(次列車)/ false = 下移動(次の行)。原典既定 false。 */
   readonly focusMoveRight: boolean;
+  /** 駅時刻行の並べ替え方式(原典 m_eEkijikokuSort。既定 = 駅扱ソート)。 */
+  readonly ekijikokuSort: 'ekiatsukai' | 'transfer';
+  /** 並べ替えの末尾要素基準(原典 m_bCompareBottom。既定 false)。 */
+  readonly compareBottom: boolean;
 }
 
 export const DEFAULT_JIKOKUHYOU_SETTINGS: JikokuhyouSettings = {
   modifyEkijikoku: true,
   focusMoveRight: false,
+  ekijikokuSort: 'ekiatsukai',
+  compareBottom: false,
 };
 
 const STORAGE_KEY = 'oudia-second-web:jikokuhyouSettings:v1';
@@ -34,13 +40,15 @@ function load(): JikokuhyouSettings {
     if (raw === null) return DEFAULT_JIKOKUHYOU_SETTINGS;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== 'object' || parsed === null) return DEFAULT_JIKOKUHYOU_SETTINGS;
-    // 既知キーのみ採用(将来のキー追加・削除に対して前方互換)。
-    const out = { ...DEFAULT_JIKOKUHYOU_SETTINGS };
-    for (const key of Object.keys(out) as (keyof JikokuhyouSettings)[]) {
+    // 既知キーのみ・既定値と同じ型のときのみ採用(将来のキー追加・削除に対して前方互換)。
+    const out: Record<string, unknown> = { ...DEFAULT_JIKOKUHYOU_SETTINGS };
+    for (const key of Object.keys(out)) {
       const v = (parsed as Record<string, unknown>)[key];
-      if (typeof v === 'boolean') (out as Record<string, boolean>)[key] = v;
+      if (v === undefined || typeof v !== typeof out[key]) continue;
+      if (key === 'ekijikokuSort' && v !== 'ekiatsukai' && v !== 'transfer') continue;
+      out[key] = v;
     }
-    return out;
+    return out as unknown as JikokuhyouSettings;
   } catch {
     return DEFAULT_JIKOKUHYOU_SETTINGS; // localStorage 不可(プライベートモード等)は既定値
   }

@@ -261,6 +261,16 @@ describe('M3 編集 → Undo でバイト一致(黄金 T1 discipline)', () => {
         teisyaFirst: true,
       },
     },
+    {
+      name: 'ressya/reorder(並べ替え)',
+      cmd: {
+        type: 'ressya/reorder',
+        diaIndex: 0,
+        houkou: 0,
+        targetIndices: [0, 1, 2, 3],
+        order: [3, 1, 0, 2],
+      },
+    },
   ];
 
   for (const c of CASES) {

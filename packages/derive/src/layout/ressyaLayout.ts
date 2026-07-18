@@ -409,6 +409,64 @@ export function computeShouldRessyajouhouDraw(
   return flags;
 }
 
+/** 乗継ソート用の推定駅時刻(秒。mod 86400 済み)。null = 推定不能。 */
+export interface EstimateSlot {
+  ekiatsukai: 'none' | 'teisya' | 'tsuuka';
+  chaku: number | null;
+  hatsu: number | null;
+}
+
+/**
+ * 乗継ソートの推定時刻(原典 CentDedDgrDia::createEstimateRessya、CentDedDgrDia.cpp
+ * 1059-1183)。列車線の起点駅 = 発時刻、終点駅 = 着時刻、中間駅 = 着発とも列車線と
+ * 駅横線の交点(駅間表示幅で重み付けした線形補間)。駅扱は実データのコピー。
+ * createEstimateRessya2 の分岐・環状線の同名駅複製補正は M5(分岐対応)まで未実装。
+ * 運休・isNull 列車も通常どおり計算する(時刻が無ければ全 null)。
+ */
+export function computeEstimateJikoku(
+  ressya: Ressya,
+  frame: DiaLayoutFrame,
+  houkou: Ressyahoukou,
+): EstimateSlot[] {
+  const ekiCount = frame.ekiLayouts.length;
+  const out: EstimateSlot[] = [];
+  for (let o = 0; o < ekiCount; o++) {
+    out.push({ ekiatsukai: getEkiJikoku(ressya, o).ekiatsukai, chaku: null, hatsu: null });
+  }
+  const syuuchaku = getSyuuchakuEki(ressya);
+  if (syuuchaku < 0) return out;
+
+  const cont = createDgrEkiJikoku(ressya, ekiCount);
+  complementKeiyunasiSide(cont);
+  complementLongStop01(cont, ressya, syuuchaku);
+  complementLongStop02(cont, ressya, getSihatsuEki(ressya));
+  const lines = buildRessyasenCont(cont, frame, houkou, syuuchaku);
+
+  const kitens = new Set(lines.map((l) => l.kitenEkiOrder));
+  const syuutens = new Set(lines.map((l) => l.syuutenEkiOrder));
+  for (let o = 0; o < ekiCount; o++) {
+    const ej = cont[o];
+    const slot = out[o];
+    if (ej === undefined || slot === undefined) continue;
+    const isKiten = kitens.has(o);
+    const isSyuuten = syuutens.has(o);
+    if (isSyuuten) {
+      const x = chakuOr(ej);
+      if (x !== null) slot.chaku = ((x % SECONDS_PER_DAY) + SECONDS_PER_DAY) % SECONDS_PER_DAY;
+    }
+    if (isKiten) {
+      const x = hatsuOr(ej);
+      if (x !== null) slot.hatsu = ((x % SECONDS_PER_DAY) + SECONDS_PER_DAY) % SECONDS_PER_DAY;
+    }
+    if (!isKiten && !isSyuuten && ej.ressyasenX !== null) {
+      const v = ((ej.ressyasenX % SECONDS_PER_DAY) + SECONDS_PER_DAY) % SECONDS_PER_DAY;
+      slot.chaku = v;
+      slot.hatsu = v;
+    }
+  }
+  return out;
+}
+
 /** 1 列車のレイアウト(列車線列 + X 範囲)を構築する。運休/Null はスジなし。 */
 export function computeRessyaRessyasen(
   ressya: Ressya,

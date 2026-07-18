@@ -35,7 +35,9 @@ export type EditAction =
   | 'tyokutsuu' // Ctrl+Shift+U: 直通化
   | 'bundan' // Ctrl+Shift+I: 分断
   | 'pasteJikokuOnly' // Ctrl+Shift+V: 時刻のみ貼り付け
-  | 'unify' // 列車番号で一本化(原典ショートカットなし。メニューから)
+  | 'unify' // 列車番号で一本化(原典ショートカットなし。ツールバーから)
+  | 'sort' // 並べ替え(フォーカス行種別で多態。原典ショートカットなし)
+  | 'minJikan' // 最小所要時間列車に移動(原典ショートカットなし)
   | 'toggleCanceled' // 運休トグル
   | 'swapLeft' // 左へ(並び順)
   | 'swapRight' // 右へ
