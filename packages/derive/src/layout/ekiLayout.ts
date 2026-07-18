@@ -19,7 +19,7 @@
 import type { Ressya, Rosen } from '@oudia/format';
 import { RESSYAHOUKOU_NOBORI } from '@oudia/format';
 import { ekiOrderOfEkiIndex, subJikoku } from '@oudia/domain';
-import { getEkiJikoku } from '../csv/runRange.js';
+import { getEkiJikoku } from '@oudia/domain';
 import type { DiaLayoutFrame, EkiLayout } from './types.js';
 
 /**

@@ -19,7 +19,7 @@ import { RESSYAHOUKOU_KUDARI, encodeJikokuCsv } from '@oudia/format';
 import type { JikokuConvOptions } from '@oudia/format';
 import { ekiIndexOfEkiOrder } from '@oudia/domain';
 import { getTrackRyakusyou, isHatsuChakuHyouji } from '../csv/ekiDisplay.js';
-import { getEkiJikoku, getValidSyuuchakuEki, isRunBetweenNextEki } from '../csv/runRange.js';
+import { getEkiJikoku, getValidSyuuchakuEki, isRunBetweenNextEki } from '@oudia/domain';
 import type { CellSpec, CellStyle, MarkKind } from './types.js';
 import { plainStyle } from './types.js';
 

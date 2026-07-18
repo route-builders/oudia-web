@@ -50,8 +50,14 @@ export default [
     },
   },
   {
-    // ツール設定ファイル(型情報なしで軽く検査する)。vite.config.ts 含む。
-    files: ['*.config.ts', '*.config.js', 'eslint.config.js', '**/vite.config.ts'],
+    // ツール設定ファイル(型情報なしで軽く検査する)。vite/playwright.config.ts 含む。
+    files: [
+      '*.config.ts',
+      '*.config.js',
+      'eslint.config.js',
+      '**/vite.config.ts',
+      '**/playwright.config.ts',
+    ],
     languageOptions: {
       globals: { ...globals.node },
     },

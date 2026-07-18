@@ -13,7 +13,7 @@
  */
 
 import type { Dia, RosenFileData, Ressya, Ressyahoukou } from '@oudia/format';
-import { getSyuuchakuEki, getValidSihatsuEki, getValidSyuuchakuEki } from '../csv/runRange.js';
+import { getSyuuchakuEki, getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia/domain';
 
 /** 1 列車ぶんの発車内容(原典 EkiJikokuhyouContent のプレーン版サブセット)。 */
 export interface EkiJikokuhyouContent {

@@ -15,7 +15,7 @@
 
 import type { Ressya, Ressyahoukou } from '@oudia/format';
 import { ekiIndexOfEkiOrder } from '@oudia/domain';
-import { getEkiJikoku, getSihatsuEki, getSyuuchakuEki } from '../csv/runRange.js';
+import { getEkiJikoku, getSihatsuEki, getSyuuchakuEki } from '@oudia/domain';
 import type { DiaLayoutFrame, Ressyasen } from './types.js';
 
 const SECONDS_PER_DAY = 86400;

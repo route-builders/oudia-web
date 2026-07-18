@@ -20,7 +20,7 @@ import {
   getValidSihatsuEki,
   getValidSyuuchakuEki,
   getEkiJikoku,
-} from '../csv/runRange.js';
+} from '@oudia/domain';
 import { buildJikokuhyouRowSpec } from './colSpec.js';
 import type { JikokuhyouRowSpec } from './colSpec.js';
 import { chakuCell, hatsuCell, trackCell } from './cellSpec.js';
