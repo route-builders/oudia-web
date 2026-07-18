@@ -7,11 +7,11 @@ import type { EkiJikoku, Ressya } from '@oudia-web/format';
 import { asSeconds } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import {
-    compareRessyabangouSplit,
-    findEkikanSaisyouSecIndex,
-    kitenCompareKey,
-    sortRessyaOrder,
-    splitRessyabangou,
+  compareRessyabangouSplit,
+  findEkikanSaisyouSecIndex,
+  kitenCompareKey,
+  sortRessyaOrder,
+  splitRessyabangou,
 } from './ressyaSort.js';
 
 function ej(over: Partial<EkiJikoku> = {}): EkiJikoku {

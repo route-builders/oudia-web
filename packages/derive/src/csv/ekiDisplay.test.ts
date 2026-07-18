@@ -5,11 +5,11 @@ import type { Ekijikokukeisiki } from '@oudia-web/format';
 import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import {
-    getChakujikokuHyouji,
-    getEkimeiJikokuhyouRyaku,
-    getHatsujikokuHyouji,
-    getTrackRyakusyou,
-    isHatsuChakuHyouji,
+  getChakujikokuHyouji,
+  getEkimeiJikokuhyouRyaku,
+  getHatsujikokuHyouji,
+  getTrackRyakusyou,
+  isHatsuChakuHyouji,
 } from './ekiDisplay.js';
 
 // 原典 CentDedEkiCont.cpp:229-238(下り)/ 424-431(上り)から導いた真理値表。

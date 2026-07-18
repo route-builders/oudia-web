@@ -5,12 +5,12 @@ import type { EkiJikoku, Ressya } from '@oudia-web/format';
 import { RESSYAHOUKOU_KUDARI, asSeconds } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import {
-    getEkiJikoku,
-    getSihatsuEki,
-    getSyuuchakuEki,
-    getValidSihatsuEki,
-    getValidSyuuchakuEki,
-    isRunBetweenNextEki,
+  getEkiJikoku,
+  getSihatsuEki,
+  getSyuuchakuEki,
+  getValidSihatsuEki,
+  getValidSyuuchakuEki,
+  isRunBetweenNextEki,
 } from './runRange.js';
 
 function ej(

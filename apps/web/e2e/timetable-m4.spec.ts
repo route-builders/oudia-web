@@ -166,9 +166,7 @@ test('表示メニュー: 全時刻を表示 ON で行数(総高さ)が増え、
     .poll(async () => spacer.evaluate((el) => el.clientHeight))
     .toBeGreaterThan(heightBefore);
 
-  const stored = await page.evaluate(() =>
-    localStorage.getItem('oudia-web:jikokuhyouSettings:v1'),
-  );
+  const stored = await page.evaluate(() => localStorage.getItem('oudia-web:jikokuhyouSettings:v1'));
   expect(stored).toContain('"displayAllEkiJikoku":true');
 });
 

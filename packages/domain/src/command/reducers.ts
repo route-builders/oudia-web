@@ -14,24 +14,24 @@
  */
 
 import type {
-    AfterOperation,
-    BeforeOperation,
-    EkiJikoku,
-    Jikoku,
-    Ressya,
-    Ressyahoukou,
-    RosenFileData,
+  AfterOperation,
+  BeforeOperation,
+  EkiJikoku,
+  Jikoku,
+  Ressya,
+  Ressyahoukou,
+  RosenFileData,
 } from '@oudia-web/format';
 import { asSeconds } from '@oudia-web/format';
 import { ekiIndexOfEkiOrder } from '../ekiOrder.js';
 import {
-    findRevJikokuItem,
-    getEkiJikoku,
-    getRunFirstEkiOrder,
-    getRunLastEkiOrder,
-    getValidSihatsuEki,
-    getValidSyuuchakuEki,
-    isRunBetweenNextEki,
+  findRevJikokuItem,
+  getEkiJikoku,
+  getRunFirstEkiOrder,
+  getRunLastEkiOrder,
+  getValidSihatsuEki,
+  getValidSyuuchakuEki,
+  isRunBetweenNextEki,
 } from '../runRange.js';
 import { addToTrailingNumber } from './clipboard.js';
 import { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';

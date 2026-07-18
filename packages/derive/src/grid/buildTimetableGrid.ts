@@ -11,12 +11,21 @@
  */
 
 import {
-    ekiIndexOfEkiOrder, getEkiJikoku, getSihatsuEki,
-    getSyuuchakuEki,
-    getValidSihatsuEki,
-    getValidSyuuchakuEki
+  ekiIndexOfEkiOrder,
+  getEkiJikoku,
+  getSihatsuEki,
+  getSyuuchakuEki,
+  getValidSihatsuEki,
+  getValidSyuuchakuEki,
 } from '@oudia-web/domain';
-import type { Dia, Eki, JikokuConvOptions, Ressya, Ressyahoukou, RosenFileData } from '@oudia-web/format';
+import type {
+  Dia,
+  Eki,
+  JikokuConvOptions,
+  Ressya,
+  Ressyahoukou,
+  RosenFileData,
+} from '@oudia-web/format';
 import { getEkimeiJikokuhyouRyaku } from '../csv/ekiDisplay.js';
 import type { CellContext } from './cellSpec.js';
 import { chakuCell, hatsuCell, trackCell } from './cellSpec.js';

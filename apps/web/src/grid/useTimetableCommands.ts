@@ -18,16 +18,16 @@ import type { TimetableGridSpec } from '@oudia-web/derive';
 import { buildDiaLayoutFrame, computeEstimateJikoku, transferSortOrder } from '@oudia-web/derive';
 import type { EkijikokuModifyOperation2, SortMethod } from '@oudia-web/domain';
 import {
-    computePasteTrains,
-    copyRessyaToClipboard,
-    ekiIndexOfEkiOrder,
-    findEkikanSaisyouSecIndex,
-    findTrainToDirect,
-    getEkiJikoku,
-    getSihatsuEki,
-    getSyuuchakuEki,
-    isNullModifyOperation2,
-    sortRessyaOrder,
+  computePasteTrains,
+  copyRessyaToClipboard,
+  ekiIndexOfEkiOrder,
+  findEkikanSaisyouSecIndex,
+  findTrainToDirect,
+  getEkiJikoku,
+  getSihatsuEki,
+  getSyuuchakuEki,
+  isNullModifyOperation2,
+  sortRessyaOrder,
 } from '@oudia-web/domain';
 import type { RosenFileData } from '@oudia-web/format';
 import { useCallback } from 'react';
@@ -36,11 +36,11 @@ import { resolveCellTarget } from './cellSemantics.js';
 import type { JikokuStepAction, ResolvedAction } from './keymap.js';
 import type { SelectionState } from './selection.js';
 import {
-    focusRessyaIndex,
-    getCommandRessyaIndices,
-    getFocusCommandRessyaIndex,
-    getSelectedRessyaIndices,
-    hasMultiSelection,
+  focusRessyaIndex,
+  getCommandRessyaIndices,
+  getFocusCommandRessyaIndex,
+  getSelectedRessyaIndices,
+  hasMultiSelection,
 } from './selection.js';
 
 export interface TimetableCommandCtx {

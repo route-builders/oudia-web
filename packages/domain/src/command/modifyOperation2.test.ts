@@ -11,9 +11,9 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { createDocumentState, executeCommand, undo } from './engine.js';
 import type {
-    EditCommand,
-    EkiJikokuModifyOperation2Command,
-    EkijikokuModifyOperation2,
+  EditCommand,
+  EkiJikokuModifyOperation2Command,
+  EkijikokuModifyOperation2,
 } from './types.js';
 import { isNullModifyOperation2 } from './types.js';
 

@@ -11,10 +11,10 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { getEkiJikoku } from '../runRange.js';
 import {
-    addToTrailingNumber,
-    computePasteTrains,
-    copyRessyaToClipboard,
-    NO_PASTE_IDOURYOU,
+  addToTrailingNumber,
+  computePasteTrains,
+  copyRessyaToClipboard,
+  NO_PASTE_IDOURYOU,
 } from './clipboard.js';
 import { createDocumentState, executeCommand, undo } from './engine.js';
 

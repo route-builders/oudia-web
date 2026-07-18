@@ -122,4 +122,3 @@ export { ReadContext, ReadError } from './context.js';
 export { readDispProp, readRosen } from './current.js';
 export { fileTypeGroup } from './fileType.js';
 export type { FileTypeGroup } from './fileType.js';
-

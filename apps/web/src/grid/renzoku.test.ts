@@ -8,10 +8,10 @@ import type { EkiJikoku, Ressya } from '@oudia-web/format';
 import { asSeconds } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import {
-    calcJikokuRowToNext,
-    canEnterRenzoku,
-    isHatsuChakuHyouji,
-    renzokuEditMark,
+  calcJikokuRowToNext,
+  canEnterRenzoku,
+  isHatsuChakuHyouji,
+  renzokuEditMark,
 } from './renzoku.js';
 
 function r(type: JikokuhyouRowSpec['type'], ekiOrder: number | null = null): JikokuhyouRowSpec {

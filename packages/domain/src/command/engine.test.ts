@@ -8,16 +8,16 @@
 import type { DispProp, Rosen, RosenFileData } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import {
-    canRedo,
-    canUndo,
-    createDocumentState,
-    executeCommand,
-    INT_MAX,
-    isDirty,
-    markSaved,
-    normalizeToLf,
-    redo,
-    undo,
+  canRedo,
+  canUndo,
+  createDocumentState,
+  executeCommand,
+  INT_MAX,
+  isDirty,
+  markSaved,
+  normalizeToLf,
+  redo,
+  undo,
 } from './index.js';
 
 /** テスト用の最小 Rosen(コメント編集に必要な部分のみ)。 */

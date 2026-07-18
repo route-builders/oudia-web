@@ -19,25 +19,25 @@
 import type { Colorref, FontProp, Ressyahoukou, UnknownEntry } from '../model/basic.js';
 import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '../model/basic.js';
 import type {
-    CrossingCheckRule,
-    Dia,
-    DiagramLineStyle,
-    DispProp,
-    Eki,
-    EkiJikoku,
-    EkiTrack2,
-    OuterTerminal,
-    Ressya,
-    Ressyasyubetsu,
-    Rosen,
-    TrackContent,
+  CrossingCheckRule,
+  Dia,
+  DiagramLineStyle,
+  DispProp,
+  Eki,
+  EkiJikoku,
+  EkiTrack2,
+  OuterTerminal,
+  Ressya,
+  Ressyasyubetsu,
+  Rosen,
+  TrackContent,
 } from '../model/entities.js';
 import type {
-    DiagramRessyajouhouHyouji,
-    Ekijikokukeisiki,
-    Ekikibo,
-    SenStyle,
-    StopMarkDrawType,
+  DiagramRessyajouhouHyouji,
+  Ekijikokukeisiki,
+  Ekikibo,
+  SenStyle,
+  StopMarkDrawType,
 } from '../model/enums.js';
 import type { UnconsumedNode } from '../node/cursor.js';
 import { NodeCursor } from '../node/cursor.js';
@@ -49,31 +49,31 @@ import { decodeFont } from '../value/font.js';
 import type { OperationKeyStore } from '../value/operation.js';
 import { decodeAfterOperationCont, decodeBeforeOperationCont } from '../value/operation.js';
 import {
-    decodeJikokuDisplay,
-    decodeOuterDisplay,
-    decodeSyubetsuChangeDisplay,
-    decodeTrackOmit,
+  decodeJikokuDisplay,
+  decodeOuterDisplay,
+  decodeSyubetsuChangeDisplay,
+  decodeTrackOmit,
 } from './composite.js';
 import type { ReadContext } from './context.js';
 import { COLOR_BLACK, COLOR_WHITE, createDefaultDispProp } from './defaults.js';
 import {
-    DIAGRAM_RESSYAJOUHOU_FROM_FILE,
-    EKIJIKOKUKEISIKI_FROM_FILE,
-    EKIKIBO_FROM_FILE,
-    SENSTYLE_FROM_FILE,
-    STOPMARK_FROM_FILE,
-    TRACKTYPE_BY_CODE,
+  DIAGRAM_RESSYAJOUHOU_FROM_FILE,
+  EKIJIKOKUKEISIKI_FROM_FILE,
+  EKIKIBO_FROM_FILE,
+  SENSTYLE_FROM_FILE,
+  STOPMARK_FROM_FILE,
+  TRACKTYPE_BY_CODE,
 } from './enumMaps.js';
 import type { ReaderProfile } from './profile.js';
 import { CURRENT_PROFILE } from './profile.js';
 import {
-    readBool,
-    readColor,
-    readFont,
-    readIndexOrNull,
-    readInt,
-    readJikokuProp,
-    readStr,
+  readBool,
+  readColor,
+  readFont,
+  readIndexOrNull,
+  readInt,
+  readJikokuProp,
+  readStr,
 } from './props.js';
 
 // ---- 未知ノード保全 ----

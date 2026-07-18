@@ -11,10 +11,10 @@
  */
 
 import type {
-    GridColumn,
-    JikokuhyouRowSpec,
-    JikokuhyouRowType,
-    TimetableGridSpec,
+  GridColumn,
+  JikokuhyouRowSpec,
+  JikokuhyouRowType,
+  TimetableGridSpec,
 } from '@oudia-web/derive';
 
 /** セルの編集意味(フォーカス行種別 × 列種別の解決結果)。 */

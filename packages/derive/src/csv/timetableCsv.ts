@@ -14,14 +14,23 @@
  */
 
 import {
-    ekiIndexOfEkiOrder, getEkiJikoku,
-    getSihatsuEki,
-    getSyuuchakuEki,
-    getValidSihatsuEki,
-    getValidSyuuchakuEki,
-    isRunBetweenNextEki
+  ekiIndexOfEkiOrder,
+  getEkiJikoku,
+  getSihatsuEki,
+  getSyuuchakuEki,
+  getValidSihatsuEki,
+  getValidSyuuchakuEki,
+  isRunBetweenNextEki,
 } from '@oudia-web/domain';
-import type { Eki, EkiJikoku, Jikoku, JikokuConvOptions, Ressya, Ressyahoukou, RosenFileData } from '@oudia-web/format';
+import type {
+  Eki,
+  EkiJikoku,
+  Jikoku,
+  JikokuConvOptions,
+  Ressya,
+  Ressyahoukou,
+  RosenFileData,
+} from '@oudia-web/format';
 import { encodeCsvDocument, encodeJikokuCsv, RESSYAHOUKOU_KUDARI } from '@oudia-web/format';
 import { buildColSpec } from './colSpec.js';
 import { getEkimeiJikokuhyouRyaku, getTrackRyakusyou, isHatsuChakuHyouji } from './ekiDisplay.js';

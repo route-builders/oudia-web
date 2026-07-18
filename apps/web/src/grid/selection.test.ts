@@ -9,16 +9,16 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
-    clampSelection,
-    extendBox,
-    focusRessyaIndex,
-    getEffectiveRessyaIndices,
-    getSelectedRessyaIndices,
-    hasMultiSelection,
-    initialSelection,
-    moveFocus,
-    setFocus,
-    toggleRandom,
+  clampSelection,
+  extendBox,
+  focusRessyaIndex,
+  getEffectiveRessyaIndices,
+  getSelectedRessyaIndices,
+  hasMultiSelection,
+  initialSelection,
+  moveFocus,
+  setFocus,
+  toggleRandom,
 } from './selection.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

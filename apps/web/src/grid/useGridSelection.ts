@@ -11,14 +11,14 @@ import type { TimetableGridSpec } from '@oudia-web/derive';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { CellPos, SelectionState } from './selection.js';
 import {
-    clampSelection,
-    extendBox,
-    initialSelection,
-    moveFocus,
-    moveFocusCellToNext,
-    moveFocusCellToPrev,
-    setFocus,
-    toggleRandom,
+  clampSelection,
+  extendBox,
+  initialSelection,
+  moveFocus,
+  moveFocusCellToNext,
+  moveFocusCellToPrev,
+  setFocus,
+  toggleRandom,
 } from './selection.js';
 
 export interface GridSelectionApi {

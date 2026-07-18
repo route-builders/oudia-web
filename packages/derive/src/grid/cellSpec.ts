@@ -14,8 +14,21 @@
  * カスタマイズ専用の "===="(終着)は出さない。通過時刻に "?" は付けない(CSV とは異なる)。
  */
 
-import { ekiIndexOfEkiOrder, getEkiJikoku, getValidSyuuchakuEki, isRunBetweenNextEki } from '@oudia-web/domain';
-import type { Colorref, Eki, EkiJikoku, Jikoku, JikokuConvOptions, Ressya, Ressyahoukou } from '@oudia-web/format';
+import {
+  ekiIndexOfEkiOrder,
+  getEkiJikoku,
+  getValidSyuuchakuEki,
+  isRunBetweenNextEki,
+} from '@oudia-web/domain';
+import type {
+  Colorref,
+  Eki,
+  EkiJikoku,
+  Jikoku,
+  JikokuConvOptions,
+  Ressya,
+  Ressyahoukou,
+} from '@oudia-web/format';
 import { RESSYAHOUKOU_KUDARI, encodeJikokuCsv } from '@oudia-web/format';
 import { getTrackRyakusyou, isHatsuChakuHyouji } from '../csv/ekiDisplay.js';
 import type { CellSpec, CellStyle, MarkKind } from './types.js';

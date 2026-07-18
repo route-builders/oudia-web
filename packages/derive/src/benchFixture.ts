@@ -5,13 +5,13 @@
 // 決定論的に生成し、レイアウト計算・グリッド構築・コマンド実行の所要時間を CI で追跡する。
 
 import type {
-    Dia,
-    DispProp,
-    Eki,
-    EkiJikoku,
-    Ressya,
-    Ressyasyubetsu,
-    RosenFileData,
+  Dia,
+  DispProp,
+  Eki,
+  EkiJikoku,
+  Ressya,
+  Ressyasyubetsu,
+  RosenFileData,
 } from '@oudia-web/format';
 import { asSeconds } from '@oudia-web/format';
 

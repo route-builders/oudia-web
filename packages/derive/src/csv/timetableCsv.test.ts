@@ -2,13 +2,13 @@
 // Copyright (C) 2026 up-tri
 
 import type {
-    Dia,
-    DispProp,
-    Eki,
-    EkiJikoku,
-    Ressya,
-    Ressyasyubetsu,
-    RosenFileData,
+  Dia,
+  DispProp,
+  Eki,
+  EkiJikoku,
+  Ressya,
+  Ressyasyubetsu,
+  RosenFileData,
 } from '@oudia-web/format';
 import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI, asSeconds } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';

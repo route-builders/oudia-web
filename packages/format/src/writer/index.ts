@@ -64,4 +64,3 @@ export function writeOud2(data: RosenFileData): Uint8Array {
 
 export { NodeBuilder, nodeOfRaw, partitionUnknownByContainer } from './builder.js';
 export { writeDispProp, WriteError, writeRosen } from './current.js';
-

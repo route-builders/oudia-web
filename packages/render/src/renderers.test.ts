@@ -5,9 +5,9 @@
 // 描画コマンドが発行され、テキスト・線が破綻なく出ることを確認する(ピクセル比較はしない)。
 
 import {
-    buildTimetableGrid,
-    computeDiagramLayout,
-    defaultTimetableGridOptions,
+  buildTimetableGrid,
+  computeDiagramLayout,
+  defaultTimetableGridOptions,
 } from '@oudia-web/derive';
 import type { RosenFileData } from '@oudia-web/format';
 import { parseNodeTree, readRosenFile } from '@oudia-web/format';

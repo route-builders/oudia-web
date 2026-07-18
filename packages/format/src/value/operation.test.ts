@@ -7,10 +7,10 @@
 import { describe, expect, it } from 'vitest';
 import type { OperationEntry, OperationKeyStore } from './operation.js';
 import {
-    decodeAfterOperationCont,
-    decodeBeforeOperationCont,
-    encodeAfterOperationCont,
-    encodeBeforeOperationCont,
+  decodeAfterOperationCont,
+  decodeBeforeOperationCont,
+  encodeAfterOperationCont,
+  encodeBeforeOperationCont,
 } from './operation.js';
 
 /** OperationEntry[] を側テーブルにする(encode → store → decode の往復テスト用)。 */

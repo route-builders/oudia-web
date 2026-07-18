@@ -9,12 +9,12 @@
  */
 
 import type {
-    DiagramRessyajouhouHyouji,
-    Ekijikokukeisiki,
-    Ekikibo,
-    SenStyle,
-    StopMarkDrawType,
-    TrackType,
+  DiagramRessyajouhouHyouji,
+  Ekijikokukeisiki,
+  Ekikibo,
+  SenStyle,
+  StopMarkDrawType,
+  TrackType,
 } from '../model/enums.js';
 
 // ---- Ekijikokukeisiki(駅時刻形式)----

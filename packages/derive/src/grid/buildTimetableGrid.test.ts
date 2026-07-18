@@ -3,10 +3,10 @@
 
 import type { RosenFileData } from '@oudia-web/format';
 import {
-    parseNodeTree,
-    readRosenFile,
-    RESSYAHOUKOU_KUDARI,
-    RESSYAHOUKOU_NOBORI,
+  parseNodeTree,
+  readRosenFile,
+  RESSYAHOUKOU_KUDARI,
+  RESSYAHOUKOU_NOBORI,
 } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';

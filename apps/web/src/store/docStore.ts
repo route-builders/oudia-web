@@ -10,19 +10,19 @@
  */
 
 import type {
-    DocumentState,
-    EditCommand,
-    EkijikokuModifyOperation2,
-    RessyaClipboard,
+  DocumentState,
+  EditCommand,
+  EkijikokuModifyOperation2,
+  RessyaClipboard,
 } from '@oudia-web/domain';
 import {
-    canRedo as canRedoState,
-    canUndo as canUndoState,
-    createDocumentState,
-    executeCommand,
-    markSaved as markSavedState,
-    redo as redoState,
-    undo as undoState,
+  canRedo as canRedoState,
+  canUndo as canUndoState,
+  createDocumentState,
+  executeCommand,
+  markSaved as markSavedState,
+  redo as redoState,
+  undo as undoState,
 } from '@oudia-web/domain';
 import type { RosenFileData } from '@oudia-web/format';
 import { create } from 'zustand';

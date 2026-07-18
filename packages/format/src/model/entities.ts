@@ -11,14 +11,14 @@
 
 import type { Colorref, FontProp, Jikoku, Ressyahoukou, UnknownEntry } from './basic.js';
 import type {
-    DiagramRessyajouhouHyouji,
-    Ekiatsukai,
-    Ekijikokukeisiki,
-    Ekikibo,
-    SecondRound,
-    SenStyle,
-    StopMarkDrawType,
-    TrackType,
+  DiagramRessyajouhouHyouji,
+  Ekiatsukai,
+  Ekijikokukeisiki,
+  Ekikibo,
+  SecondRound,
+  SenStyle,
+  StopMarkDrawType,
+  TrackType,
 } from './enums.js';
 import type { AfterOperation, BeforeOperation } from './operation.js';
 

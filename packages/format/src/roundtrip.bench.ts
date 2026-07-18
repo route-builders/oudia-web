@@ -10,10 +10,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bench, describe } from 'vitest';
 import {
-    decodeOudText,
-    parsePropertiesText,
-    roundtripOud2,
-    serializePropertiesText,
+  decodeOudText,
+  parsePropertiesText,
+  roundtripOud2,
+  serializePropertiesText,
 } from './index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

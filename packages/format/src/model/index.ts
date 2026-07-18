@@ -14,4 +14,3 @@ export * from './entities.js';
 export * from './enums.js';
 export * from './operation.js';
 export * from './rosenFileData.js';
-

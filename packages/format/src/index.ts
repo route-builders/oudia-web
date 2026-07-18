@@ -18,7 +18,10 @@ import { encodeOudTextUtf8 } from './text/encodeOudText.js';
 
 export { decodeOudText } from './text/decodeOudText.js';
 export type {
-    DecodeTextErr, DecodeTextOk, DecodeTextResult, OudEncoding
+  DecodeTextErr,
+  DecodeTextOk,
+  DecodeTextResult,
+  OudEncoding,
 } from './text/decodeOudText.js';
 export { encodeOudTextUtf8 } from './text/encodeOudText.js';
 
@@ -44,12 +47,21 @@ export { decodeJikoku, encodeJikoku, isJikokuDecodeError } from './value/jikoku.
 export type { JikokuDecodeError } from './value/jikoku.js';
 export { decodeBool, decodeInt, encodeBool, encodeInt } from './value/number.js';
 export {
-    decodeAfterOperationCont, decodeBeforeOperationCont, encodeAfterOperationCont, encodeBeforeOperationCont
+  decodeAfterOperationCont,
+  decodeBeforeOperationCont,
+  encodeAfterOperationCont,
+  encodeBeforeOperationCont,
 } from './value/operation.js';
 export type { OperationEntry, OperationKeyStore } from './value/operation.js';
 
 // ---- 現行世代リーダー(ノードツリー → RosenFileData)----
-export { fileTypeGroup, ReadContext, ReaderErrorCode, ReadError, readRosenFile } from './reader/index.js';
+export {
+  fileTypeGroup,
+  ReadContext,
+  ReaderErrorCode,
+  ReadError,
+  readRosenFile,
+} from './reader/index.js';
 export type { FileTypeGroup, ReadRosenFileResult } from './reader/index.js';
 
 // ---- 現行世代ライター(RosenFileData → ノードツリー → bytes)----

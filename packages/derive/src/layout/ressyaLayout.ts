@@ -13,7 +13,12 @@
  * 経由なしの切断)を決めるため忠実に再現する。在線表(_07)・運用(_11)は M1 対象外。
  */
 
-import { ekiIndexOfEkiOrder, getEkiJikoku, getSihatsuEki, getSyuuchakuEki } from '@oudia-web/domain';
+import {
+  ekiIndexOfEkiOrder,
+  getEkiJikoku,
+  getSihatsuEki,
+  getSyuuchakuEki,
+} from '@oudia-web/domain';
 import type { Ressya, Ressyahoukou } from '@oudia-web/format';
 import type { DiaLayoutFrame, Ressyasen } from './types.js';
 
