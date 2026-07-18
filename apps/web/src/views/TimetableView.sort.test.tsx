@@ -4,11 +4,11 @@
 
 // 並べ替え・列車番号で一本化・最小所要時間列車に移動(ツールバー)の配線検証。
 
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
 import { useDocStore } from '../store/docStore.js';

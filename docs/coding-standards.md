@@ -12,11 +12,11 @@
 
 ## 2. フォーマッタ・リンタ
 
-| ツール                                                                 | 用途                                         | 実行                                   |
-| ---------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------- |
-| **Prettier**                                                           | フォーマット(設定は既定 + `printWidth: 100`) | `pnpm format` / `pnpm format:check`    |
-| **ESLint**(typescript-eslint の type-checked 推奨セット + react-hooks) | 静的検査                                     | `pnpm lint`                            |
-| **dependency-cruiser**                                                 | パッケージ間の依存方向の強制(§3)             | `pnpm lint:deps`(`pnpm lint` に含める) |
+| ツール                                                                 | 用途                                         | 実行                                               |
+| ---------------------------------------------------------------------- | -------------------------------------------- | -------------------------------------------------- |
+| **Prettier**                                                           | フォーマット(設定は既定 + `printWidth: 100`) | `pnpm format` / `pnpm format:check`                |
+| **ESLint**(typescript-eslint の type-checked 推奨セット + react-hooks) | 静的検査                                     | `pnpm check:code`                                  |
+| **dependency-cruiser**                                                 | パッケージ間の依存方向の強制(§3)             | `pnpm check:code:deps`(`pnpm check:code` に含める) |
 
 フォーマットに関する議論はしない(Prettier の出力が正)。ESLint ルールの無効化コメント(`eslint-disable`)は行単位のみ許可し、理由を併記する。
 

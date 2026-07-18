@@ -73,7 +73,8 @@ function directionLabel(rosen: Rosen, houkou: Ressyahoukou): string {
 }
 
 export type BuildEkiTimetableCsvResult =
-  { readonly ok: true; readonly csv: string } | { readonly ok: false; readonly code: -1 };
+  | { readonly ok: true; readonly csv: string }
+  | { readonly ok: false; readonly code: -1 };
 
 /**
  * 1 駅 1 方向の駅時刻表 CSV ブロックを組み立てる。UTF-8 BOM + CRLF で直列化する。

@@ -5,10 +5,10 @@
 // executeCommand は Immer produceWithPatches(構造共有 + patch 記録)がホット。
 // 大規模ファイル(sample.oud2 約 1.1MB)を土台に、代表的な編集コマンドの所要を測る。
 
-import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { bench, describe } from 'vitest';
 import { createNullRessya } from '../ressya.js';
 import { createDocumentState, executeCommand } from './engine.js';

@@ -3,11 +3,11 @@
 
 // 駅時刻変更(原典 CentDedRessya_EkijikokuModifyOperation2::execute 86-183)の検証。
 
-import type { RosenFileData } from '@oudia-web/format';
-import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { createDocumentState, executeCommand, undo } from './engine.js';
 import type {

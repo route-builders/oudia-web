@@ -5,11 +5,11 @@
 // 種別/番号ステップ)のレデューサ検証。原典 CentDedRessya.cpp 284-1010 /
 // CWjkState_Ressyahensyu.cpp 4919-5042, 9942-9997, 14585-14621 準拠(抽出レポート引用)。
 
-import type { RosenFileData } from '@oudia-web/format';
-import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { createDocumentState, executeCommand, redo, undo } from './engine.js';
 import type { EditCommand } from './types.js';

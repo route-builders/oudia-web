@@ -43,7 +43,7 @@ jobs:
         run: pnpm typecheck
 
       - name: Lint(ESLint + 依存方向)
-        run: pnpm lint
+        run: pnpm check:code
 
       - name: フォーマット検査
         run: pnpm format:check

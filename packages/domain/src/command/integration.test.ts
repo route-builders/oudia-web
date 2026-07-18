@@ -5,10 +5,10 @@
 // 再読込したコメントが編集後の値になる(コマンド基盤 × format ライターの結合)。
 // また無編集での read→write バイト一致(黄金 T1)がコマンド基盤導入後も不変であることを確認。
 
-import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { createDocumentState, executeCommand, markSaved, undo } from './index.js';
 import type { EditCommand } from './types.js';

@@ -10,14 +10,14 @@
   "assets": {
     "directory": "./dist",
     // SPA:存在しないパスは 200 で index.html を返し、クライアント側ルーティングに委ねる。
-    "not_found_handling": "single-page-application",
+    "not_found_handling": "single-page-application"
   },
   "routes": [
     {
       "pattern": "oudia-web.route.builders",
-      "custom_domain": true,
-    },
+      "custom_domain": true
+    }
   ],
   "preview_urls": false,
-  "workers_dev": false,
+  "workers_dev": false
 }

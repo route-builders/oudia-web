@@ -2,7 +2,7 @@
 // Copyright (C) 2026 up-tri
 
 import type { EkiJikoku, Ressya } from '@oudia-web/format';
-import { RESSYAHOUKOU_KUDARI, asSeconds } from '@oudia-web/format';
+import { asSeconds, RESSYAHOUKOU_KUDARI } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import {
   getEkiJikoku,

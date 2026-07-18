@@ -35,6 +35,6 @@ iconv -f CP932 -t UTF-8 <file> | head -200   # 混在ファイルは -c を付�
 ## コマンド(M0 で workspace 整備後)
 
 ```bash
-pnpm typecheck && pnpm lint && pnpm test   # コミット前の最低ライン
+pnpm typecheck && pnpm check:code && pnpm test   # コミット前の最低ライン
 pnpm dev                                    # 開発サーバ
 ```

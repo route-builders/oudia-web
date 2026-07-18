@@ -3,11 +3,11 @@
 
 // 列単位コピー/貼り付けの純ロジック(累積移動量)。原典 modifyRessyaBangou/Gou/RessyaJikoku 照合。
 
-import type { RosenFileData } from '@oudia-web/format';
-import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { getEkiJikoku } from '../runRange.js';
 import {

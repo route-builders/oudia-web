@@ -6,13 +6,13 @@
 // キーボード操作(Enter / 文字キー)でダイアログが開き、コミットで store.dispatch → data 更新
 // されることを確認する。Canvas は happy-dom 未実装のためスタブ。
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { TimetableGridSpec } from '@oudia-web/derive';
 import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
 import { getEkiJikoku } from '@oudia-web/domain';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
 import { useDocStore } from '../store/docStore.js';

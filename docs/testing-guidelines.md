@@ -81,7 +81,7 @@
 PR マージには以下すべての green を要求する(GitHub Actions):
 
 1. `pnpm typecheck`
-2. `pnpm lint`(ESLint + dependency-cruiser)
+2. `pnpm check:code`(ESLint + dependency-cruiser)
 3. `pnpm format:check`
 4. `pnpm test`(ユニット + 黄金テスト + プロパティテスト)
 5. ライセンスチェック(GPLv3 非互換依存の混入防止)

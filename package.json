@@ -13,11 +13,7 @@
     "dev": "pnpm --filter @oudia-web/web dev",
     "build": "pnpm -r run build",
     "typecheck": "tsc --build",
-    "lint": "pnpm run lint:eslint && pnpm run lint:deps",
-    "lint:eslint": "eslint .",
-    "lint:deps": "depcruise packages apps",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "check:code": "biome check --write && depcruise packages apps",
     "test": "vitest run",
     "test:watch": "vitest",
     "e2e": "pnpm --filter @oudia-web/web e2e",
@@ -27,6 +23,7 @@
     "license-check": "node scripts/license-check.mjs"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.5.4",
     "@eslint/js": "^9.17.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",

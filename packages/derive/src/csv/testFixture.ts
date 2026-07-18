@@ -3,11 +3,11 @@
 
 // テスト用のフィクスチャ読込ヘルパ(実 OuDiaSecond ファイルを RosenFileData へ)。
 
-import type { RosenFileData } from '@oudia-web/format';
-import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 
 const here = dirname(fileURLToPath(import.meta.url));
 // derive/src/csv → リポジトリの packages/format/fixtures を参照。

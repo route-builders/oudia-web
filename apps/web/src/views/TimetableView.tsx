@@ -14,7 +14,7 @@ import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/deri
 import { getEkiJikoku } from '@oudia-web/domain';
 import type { RosenFileData } from '@oudia-web/format';
 import type { GridTheme } from '@oudia-web/render';
-import { GridGeometry, drawGrid } from '@oudia-web/render';
+import { drawGrid, GridGeometry } from '@oudia-web/render';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EkiJikokuDialogTarget } from '../dialog/EkiJikokuDialog.js';
 import { EkiJikokuDialog } from '../dialog/EkiJikokuDialog.js';

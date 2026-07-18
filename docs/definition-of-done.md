@@ -13,7 +13,7 @@
 ### 1. コード品質
 
 - [ ] `pnpm typecheck` がエラー 0 件(TypeScript strict、`exactOptionalPropertyTypes`)
-- [ ] `pnpm lint` がエラー 0 件(ESLint + 依存方向チェック)
+- [ ] `pnpm check:code` がエラー 0 件(ESLint + 依存方向チェック)
 - [ ] `pnpm format:check` が通過(Prettier 適用済み)
 - [ ] [コーディング規約](./coding-standards.md)に準拠(命名、層の責務、SPDX ヘッダ)
 - [ ] コードレビュー指摘事項に対応済み

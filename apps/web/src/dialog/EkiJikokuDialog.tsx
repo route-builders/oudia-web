@@ -25,7 +25,7 @@
 
 import type { EditCommand } from '@oudia-web/domain';
 import { decodeJikokuWithHourCompletion } from '@oudia-web/domain';
-import type { EkiJikoku, Ekiatsukai, Jikoku } from '@oudia-web/format';
+import type { Ekiatsukai, EkiJikoku, Jikoku } from '@oudia-web/format';
 import { encodeJikoku } from '@oudia-web/format';
 import { useEffect, useRef, useState } from 'react';
 import { useSettingsStore } from '../store/settingsStore.js';

@@ -2,10 +2,10 @@
 // Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App.js';
 import { parseBytes } from './file/openFile.js';

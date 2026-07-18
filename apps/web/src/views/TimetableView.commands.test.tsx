@@ -6,10 +6,10 @@
 // store.dispatch → data 更新 と Undo/Redo・クリップボードを確認する。happy-dom は
 // display-mode: standalone を報告しないため Ctrl バインドは非衝突キー(C/V/Z/Y/矢印)のみ有効。
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
 import { useDocStore } from '../store/docStore.js';

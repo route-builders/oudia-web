@@ -4,6 +4,9 @@
 // レンダラのスモークテスト(実 fixture → derive → render をモック ctx で記録)。
 // 描画コマンドが発行され、テキスト・線が破綻なく出ることを確認する(ピクセル比較はしない)。
 
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   buildTimetableGrid,
   computeDiagramLayout,
@@ -11,9 +14,6 @@ import {
 } from '@oudia-web/derive';
 import type { RosenFileData } from '@oudia-web/format';
 import { parseNodeTree, readRosenFile } from '@oudia-web/format';
-import { readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { createViewTransform, viewTransformFromZone } from './core/ViewTransform.js';
 import type { DiagramTheme, DiagramViewState } from './diagram/DiagramRenderer.js';
