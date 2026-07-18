@@ -28,7 +28,7 @@ export default defineConfig({
           {
             src: '/favicon.svg',
             type: 'image/svg+xml',
-          }
+          },
         ],
       },
     }),
