@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';

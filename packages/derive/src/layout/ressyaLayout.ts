@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -13,9 +13,8 @@
  * 経由なしの切断)を決めるため忠実に再現する。在線表(_07)・運用(_11)は M1 対象外。
  */
 
-import type { Ressya, Ressyahoukou } from '@oudia/format';
-import { ekiIndexOfEkiOrder } from '@oudia/domain';
-import { getEkiJikoku, getSihatsuEki, getSyuuchakuEki } from '@oudia/domain';
+import { ekiIndexOfEkiOrder, getEkiJikoku, getSihatsuEki, getSyuuchakuEki } from '@oudia-web/domain';
+import type { Ressya, Ressyahoukou } from '@oudia-web/format';
 import type { DiaLayoutFrame, Ressyasen } from './types.js';
 
 const SECONDS_PER_DAY = 86400;

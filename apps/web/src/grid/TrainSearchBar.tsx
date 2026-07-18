@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * 列車番号検索バー(design §05 3.5 / 7.1)。ビュー内の簡易検索(Ctrl+F 傍受)。
  * Enter = 次を検索、Esc = 閉じる。一致なしは視覚フィードバック。
  */
 
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export function TrainSearchBar(props: {
   /** query で検索して一致列へフォーカスを移す。ヒットしたら true。 */

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * ファイルを開く(File System Access API 優先、input[type=file] フォールバック、
  * ドロップ対応。design/05_ui-views / M1 プラン #6)。bytes → RosenFileData。
  */
 
-import { parseNodeTree, readRosenFile } from '@oudia/format';
-import type { RosenFileData } from '@oudia/format';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 
 export interface OpenResult {
   readonly data: RosenFileData;

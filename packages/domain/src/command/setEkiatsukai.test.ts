@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // ekiJikoku/setEkiatsukai(駅扱の直接設定。駅時刻ダイアログの駅扱ラジオ)のレデューサ検証。
 
-import { describe, it, expect } from 'vitest';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia/format';
-import type { RosenFileData } from '@oudia/format';
-import { createDocumentState, executeCommand, undo, redo } from './engine.js';
-import type { EditCommand } from './types.js';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { getEkiJikoku } from '../runRange.js';
+import { createDocumentState, executeCommand, redo, undo } from './engine.js';
+import type { EditCommand } from './types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(here, '..', '..', '..', 'format', 'fixtures');

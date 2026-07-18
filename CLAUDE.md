@@ -1,4 +1,4 @@
-# oudia-second-web
+# oudia-web
 
 OuDiaSecond(Windows 向け時刻表・ダイヤグラム作成ソフト、C++/MFC、GPLv3)を TypeScript + React でブラウザ向けに再実装するプロジェクト。
 

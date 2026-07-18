@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -13,7 +13,7 @@
  * ダイアログ起動の起点になる。
  */
 
-import type { TimetableGridSpec } from '@oudia/derive';
+import type { TimetableGridSpec } from '@oudia-web/derive';
 
 /** グリッド上の 1 セル位置。 */
 export interface CellPos {

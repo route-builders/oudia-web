@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -14,12 +14,10 @@
  * カスタマイズ専用の "===="(終着)は出さない。通過時刻に "?" は付けない(CSV とは異なる)。
  */
 
-import type { Colorref, Eki, EkiJikoku, Jikoku, Ressya, Ressyahoukou } from '@oudia/format';
-import { RESSYAHOUKOU_KUDARI, encodeJikokuCsv } from '@oudia/format';
-import type { JikokuConvOptions } from '@oudia/format';
-import { ekiIndexOfEkiOrder } from '@oudia/domain';
+import { ekiIndexOfEkiOrder, getEkiJikoku, getValidSyuuchakuEki, isRunBetweenNextEki } from '@oudia-web/domain';
+import type { Colorref, Eki, EkiJikoku, Jikoku, JikokuConvOptions, Ressya, Ressyahoukou } from '@oudia-web/format';
+import { RESSYAHOUKOU_KUDARI, encodeJikokuCsv } from '@oudia-web/format';
 import { getTrackRyakusyou, isHatsuChakuHyouji } from '../csv/ekiDisplay.js';
-import { getEkiJikoku, getValidSyuuchakuEki, isRunBetweenNextEki } from '@oudia/domain';
 import type { CellSpec, CellStyle, MarkKind } from './types.js';
 import { plainStyle } from './types.js';
 

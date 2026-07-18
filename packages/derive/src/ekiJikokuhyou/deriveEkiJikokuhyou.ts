@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -12,8 +12,8 @@
  * 路線外終着など)は M7 スコープなので、各列車を単純に 1 エントリへ展開する。
  */
 
-import type { Dia, RosenFileData, Ressya, Ressyahoukou } from '@oudia/format';
-import { getSyuuchakuEki, getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia/domain';
+import { getSyuuchakuEki, getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia-web/domain';
+import type { Dia, Ressya, Ressyahoukou, RosenFileData } from '@oudia-web/format';
 
 /** 1 列車ぶんの発車内容(原典 EkiJikokuhyouContent のプレーン版サブセット)。 */
 export interface EkiJikokuhyouContent {

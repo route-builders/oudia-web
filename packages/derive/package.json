@@ -1,5 +1,5 @@
 {
-  "name": "@oudia/derive",
+  "name": "@oudia-web/derive",
   "version": "0.0.0",
   "private": true,
   "description": "導出計算(ダイヤレイアウト・cellSpec・運用探索・交差支障。DOM 非依存の純関数)",
@@ -12,8 +12,8 @@
     }
   },
   "dependencies": {
-    "@oudia/domain": "workspace:*",
-    "@oudia/format": "workspace:*"
+    "@oudia-web/domain": "workspace:*",
+    "@oudia-web/format": "workspace:*"
   },
   "scripts": {
     "build": "tsc --build"

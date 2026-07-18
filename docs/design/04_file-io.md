@@ -1,6 +1,6 @@
 # ファイル I/O 設計
 
-本書は OuDiaSecond Web 再実装におけるファイル I/O(`@oudia/format` パッケージとブラウザのファイルアクセス層)の設計書である。`docs/design/02_architecture.md` §6(ファイル I/O)・§7.1(黄金テスト)を具体化する。ファイル形式の一次仕様は `docs/analysis/03_file-format.md`(以下「分析 §03」)であり、本書の §番号参照はそれに従う。
+本書は OuDiaSecond Web 再実装におけるファイル I/O(`@oudia-web/format` パッケージとブラウザのファイルアクセス層)の設計書である。`docs/design/02_architecture.md` §6(ファイル I/O)・§7.1(黄金テスト)を具体化する。ファイル形式の一次仕様は `docs/analysis/03_file-format.md`(以下「分析 §03」)であり、本書の §番号参照はそれに従う。
 
 設計の最上位制約は **.oud2 のラウンドトリップ・バイト互換**である。本書のすべての決定はこの制約から演繹される。
 
@@ -34,7 +34,7 @@
 
 ---
 
-## 2. `@oudia/format` パッケージ構成と公開 API
+## 2. `@oudia-web/format` パッケージ構成と公開 API
 
 ### 2.1 ディレクトリ構成
 
@@ -119,7 +119,7 @@ export function serializePropertiesText(root: PtDirectory): string; // CRLF 済�
 
 ### 2.3 型のホーム(依存方向との整合)
 
-`RosenFileData` とその構成エンティティの**型宣言の実体は `@oudia/format/src/model/` に置く**。format は依存方向の最上流であり(format ← domain ← derive ← render ← app)、パーサの出力型を format 自身が持つ以外に一方向依存を満たす方法がないためである。`@oudia/domain` はこれを re-export し、アプリ・derive からは domain 経由で参照する。アーキ §3.3 の domain の責務「`RosenFileData` 型の公開(format の型宣言を re-export)」はこの分担を指す(両ドキュメントで記述を一致させてある)。format の禁止事項(ドメインロジックの混入)は維持される — model/ に置くのは**型宣言と判別可能ユニオンの定義のみ**で、コマンド・整合カスケード等の振る舞いは一切置かない。
+`RosenFileData` とその構成エンティティの**型宣言の実体は `@oudia-web/format/src/model/` に置く**。format は依存方向の最上流であり(format ← domain ← derive ← render ← app)、パーサの出力型を format 自身が持つ以外に一方向依存を満たす方法がないためである。`@oudia-web/domain` はこれを re-export し、アプリ・derive からは domain 経由で参照する。アーキ §3.3 の domain の責務「`RosenFileData` 型の公開(format の型宣言を re-export)」はこの分担を指す(両ドキュメントで記述を一致させてある)。format の禁止事項(ドメインロジックの混入)は維持される — model/ に置くのは**型宣言と判別可能ユニオンの定義のみ**で、コマンド・整合カスケード等の振る舞いは一切置かない。
 
 ### 2.4 外部依存
 
@@ -350,7 +350,7 @@ zod 等の検証層は置かず、以下の原典規則そのものを検証層�
 | HeadwaySecondMinimum ≥ HeadwaySecond → 0 に補正                                                         | CrossingCheckRule                        |
 | OuterTerminal の Ekimei 空エントリ → 無視                                                               | Eki                                      |
 
-読込後処理は原典 `from_OuPropertiesText` 末尾と同順で実行する: `adjustBrunchLoopCont()` → `adjustOperation()` → `adjustCrossingCheckRuleByEkiEdit()`(これらは `@oudia/domain` の整合カスケード関数を使う…のではなく、**format 内では行わない**。format はファイル同型の生データを返すのみとし、読込直後の adjust 呼び出しと運用探索(OperationConnect)はアプリ層が domain / derive(Worker)に依頼する。依存方向 format ← domain を守るための分担である)。
+読込後処理は原典 `from_OuPropertiesText` 末尾と同順で実行する: `adjustBrunchLoopCont()` → `adjustOperation()` → `adjustCrossingCheckRuleByEkiEdit()`(これらは `@oudia-web/domain` の整合カスケード関数を使う…のではなく、**format 内では行わない**。format はファイル同型の生データを返すのみとし、読込直後の adjust 呼び出しと運用探索(OperationConnect)はアプリ層が domain / derive(Worker)に依頼する。依存方向 format ← domain を守るための分担である)。
 
 ### 3.7 エラー・警告体系
 

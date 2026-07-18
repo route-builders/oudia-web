@@ -1,5 +1,5 @@
 {
-  "name": "oudia-second-web",
+  "name": "oudia-web",
   "version": "0.0.0",
   "private": true,
   "description": "OuDiaSecond を TypeScript + React でブラウザ向けに再実装するプロジェクト",
@@ -10,7 +10,7 @@
   },
   "packageManager": "pnpm@9.15.0",
   "scripts": {
-    "dev": "pnpm --filter @oudia/web dev",
+    "dev": "pnpm --filter @oudia-web/web dev",
     "build": "pnpm -r run build",
     "typecheck": "tsc --build",
     "lint": "pnpm run lint:eslint && pnpm run lint:deps",
@@ -20,8 +20,10 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "pnpm --filter @oudia/web e2e",
+    "e2e": "pnpm --filter @oudia-web/web e2e",
     "bench": "vitest bench --run",
+    "cf:preview": "pnpm --filter @oudia-web/web build && pnpm --filter @oudia-web/web cf:preview",
+    "cf:deploy": "pnpm --filter @oudia-web/web build && pnpm --filter @oudia-web/web cf:deploy",
     "license-check": "node scripts/license-check.mjs"
   },
   "devDependencies": {
@@ -39,6 +41,7 @@
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
     "typescript-eslint": "^8.19.1",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "wrangler": "^4.112.0"
   }
 }

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
 
-import { ErrorCode } from '../errors.js';
 import type { ReadWarning } from '../errors.js';
+import { ErrorCode } from '../errors.js';
 
 /**
  * 物理層のデコード。bytes → 文字列(LF 区切り)。

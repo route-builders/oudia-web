@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -9,12 +9,12 @@
  */
 
 import type {
-  DiagramRessyajouhouHyouji,
-  Ekijikokukeisiki,
-  Ekikibo,
-  SenStyle,
-  StopMarkDrawType,
-  TrackType,
+    DiagramRessyajouhouHyouji,
+    Ekijikokukeisiki,
+    Ekikibo,
+    SenStyle,
+    StopMarkDrawType,
+    TrackType,
 } from '../model/enums.js';
 
 // ---- Ekijikokukeisiki(駅時刻形式)----

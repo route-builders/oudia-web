@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -14,8 +14,8 @@
  * 対合写像なので同一実装で双方向に使える。
  */
 
-import type { Ressyahoukou } from '@oudia/format';
-import { RESSYAHOUKOU_KUDARI } from '@oudia/format';
+import type { Ressyahoukou } from '@oudia-web/format';
+import { RESSYAHOUKOU_KUDARI } from '@oudia-web/format';
 
 export function ekiIndexOfEkiOrder(
   ekiOrder: number,

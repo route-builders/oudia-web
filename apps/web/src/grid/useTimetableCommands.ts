@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 
@@ -14,34 +14,34 @@
  * 未配線: 連続入力(M4-2)・番線行の ±1 多態(M6)・作業行/路線外行(M7)。
  */
 
-import { useCallback } from 'react';
-import type { RosenFileData } from '@oudia/format';
-import type { TimetableGridSpec } from '@oudia/derive';
-import { buildDiaLayoutFrame, computeEstimateJikoku, transferSortOrder } from '@oudia/derive';
-import type { EkijikokuModifyOperation2, SortMethod } from '@oudia/domain';
+import type { TimetableGridSpec } from '@oudia-web/derive';
+import { buildDiaLayoutFrame, computeEstimateJikoku, transferSortOrder } from '@oudia-web/derive';
+import type { EkijikokuModifyOperation2, SortMethod } from '@oudia-web/domain';
 import {
-  copyRessyaToClipboard,
-  computePasteTrains,
-  isNullModifyOperation2,
-  findTrainToDirect,
-  getEkiJikoku,
-  getSihatsuEki,
-  getSyuuchakuEki,
-  sortRessyaOrder,
-  findEkikanSaisyouSecIndex,
-  ekiIndexOfEkiOrder,
-} from '@oudia/domain';
+    computePasteTrains,
+    copyRessyaToClipboard,
+    ekiIndexOfEkiOrder,
+    findEkikanSaisyouSecIndex,
+    findTrainToDirect,
+    getEkiJikoku,
+    getSihatsuEki,
+    getSyuuchakuEki,
+    isNullModifyOperation2,
+    sortRessyaOrder,
+} from '@oudia-web/domain';
+import type { RosenFileData } from '@oudia-web/format';
+import { useCallback } from 'react';
 import { useDocStore } from '../store/docStore.js';
+import { resolveCellTarget } from './cellSemantics.js';
 import type { JikokuStepAction, ResolvedAction } from './keymap.js';
 import type { SelectionState } from './selection.js';
 import {
-  getCommandRessyaIndices,
-  getFocusCommandRessyaIndex,
-  getSelectedRessyaIndices,
-  focusRessyaIndex,
-  hasMultiSelection,
+    focusRessyaIndex,
+    getCommandRessyaIndices,
+    getFocusCommandRessyaIndex,
+    getSelectedRessyaIndices,
+    hasMultiSelection,
 } from './selection.js';
-import { resolveCellTarget } from './cellSemantics.js';
 
 export interface TimetableCommandCtx {
   data: RosenFileData;

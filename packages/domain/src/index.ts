@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
- * `@oudia/domain` 公開 API。
+ * `@oudia-web/domain` 公開 API。
  *
  * domain は format のモデル型宣言を re-export し(file-io §2.3)、エンティティ・時刻演算・
  * コマンドレデューサ・整合カスケードを提供する。M1 では時刻演算・index 変換を実装する。
  */
 
-// ---- ファイル同型モデルの型(実体は @oudia/format/model)----
-export type * from '@oudia/format';
+// ---- ファイル同型モデルの型(実体は @oudia-web/format/model)----
+export type * from '@oudia-web/format';
 
 // ---- 時刻演算・index 変換(domain 実装)----
-export * from './jikoku.js';
 export * from './ekiOrder.js';
+export * from './jikoku.js';
 
 // ---- 列車の運行範囲導出(getSihatsuEki 系。derive から移設)----
 export * from './runRange.js';

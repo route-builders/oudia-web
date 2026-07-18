@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * ダイヤグラムビュー(読み取り専用)。derive の computeDiagramLayout + render の drawL1/L2/L3。
  * M1 はドラッグパン + ホイール縦スクロールの最小構成(ズームは M3 で拡充)。
  */
 
+import { computeDiagramLayout } from '@oudia-web/derive';
+import type { RosenFileData } from '@oudia-web/format';
+import type { DiagramTheme } from '@oudia-web/render';
+import { createViewTransform, DEFAULT_PX_PER_SEC, drawL1, drawL2, drawL3 } from '@oudia-web/render';
 import { useMemo, useRef, useState } from 'react';
-import type { RosenFileData } from '@oudia/format';
-import { computeDiagramLayout } from '@oudia/derive';
-import { createViewTransform, drawL1, drawL2, drawL3, DEFAULT_PX_PER_SEC } from '@oudia/render';
-import type { DiagramTheme } from '@oudia/render';
 import { useCanvas2d } from '../hooks/useCanvas2d.js';
-import { pinchToStep, touchDistance, dominantPinchAxis } from '../input/pinch.js';
+import { dominantPinchAxis, pinchToStep, touchDistance } from '../input/pinch.js';
 
 const THEME: DiagramTheme = {
   axisColor: 'rgb(192,192,192)',

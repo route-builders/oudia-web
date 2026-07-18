@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -13,8 +13,8 @@
  * 終着より後は出力しない)。カンマ分割・start/terminal 範囲はリーダーが担う。
  */
 
-import type { Ekiatsukai } from '../model/enums.js';
 import type { Jikoku } from '../model/basic.js';
+import type { Ekiatsukai } from '../model/enums.js';
 import { decodeJikoku, encodeJikoku, isJikokuDecodeError } from './jikoku.js';
 
 /** decode 結果(駅扱 + 着発 + 番線)。番線は範囲補正済み。 */

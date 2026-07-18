@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 
@@ -14,10 +14,10 @@
  * - int 変換不可なら閉じずに継続(範囲チェックなし)。
  */
 
+import type { EkijikokuModifyOperation2 } from '@oudia-web/domain';
+import { ekiIndexOfEkiOrder } from '@oudia-web/domain';
+import type { Eki } from '@oudia-web/format';
 import { useState } from 'react';
-import type { Eki } from '@oudia/format';
-import type { EkijikokuModifyOperation2 } from '@oudia/domain';
-import { ekiIndexOfEkiOrder } from '@oudia/domain';
 import { Dialog } from './Dialog.js';
 
 export interface ModifyEkijikokuDialogProps {

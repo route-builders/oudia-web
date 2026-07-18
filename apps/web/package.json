@@ -1,15 +1,15 @@
 {
-  "name": "@oudia/web",
+  "name": "@oudia-web/web",
   "version": "0.0.0",
   "private": true,
   "description": "React シェル UI・Zustand ストア・タブ管理・ファイルアクセス・PWA",
   "license": "GPL-3.0-or-later",
   "type": "module",
   "dependencies": {
-    "@oudia/derive": "workspace:*",
-    "@oudia/domain": "workspace:*",
-    "@oudia/format": "workspace:*",
-    "@oudia/render": "workspace:*",
+    "@oudia-web/derive": "workspace:*",
+    "@oudia-web/domain": "workspace:*",
+    "@oudia-web/format": "workspace:*",
+    "@oudia-web/render": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zustand": "^5.0.2"
@@ -21,12 +21,15 @@
     "@vitejs/plugin-react": "^4.3.4",
     "vite": "^5.4.11",
     "vite-plugin-pwa": "^1.3.0",
-    "workbox-window": "^7.4.1"
+    "workbox-window": "^7.4.1",
+    "wrangler": "^4.112.0"
   },
   "scripts": {
     "build": "tsc --build && vite build",
     "dev": "vite",
     "preview": "vite preview",
+    "cf:preview": "wrangler dev",
+    "cf:deploy": "wrangler deploy",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:install": "playwright install --with-deps chromium",

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { encodeJikokuCsv } from './jikokuConv.js';
-import type { JikokuConvOptions } from './jikokuConv.js';
+import { describe, expect, it } from 'vitest';
 import { asSeconds } from '../model/basic.js';
+import type { JikokuConvOptions } from './jikokuConv.js';
+import { encodeJikokuCsv } from './jikokuConv.js';
 
 const hms = (h: number, m: number, s: number) => asSeconds(h * 3600 + m * 60 + s);
 

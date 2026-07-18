@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // M3 編集コマンドのレデューサ + patch Undo/Redo 対称性(実 fixture sample2 で検証)。
 
-import { describe, it, expect } from 'vitest';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { parseNodeTree, readRosenFile } from '@oudia/format';
-import type { RosenFileData } from '@oudia/format';
-import { createDocumentState, executeCommand, undo, redo } from './engine.js';
-import type { EditCommand } from './types.js';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { createNullRessya } from '../ressya.js';
 import { getEkiJikoku, getSihatsuEki, getSyuuchakuEki } from '../runRange.js';
+import { createDocumentState, executeCommand, redo, undo } from './engine.js';
+import type { EditCommand } from './types.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(here, '..', '..', '..', 'format', 'fixtures');

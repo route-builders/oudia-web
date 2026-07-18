@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * 駅時刻表ビュー(読み取り専用の発車標)。derive の deriveEkiJikokuhyou VM を DOM テーブルで
  * 表示する。発車標は小規模なので Canvas グリッドではなく素の table を使う(M1 簡略)。
  */
 
+import { deriveEkiJikokuhyou, getEkimeiJikokuhyouRyaku } from '@oudia-web/derive';
+import { ekiIndexOfEkiOrder } from '@oudia-web/domain';
+import type { RosenFileData } from '@oudia-web/format';
 import { useMemo } from 'react';
-import type { RosenFileData } from '@oudia/format';
-import { deriveEkiJikokuhyou, getEkimeiJikokuhyouRyaku } from '@oudia/derive';
-import { ekiIndexOfEkiOrder } from '@oudia/domain';
 
 export function EkiJikokuhyouView(props: {
   data: RosenFileData;

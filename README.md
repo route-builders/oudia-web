@@ -1,4 +1,4 @@
-# oudia-second-web
+# oudia-web
 
 OuDiaSecond を web に移植しようプロジェクト。
 

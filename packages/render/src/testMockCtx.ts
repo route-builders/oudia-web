@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 描画コマンドを記録するモック RenderContext2D(design §6.3: スナップショットは
 // 描画コマンド列を主とする)。実 Canvas なしで render 層を単体テストする。

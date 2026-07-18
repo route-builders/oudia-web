@@ -23,7 +23,7 @@ OuDiaSecond Web 再実装プロジェクトのドキュメント一覧。
 | [01_goals-scope.md](design/01_goals-scope.md)     | プロジェクト定義書。背景・ゴールと非ゴール・対象ユーザ・互換性要件・スコープの線引き・GPLv3 ライセンス方針・成功基準                                                               |
 | [02_architecture.md](design/02_architecture.md)   | アーキテクチャ設計。技術スタック確定(TS/React/Zustand+Immer/Canvas/PWA)、pnpm workspace 構成、patch 方式 Undo、リリース 8 段階、リスクと軽減策                                     |
 | [03_data-model.md](design/03_data-model.md)       | データモデル設計。index 参照モデルの TypeScript 型定義、駅作業の判別可能ユニオン、コマンドレデューサと整合カスケード                                                               |
-| [04_file-io.md](design/04_file-io.md)             | ファイル I/O 設計。`@oudia/format` パッケージ、OuPropertiesText パーサ、世代別リーダー、テーブル駆動ライター、バイト一致黄金テスト                                                 |
+| [04_file-io.md](design/04_file-io.md)             | ファイル I/O 設計。`@oudia-web/format` パッケージ、OuPropertiesText パーサ、世代別リーダー、テーブル駆動ライター、バイト一致黄金テスト                                             |
 | [05_ui-views.md](design/05_ui-views.md)           | UI・ビュー設計。シェル UI(路線ツリー・タブ)、各ビューの仕様、ダイアログ(`usePropEdit`)、キーマップ                                                                                 |
 | [06_rendering.md](design/06_rendering.md)         | レンダリング設計。ダイヤグラム 4 レイヤ Canvas、`computeDiagramLayout`、Canvas 時刻表グリッドと `cellSpec`、印刷                                                                   |
 | [07_roadmap.md](design/07_roadmap.md)             | 開発ロードマップ。v0.1(ビューア)〜 v0.8(交差支障・印刷)の各リリースの完了条件と作業分解                                                                                            |

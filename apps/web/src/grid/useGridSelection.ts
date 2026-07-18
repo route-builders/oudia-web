@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * 時刻表グリッドの選択状態フック。selection.ts の純ロジックを React state で包む。
@@ -7,18 +7,18 @@
  * 変わった(= 編集による再構築)ときはフォーカス位置を保って範囲内へクランプする。
  */
 
+import type { TimetableGridSpec } from '@oudia-web/derive';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { TimetableGridSpec } from '@oudia/derive';
 import type { CellPos, SelectionState } from './selection.js';
 import {
-  initialSelection,
-  setFocus,
-  extendBox,
-  toggleRandom,
-  moveFocus,
-  clampSelection,
-  moveFocusCellToNext,
-  moveFocusCellToPrev,
+    clampSelection,
+    extendBox,
+    initialSelection,
+    moveFocus,
+    moveFocusCellToNext,
+    moveFocusCellToPrev,
+    setFocus,
+    toggleRandom,
 } from './selection.js';
 
 export interface GridSelectionApi {

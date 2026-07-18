@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 根拠: docs/analysis/03_file-format.md §6.3
 // 原典: libs/DcDrawLib/DcdCd/DcDrawProp/CconvDcDrawProp.cpp
 
-import { describe, it, expect } from 'vitest';
-import { decodeColor, encodeColor, colorrefToRgb, rgbToColorref } from './color.js';
+import { describe, expect, it } from 'vitest';
 import { asColorref } from '../model/basic.js';
+import { colorrefToRgb, decodeColor, encodeColor, rgbToColorref } from './color.js';
 
 const WHITE = asColorref(0x00ffffff);
 

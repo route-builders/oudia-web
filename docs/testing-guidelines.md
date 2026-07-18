@@ -59,7 +59,7 @@
 
 ### E2E テスト(Playwright)
 
-- 配置は `apps/web/e2e/*.spec.ts`(vitest の `src/**/*.test.ts` と実行系を分離。`apps/web/e2e/tsconfig.json` で型付け)。実行: `pnpm e2e`(= `pnpm --filter @oudia/web e2e`)。CI 用ブラウザ導入は `pnpm --filter @oudia/web e2e:install`
+- 配置は `apps/web/e2e/*.spec.ts`(vitest の `src/**/*.test.ts` と実行系を分離。`apps/web/e2e/tsconfig.json` で型付け)。実行: `pnpm e2e`(= `pnpm --filter @oudia-web/web e2e`)。CI 用ブラウザ導入は `pnpm --filter @oudia-web/web e2e:install`
 - M3 時点は **Chromium・タブ表示モード(display-mode: browser)のみ**。原典 Ctrl バインドを含む PWA standalone 検証と Firefox/WebKit は v0.4 の本格整備で追加する(roadmap §M3 §177 → M4)
 - グリッドは Canvas 描画のためセル文字は DOM に出ない。E2E は **DOM に現れる成果物**(ダイアログ・入力欄・ファイル名・検索バー・タブ)を検証点にする。ファイル読込は実 fixture(`sample2.oud2`)を `.app` へドロップして実経路を通す(`e2e/helpers.ts`)
 - 一次シナリオはマニュアル 2.3 章のキーボード操作手順(roadmap §M4 完了条件)。M3 骨格では「開く → 時刻表 → ダイアログ編集・コミット・Undo・コピペ・検索」を最小カバー

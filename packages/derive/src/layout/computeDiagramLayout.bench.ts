@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 代表規模(500 列車 × 50 駅)のレイアウト計算ベンチ(architecture §8.1)。
 // 予算: computeDiagramLayout 全体 < 100ms(駅・種別編集時のみ)、
 //       1 列車再計算(編集反映のホットパス)< 0.5ms。CI で前回比を追跡する。
 
 import { bench, describe } from 'vitest';
-import { computeDiagramLayout, buildDiaLayoutFrame } from '../index.js';
 import { makeBenchRosen } from '../benchFixture.js';
+import { buildDiaLayoutFrame, computeDiagramLayout } from '../index.js';
 
 const data = makeBenchRosen(50, 500);
 

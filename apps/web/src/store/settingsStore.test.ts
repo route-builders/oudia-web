@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
 // 時刻表ビュー設定ストア(localStorage 永続化)の検証。
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { useSettingsStore, DEFAULT_JIKOKUHYOU_SETTINGS } from './settingsStore.js';
+import { beforeEach, describe, expect, it } from 'vitest';
+import { DEFAULT_JIKOKUHYOU_SETTINGS, useSettingsStore } from './settingsStore.js';
 
-const KEY = 'oudia-second-web:jikokuhyouSettings:v1';
+const KEY = 'oudia-web:jikokuhyouSettings:v1';
 
 describe('settingsStore', () => {
   beforeEach(() => {

@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
 // 直通化(Ctrl+Shift+U)・分断(Ctrl+Shift+I)・時刻のみ貼り付け(Ctrl+Shift+V)の配線検証。
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { render, cleanup, fireEvent } from '@testing-library/react';
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
-import { TimetableView } from './TimetableView.js';
-import { useDocStore } from '../store/docStore.js';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
+import { useDocStore } from '../store/docStore.js';
+import { TimetableView } from './TimetableView.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROW_H = 20;

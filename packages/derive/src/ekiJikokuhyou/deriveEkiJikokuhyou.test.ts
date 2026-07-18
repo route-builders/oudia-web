@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '@oudia/format';
-import { deriveEkiJikokuhyou } from './deriveEkiJikokuhyou.js';
+import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
 import { loadFixture } from '../csv/testFixture.js';
+import { deriveEkiJikokuhyou } from './deriveEkiJikokuhyou.js';
 
 describe('deriveEkiJikokuhyou(実ファイル sample2)', () => {
   it('始発駅(下り駅Order 0)は当駅始発フラグが立ち、発車分でソートされる', () => {

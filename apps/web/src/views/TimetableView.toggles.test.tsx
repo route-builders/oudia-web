@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
 // 表示トグル群([表示]メニュー → derive オプション接続 → グリッド再構築)の統合検証。
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { render, cleanup, fireEvent, screen } from '@testing-library/react';
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
-import { TimetableView } from './TimetableView.js';
-import { useDocStore } from '../store/docStore.js';
-import { useSettingsStore, DEFAULT_JIKOKUHYOU_SETTINGS } from '../store/settingsStore.js';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
+import { useDocStore } from '../store/docStore.js';
+import { DEFAULT_JIKOKUHYOU_SETTINGS, useSettingsStore } from '../store/settingsStore.js';
+import { TimetableView } from './TimetableView.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -105,7 +105,7 @@ describe('[表示]メニュー(ビュー統合)', () => {
 
     expect(spacer.style.height).not.toBe(heightBefore); // 行数増 → 総高さ増
     expect(useSettingsStore.getState().jikokuhyou.displayAllEkiJikoku).toBe(true);
-    const raw = localStorage.getItem('oudia-second-web:jikokuhyouSettings:v1');
+    const raw = localStorage.getItem('oudia-web:jikokuhyouSettings:v1');
     expect(raw).toContain('"displayAllEkiJikoku":true');
   });
 

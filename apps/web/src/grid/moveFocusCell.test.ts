@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 原典 moveFocusCellToNext/Prev(CWndJikokuhyou.cpp 1787-2077)の純関数検証。
 // 合成グリッド: 行 = [列車番号, 種別, 着0, 番線0, 発0, 発1, 着2, 発2, 備考]、列車 2 本。
 
-import { describe, it, expect } from 'vitest';
-import type { TimetableGridSpec, JikokuhyouRowSpec } from '@oudia/derive';
+import type { JikokuhyouRowSpec, TimetableGridSpec } from '@oudia-web/derive';
+import { describe, expect, it } from 'vitest';
 import type { SelectionState } from './selection.js';
 import { moveFocusCellToNext, moveFocusCellToPrev } from './selection.js';
 

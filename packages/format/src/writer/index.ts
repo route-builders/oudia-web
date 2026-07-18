@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -19,9 +19,9 @@
  */
 
 import type { RosenFileData } from '../model/rosenFileData.js';
-import { encodeOudTextUtf8 } from '../text/encodeOudText.js';
 import { serializePropertiesText } from '../node/serialize.js';
 import type { PtDirectory } from '../node/types.js';
+import { encodeOudTextUtf8 } from '../text/encodeOudText.js';
 import { NodeBuilder, nodeOfRaw } from './builder.js';
 import { writeDispProp, writeRosen } from './current.js';
 
@@ -62,5 +62,6 @@ export function writeOud2(data: RosenFileData): Uint8Array {
   return encodeOudTextUtf8(text);
 }
 
-export { writeRosen, writeDispProp, WriteError } from './current.js';
 export { NodeBuilder, nodeOfRaw, partitionUnknownByContainer } from './builder.js';
+export { writeDispProp, WriteError, writeRosen } from './current.js';
+

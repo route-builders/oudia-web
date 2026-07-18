@@ -1,24 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 列挙 ⇄ ファイル値の対応表が読み/書きで相互逆写像であることを検証する。
 // 書き出しの値ドリフトは T1 バイト一致と原典 OuDia の再読込を同時に壊すため、
 // TO_FILE / BY_CODE / TO_CODE が FROM_FILE の厳密な逆であることを固定する。
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  DIAGRAM_RESSYAJOUHOU_FROM_FILE,
-  DIAGRAM_RESSYAJOUHOU_TO_FILE,
-  EKIJIKOKUKEISIKI_FROM_FILE,
-  EKIJIKOKUKEISIKI_TO_FILE,
-  EKIKIBO_FROM_FILE,
-  EKIKIBO_TO_FILE,
-  SENSTYLE_FROM_FILE,
-  SENSTYLE_TO_FILE,
-  STOPMARK_FROM_FILE,
-  STOPMARK_TO_FILE,
-  TRACKTYPE_BY_CODE,
-  TRACKTYPE_TO_CODE,
+    DIAGRAM_RESSYAJOUHOU_FROM_FILE,
+    DIAGRAM_RESSYAJOUHOU_TO_FILE,
+    EKIJIKOKUKEISIKI_FROM_FILE,
+    EKIJIKOKUKEISIKI_TO_FILE,
+    EKIKIBO_FROM_FILE,
+    EKIKIBO_TO_FILE,
+    SENSTYLE_FROM_FILE,
+    SENSTYLE_TO_FILE,
+    STOPMARK_FROM_FILE,
+    STOPMARK_TO_FILE,
+    TRACKTYPE_BY_CODE,
+    TRACKTYPE_TO_CODE,
 } from '../reader/enumMaps.js';
 
 describe('TrackType コード ⇄ ユニオンの相互逆写像', () => {

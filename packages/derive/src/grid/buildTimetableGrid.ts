@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -10,21 +10,18 @@
  * render 層(タスク #20)が消費するデータ契約。
  */
 
-import type { Dia, Eki, Ressya, Ressyahoukou, RosenFileData } from '@oudia/format';
-import type { JikokuConvOptions } from '@oudia/format';
-import { ekiIndexOfEkiOrder } from '@oudia/domain';
-import { getEkimeiJikokuhyouRyaku } from '../csv/ekiDisplay.js';
 import {
-  getSihatsuEki,
-  getSyuuchakuEki,
-  getValidSihatsuEki,
-  getValidSyuuchakuEki,
-  getEkiJikoku,
-} from '@oudia/domain';
-import { buildJikokuhyouRowSpec } from './colSpec.js';
-import type { JikokuhyouRowSpec } from './colSpec.js';
-import { chakuCell, hatsuCell, trackCell } from './cellSpec.js';
+    ekiIndexOfEkiOrder, getEkiJikoku, getSihatsuEki,
+    getSyuuchakuEki,
+    getValidSihatsuEki,
+    getValidSyuuchakuEki
+} from '@oudia-web/domain';
+import type { Dia, Eki, JikokuConvOptions, Ressya, Ressyahoukou, RosenFileData } from '@oudia-web/format';
+import { getEkimeiJikokuhyouRyaku } from '../csv/ekiDisplay.js';
 import type { CellContext } from './cellSpec.js';
+import { chakuCell, hatsuCell, trackCell } from './cellSpec.js';
+import type { JikokuhyouRowSpec } from './colSpec.js';
+import { buildJikokuhyouRowSpec } from './colSpec.js';
 import type { CellSpec, GridColumn, TimetableGridSpec } from './types.js';
 import { plainStyle } from './types.js';
 

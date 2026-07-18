@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { RESSYAHOUKOU_KUDARI } from '@oudia/format';
-import type { Eki, EkiJikoku, JikokuConvOptions, Ressya } from '@oudia/format';
-import { chakuCell, hatsuCell, trackCell, getKyoukaisen } from './cellSpec.js';
-import type { CellContext } from './cellSpec.js';
+import type { Eki, EkiJikoku, JikokuConvOptions, Ressya } from '@oudia-web/format';
+import { RESSYAHOUKOU_KUDARI } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
 import { ej } from '../layout/testSynthetic.js';
+import type { CellContext } from './cellSpec.js';
+import { chakuCell, getKyoukaisen, hatsuCell, trackCell } from './cellSpec.js';
 
 const CONV: JikokuConvOptions = {
   noColon: true,

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * Playwright E2E 設定(design/testing-guidelines・roadmap §M3「Playwright キーボード回帰の骨格」)。

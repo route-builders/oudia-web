@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import {
-  createViewTransform,
-  viewTransformFromZone,
-  xDgrToView,
-  yDgrToView,
-  xViewToDgr,
-  yViewToDgr,
-  DEFAULT_PX_PER_SEC,
-  PX_PER_SEC_MAX,
+    createViewTransform,
+    DEFAULT_PX_PER_SEC,
+    PX_PER_SEC_MAX,
+    viewTransformFromZone,
+    xDgrToView,
+    xViewToDgr,
+    yDgrToView,
+    yViewToDgr,
 } from './ViewTransform.js';
 
 describe('ViewTransform', () => {

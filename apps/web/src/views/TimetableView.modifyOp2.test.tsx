@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
 // 駅時刻変更ダイアログ(Ctrl+M)+ 再実行(Ctrl+'.')のビュー統合検証。
 
-import { describe, it, expect, beforeEach, afterEach, beforeAll } from 'vitest';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { render, cleanup, fireEvent, screen } from '@testing-library/react';
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
-import { TimetableView } from './TimetableView.js';
-import { useDocStore } from '../store/docStore.js';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
+import { useDocStore } from '../store/docStore.js';
+import { TimetableView } from './TimetableView.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROW_H = 20;

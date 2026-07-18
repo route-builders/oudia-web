@@ -127,16 +127,16 @@ OuDia / OuDiaSecond の鉄道・ダイヤ用語と、元ソース(C++)識別子�
 
 ## 7. ファイル形式・I/O
 
-| 日本語用語       | 元ソース識別子                                                                                            | Web 版識別子(提案)                                   | 意味                                                            |
-| ---------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | --------------------------------------------------------------- |
-| oud2 形式        | `FileType=OuDiaSecond.1.17`、`CconvCDedRosenFileData`                                                     | `@oudia/format` の `parseOud2()` / `serializeOud2()` | UTF-8(BOM 付き)+CRLF の `Key=Value` + ノード階層テキスト        |
-| oud 形式         | `FileType=OuDia.1.02`、`CconvCDedRosenFileDataOud`                                                        | `parseOud()` / `serializeOud()`                      | 本家 OuDia 形式(Shift_JIS)。読込 + 機能喪失警告付き書き出し     |
-| OuPropertiesText | `OuPropertiesText` / `CNodeContainer`                                                                     | `PropertiesNode`(パーサ/ノードツリー)                | ノード開始 `名前.`・終端 `.`・プロパティ `Key=Value` の独自文法 |
-| 世代別リーダー   | `CconvCentDedS00 / S05 / S09`                                                                             | `readerS00 / readerS05 / readerS09 / readerCurrent`  | 旧世代 oud2(1.00–1.16)・OuDia 1.02 の読込変換系統               |
-| 寛容読込規則     | (非数→0、範囲外 index→主本線補正、0x5C 救済)                                                              | format 内の正規化関数群                              | 原典で開けるファイルは必ず開けるようにする読込時補正            |
-| ウインドウ配置   | `WindowPlacement` / `ChildWindow` ノード                                                                  | 未解釈保持(`unknownNodes` と同機構)                  | Windows 版の MDI 配置。読込時保持・書出時透過書き戻しのみ       |
-| CSV 変換         | `CconvJikokuhyouCsv` / `CconvJikokuhyouCustomizeCsv` / `CconvOperationTableCsv` / `CconvEkiJikokuhyouCsv` | `jikokuhyouCsv` 等(format 内)                        | 時刻表(双方向)・カスタマイズ時刻表・運用表・駅時刻表の CSV      |
-| 自動バックアップ | `iBackupIntervalSecond = 60`                                                                              | OPFS 世代保存(編集コマンド契機・60 秒)               | タイマーではなく編集契機。クラッシュ復元の元データ              |
+| 日本語用語       | 元ソース識別子                                                                                            | Web 版識別子(提案)                                       | 意味                                                            |
+| ---------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- | --------------------------------------------------------------- |
+| oud2 形式        | `FileType=OuDiaSecond.1.17`、`CconvCDedRosenFileData`                                                     | `@oudia-web/format` の `parseOud2()` / `serializeOud2()` | UTF-8(BOM 付き)+CRLF の `Key=Value` + ノード階層テキスト        |
+| oud 形式         | `FileType=OuDia.1.02`、`CconvCDedRosenFileDataOud`                                                        | `parseOud()` / `serializeOud()`                          | 本家 OuDia 形式(Shift_JIS)。読込 + 機能喪失警告付き書き出し     |
+| OuPropertiesText | `OuPropertiesText` / `CNodeContainer`                                                                     | `PropertiesNode`(パーサ/ノードツリー)                    | ノード開始 `名前.`・終端 `.`・プロパティ `Key=Value` の独自文法 |
+| 世代別リーダー   | `CconvCentDedS00 / S05 / S09`                                                                             | `readerS00 / readerS05 / readerS09 / readerCurrent`      | 旧世代 oud2(1.00–1.16)・OuDia 1.02 の読込変換系統               |
+| 寛容読込規則     | (非数→0、範囲外 index→主本線補正、0x5C 救済)                                                              | format 内の正規化関数群                                  | 原典で開けるファイルは必ず開けるようにする読込時補正            |
+| ウインドウ配置   | `WindowPlacement` / `ChildWindow` ノード                                                                  | 未解釈保持(`unknownNodes` と同機構)                      | Windows 版の MDI 配置。読込時保持・書出時透過書き戻しのみ       |
+| CSV 変換         | `CconvJikokuhyouCsv` / `CconvJikokuhyouCustomizeCsv` / `CconvOperationTableCsv` / `CconvEkiJikokuhyouCsv` | `jikokuhyouCsv` 等(format 内)                            | 時刻表(双方向)・カスタマイズ時刻表・運用表・駅時刻表の CSV      |
+| 自動バックアップ | `iBackupIntervalSecond = 60`                                                                              | OPFS 世代保存(編集コマンド契機・60 秒)                   | タイマーではなく編集契機。クラッシュ復元の元データ              |
 
 ---
 

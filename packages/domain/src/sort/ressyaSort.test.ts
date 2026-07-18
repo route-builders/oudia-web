@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 並べ替え比較関数(CDedRessyaSoater 系)+ 最小所要時間検索の検証。
 
-import { describe, it, expect } from 'vitest';
-import type { EkiJikoku, Ressya } from '@oudia/format';
-import { asSeconds } from '@oudia/format';
+import type { EkiJikoku, Ressya } from '@oudia-web/format';
+import { asSeconds } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
 import {
-  splitRessyabangou,
-  compareRessyabangouSplit,
-  sortRessyaOrder,
-  findEkikanSaisyouSecIndex,
-  kitenCompareKey,
+    compareRessyabangouSplit,
+    findEkikanSaisyouSecIndex,
+    kitenCompareKey,
+    sortRessyaOrder,
+    splitRessyabangou,
 } from './ressyaSort.js';
 
 function ej(over: Partial<EkiJikoku> = {}): EkiJikoku {

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 旧世代リーダー(S09 / S05 / S00 / OuDia.1.02)の読込・境界検証(M1 完了条件 #1)。
 // 旧世代は現行 FileType では書き出さないためバイト一致(往復)は対象外。読込結果のモデルを検証する。
 
-import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { parseNodeTree, readRosenFile } from '../index.js';
 import type { RosenFileData } from '../model/rosenFileData.js';
 

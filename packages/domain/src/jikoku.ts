@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -11,8 +11,8 @@
  * すべての循環比較はこの compareJikoku を経由する(独自比較を書かない — data-model §4.2)。
  */
 
-import type { Jikoku, Jikan, Seconds } from '@oudia/format';
-import { asJikan, asSeconds } from '@oudia/format';
+import type { Jikan, Jikoku, Seconds } from '@oudia-web/format';
+import { asJikan, asSeconds } from '@oudia-web/format';
 
 /** 1 日の秒数(原典 TOTALSECONDS_A_DAY / iSecondsOfADay)。 */
 export const SECONDS_PER_DAY = 86400;

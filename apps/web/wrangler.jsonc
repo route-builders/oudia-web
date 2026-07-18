@@ -1,0 +1,23 @@
+{
+  // Cloudflare Workers Static Assets — @oudia-web/web(Vite SPA)の静的配信設定。
+  // サーバサイド Worker は無く、ビルド成果物(dist)をそのまま配信する assets-only 構成。
+  // 設定項目リファレンス: https://developers.cloudflare.com/workers/static-assets/
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "oudia-web",
+  // Navigation request 最適化(ナビゲーションは Worker を経由せず index.html を直接配信)を
+  // 有効化するため 2025-04-01 以降を指定。
+  "compatibility_date": "2025-04-01",
+  "assets": {
+    "directory": "./dist",
+    // SPA:存在しないパスは 200 で index.html を返し、クライアント側ルーティングに委ねる。
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [
+    {
+      "pattern": "oudia-web.route.builders",
+      "custom_domain": true
+    }
+  ],
+  "preview_urls": false,
+  "workers_dev": false
+}

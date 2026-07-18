@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -15,8 +15,8 @@
  * 編集したら INT_MAX(「保存後に Undo してから編集した」ケースで未保存扱いを維持)。
  */
 
-import { applyPatches, produceWithPatches, enablePatches } from 'immer';
-import type { RosenFileData } from '@oudia/format';
+import type { RosenFileData } from '@oudia-web/format';
+import { applyPatches, enablePatches, produceWithPatches } from 'immer';
 import { applyCommand } from './reducers.js';
 import type { EditCommand, HistoryEntry } from './types.js';
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -11,9 +11,9 @@
  * ressya/replaceRange を先に発行してから本ダイアログを開く。
  */
 
+import type { EditCommand } from '@oudia-web/domain';
+import type { Ressya, Ressyasyubetsu } from '@oudia-web/format';
 import { useEffect, useRef, useState } from 'react';
-import type { Ressya, Ressyasyubetsu } from '@oudia/format';
-import type { EditCommand } from '@oudia/domain';
 import { Dialog } from './Dialog.js';
 
 export interface RessyaPropDialogTarget {

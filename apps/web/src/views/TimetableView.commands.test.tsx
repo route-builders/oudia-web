@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
 // 編集コマンド配線の統合検証: TimetableView にフォーカスして Ctrl+C/V/Z 等を送り、
 // store.dispatch → data 更新 と Undo/Redo・クリップボードを確認する。happy-dom は
 // display-mode: standalone を報告しないため Ctrl バインドは非衝突キー(C/V/Z/Y/矢印)のみ有効。
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { render, cleanup, fireEvent, screen } from '@testing-library/react';
-import { TimetableView } from './TimetableView.js';
-import { useDocStore } from '../store/docStore.js';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
+import { useDocStore } from '../store/docStore.js';
+import { TimetableView } from './TimetableView.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 

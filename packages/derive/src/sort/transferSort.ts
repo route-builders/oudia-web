@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 
@@ -18,9 +18,9 @@
  * カスタマイズ列の併合/分割グループ維持(Ver2 の運用連携)は M7。
  */
 
-import type { Ressya } from '@oudia/format';
-import { getSyuuchakuEki, kitenCompareKey, subJikokuWrapped } from '@oudia/domain';
-import { asSeconds } from '@oudia/format';
+import { getSyuuchakuEki, kitenCompareKey, subJikokuWrapped } from '@oudia-web/domain';
+import type { Ressya } from '@oudia-web/format';
+import { asSeconds } from '@oudia-web/format';
 import type { EstimateSlot } from '../layout/ressyaLayout.js';
 
 export interface TransferSortInput {

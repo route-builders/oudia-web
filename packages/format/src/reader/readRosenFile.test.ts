@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 現行世代リーダーの検証: 実ファイル sample2.oud2 を readRosenFile で読み、
 // RosenFileData の構造(駅・種別・ダイヤ・列車・駅時刻・番線・入れ子作業)が
 // 期待どおり構築されることを確認する。
 // 根拠: docs/design/04_file-io.md §3、原典 CconvCentDed の読込ロジック。
 
-import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { parseNodeTree } from '../index.js';
-import { readRosenFile } from './index.js';
 import type { RosenFileData } from '../model/rosenFileData.js';
+import { readRosenFile } from './index.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const fixtures = join(here, '..', '..', 'fixtures');

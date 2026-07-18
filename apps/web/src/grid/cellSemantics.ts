@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -11,11 +11,11 @@
  */
 
 import type {
-  GridColumn,
-  JikokuhyouRowSpec,
-  JikokuhyouRowType,
-  TimetableGridSpec,
-} from '@oudia/derive';
+    GridColumn,
+    JikokuhyouRowSpec,
+    JikokuhyouRowType,
+    TimetableGridSpec,
+} from '@oudia-web/derive';
 
 /** セルの編集意味(フォーカス行種別 × 列種別の解決結果)。 */
 export type CellTarget =

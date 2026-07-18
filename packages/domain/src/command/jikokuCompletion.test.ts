@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { asSeconds } from '@oudia/format';
+import { asSeconds } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
 import { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
 
 const hms = (h: number, m: number, s = 0) => asSeconds(h * 3600 + m * 60 + s);

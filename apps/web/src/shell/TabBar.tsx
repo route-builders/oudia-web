@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /** タブバー(開いているビューの切替・クローズ)。 */
 
-import type { RosenFileData } from '@oudia/format';
+import type { RosenFileData } from '@oudia-web/format';
 import { useDocStore } from '../store/docStore.js';
-import { descriptorLabel } from '../tabs/viewDescriptor.js';
 import type { ViewDescriptor } from '../tabs/viewDescriptor.js';
+import { descriptorLabel } from '../tabs/viewDescriptor.js';
 
 function labelOf(data: RosenFileData, d: ViewDescriptor): string {
   const diaName = data.rosen.diaCont[d.diaIndex]?.name ?? '';

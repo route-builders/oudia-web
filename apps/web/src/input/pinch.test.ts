@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { pinchToStep, touchDistance, dominantPinchAxis, PINCH_STEP_RATIO } from './pinch.js';
+import { describe, expect, it } from 'vitest';
+import { dominantPinchAxis, PINCH_STEP_RATIO, pinchToStep, touchDistance } from './pinch.js';
 
 describe('pinchToStep(ピンチ → 離散ズーム)', () => {
   it('√2 を超えると拡大 1 段階、残スケールは基準へ戻る', () => {

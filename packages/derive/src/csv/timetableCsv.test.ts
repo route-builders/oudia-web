@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect } from 'vitest';
-import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI, asSeconds } from '@oudia/format';
 import type {
-  Dia,
-  DispProp,
-  Eki,
-  EkiJikoku,
-  Ressya,
-  Ressyasyubetsu,
-  RosenFileData,
-} from '@oudia/format';
-import { buildTimetableCsv, defaultTimetableCsvOptions } from './timetableCsv.js';
+    Dia,
+    DispProp,
+    Eki,
+    EkiJikoku,
+    Ressya,
+    Ressyasyubetsu,
+    RosenFileData,
+} from '@oudia-web/format';
+import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI, asSeconds } from '@oudia-web/format';
+import { describe, expect, it } from 'vitest';
 import { loadFixture } from './testFixture.js';
+import { buildTimetableCsv, defaultTimetableCsvOptions } from './timetableCsv.js';
 
 describe('buildTimetableCsv(実ファイル sample2 スナップショット)', () => {
   it('下り・dia0(平日ダイヤ)', () => {

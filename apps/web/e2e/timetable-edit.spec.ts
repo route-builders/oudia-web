@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 /**
  * 時刻表編集の E2E 回帰(roadmap §M3「Playwright キーボード回帰の骨格」)。
@@ -10,7 +10,7 @@
  * (ダイアログ・入力欄・ファイル名・検索バー)を対象に検証する。M3 はタブ表示モードのみ。
  */
 
-import { test, expect } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { dropFile, openTimetableDown } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {

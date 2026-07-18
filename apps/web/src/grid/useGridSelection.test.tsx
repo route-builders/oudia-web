@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
 // useGridSelection: resetKey(ダイヤ/方向)変更で初期化・同一キーのグリッド変化でクランプ維持。
 
-import { describe, it, expect } from 'vitest';
+import type { TimetableGridSpec } from '@oudia-web/derive';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
+import { act, renderHook } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { renderHook, act } from '@testing-library/react';
-import { parseNodeTree, readRosenFile } from '@oudia/format';
-import type { TimetableGridSpec } from '@oudia/derive';
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { useGridSelection } from './useGridSelection.js';
 
 const here = dirname(fileURLToPath(import.meta.url));

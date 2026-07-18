@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 
@@ -47,7 +47,7 @@ export const DEFAULT_JIKOKUHYOU_SETTINGS: JikokuhyouSettings = {
   displayParentSyubetsu: false,
 };
 
-const STORAGE_KEY = 'oudia-second-web:jikokuhyouSettings:v1';
+const STORAGE_KEY = 'oudia-web:jikokuhyouSettings:v1';
 
 function load(): JikokuhyouSettings {
   try {

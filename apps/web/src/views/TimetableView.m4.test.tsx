@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 // @vitest-environment happy-dom
 
 // M4-1 配線の統合検証: Ctrl/Alt+J/K/L の多態(駅時刻シフト・列車番号±・種別±)、
 // 通過-停車トグル、運休の独立反転、編集後のフォーカス移動(原典 moveFocusCellToNext)。
 // happy-dom はタブ表示相当だが、傍受可能な Ctrl 系は常時有効(design §4.1)。
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { render, cleanup, fireEvent } from '@testing-library/react';
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
-import { TimetableView } from './TimetableView.js';
-import { useDocStore } from '../store/docStore.js';
-import { useSettingsStore, DEFAULT_JIKOKUHYOU_SETTINGS } from '../store/settingsStore.js';
+import { fileURLToPath } from 'node:url';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
+import { useDocStore } from '../store/docStore.js';
+import { DEFAULT_JIKOKUHYOU_SETTINGS, useSettingsStore } from '../store/settingsStore.js';
+import { TimetableView } from './TimetableView.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const ROW_H = 20;

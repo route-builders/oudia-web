@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import type { RosenFileData } from '@oudia-web/format';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { useDocStore } from './docStore.js';
-import type { RosenFileData } from '@oudia/format';
 
 const FAKE_DATA = { rosen: { rosenmei: 'テスト' } } as unknown as RosenFileData;
 

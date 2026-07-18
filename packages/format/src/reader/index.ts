@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -21,10 +21,10 @@ import type { PtDirectory, PtNode } from '../node/types.js';
 import { ReadContext, ReadError } from './context.js';
 import { readDispProp, readRosen } from './current.js';
 import { fileTypeGroup } from './fileType.js';
-import { CURRENT_PROFILE } from './profile.js';
 import type { ReaderProfile } from './profile.js';
-import { S05_PROFILE } from './s05.js';
+import { CURRENT_PROFILE } from './profile.js';
 import { createS00Profile } from './s00.js';
+import { S05_PROFILE } from './s05.js';
 
 /** 読込エラーコード(原典の負コード体系。file-io §3.7)。 */
 export const ReaderErrorCode = {
@@ -118,7 +118,8 @@ export function readRosenFile(root: PtDirectory): ReadRosenFileResult {
   return { data, warnings: ctx.warnings };
 }
 
-export { readRosen, readDispProp } from './current.js';
+export { ReadContext, ReadError } from './context.js';
+export { readDispProp, readRosen } from './current.js';
 export { fileTypeGroup } from './fileType.js';
 export type { FileTypeGroup } from './fileType.js';
-export { ReadContext, ReadError } from './context.js';
+

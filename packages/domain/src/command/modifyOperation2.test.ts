@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 
 // 駅時刻変更(原典 CentDedRessya_EkijikokuModifyOperation2::execute 86-183)の検証。
 
-import { describe, it, expect } from 'vitest';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia/format';
-import type { RosenFileData } from '@oudia/format';
+import { fileURLToPath } from 'node:url';
+import { describe, expect, it } from 'vitest';
 import { createDocumentState, executeCommand, undo } from './engine.js';
 import type {
-  EditCommand,
-  EkiJikokuModifyOperation2Command,
-  EkijikokuModifyOperation2,
+    EditCommand,
+    EkiJikokuModifyOperation2Command,
+    EkijikokuModifyOperation2,
 } from './types.js';
 import { isNullModifyOperation2 } from './types.js';
 

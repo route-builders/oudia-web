@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-// Copyright (C) 2026 oudia-second-web contributors
+// Copyright (C) 2026 up-tri
 //
 // Based on OuDiaSecond (Copyright (C) 2017-2026 diagram_mania)
 // and OuDia (Copyright (C) 2006-2017 take-okm)
@@ -10,37 +10,36 @@
  * ダイアログ)を重ねる。状態変更は store.dispatch(EditCommand)経由(architecture §4.3)。
  */
 
-import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import type { RosenFileData } from '@oudia/format';
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
-import { getEkiJikoku } from '@oudia/domain';
-import { GridGeometry, drawGrid } from '@oudia/render';
-import type { GridTheme } from '@oudia/render';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { getEkiJikoku } from '@oudia-web/domain';
+import type { RosenFileData } from '@oudia-web/format';
+import type { GridTheme } from '@oudia-web/render';
+import { GridGeometry, drawGrid } from '@oudia-web/render';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { EkiJikokuDialogTarget } from '../dialog/EkiJikokuDialog.js';
+import { EkiJikokuDialog } from '../dialog/EkiJikokuDialog.js';
+import { DEFAULT_MODIFY_OP2, ModifyEkijikokuDialog } from '../dialog/ModifyEkijikokuDialog.js';
+import type { RessyaPropDialogTarget } from '../dialog/RessyaPropDialog.js';
+import { RessyaPropDialog } from '../dialog/RessyaPropDialog.js';
+import { resolveCellTarget } from '../grid/cellSemantics.js';
+import { cellViewRect, hitTestCell } from '../grid/hitTest.js';
+import { detectKeymapMode, resolveEditAction } from '../grid/keymap.js';
+import { referJikokuFor } from '../grid/referJikoku.js';
+import type { RenzokuState } from '../grid/renzoku.js';
+import {
+  calcJikokuRowToNext,
+  canEnterRenzoku,
+  isHatsuChakuHyouji,
+  renzokuEditMark,
+} from '../grid/renzoku.js';
+import { getCommandRessyaIndices, getSelectedRessyaIndices } from '../grid/selection.js';
+import { TrainSearchBar } from '../grid/TrainSearchBar.js';
+import { useGridSelection } from '../grid/useGridSelection.js';
+import { useTimetableCommands } from '../grid/useTimetableCommands.js';
+import { ViewToggleMenu } from '../grid/ViewToggleMenu.js';
 import { useCanvas2d } from '../hooks/useCanvas2d.js';
 import { useDocStore } from '../store/docStore.js';
 import { useSettingsStore } from '../store/settingsStore.js';
-import { useGridSelection } from '../grid/useGridSelection.js';
-import { hitTestCell, cellViewRect } from '../grid/hitTest.js';
-import { resolveCellTarget } from '../grid/cellSemantics.js';
-import { getSelectedRessyaIndices } from '../grid/selection.js';
-import { referJikokuFor } from '../grid/referJikoku.js';
-import { resolveEditAction, detectKeymapMode } from '../grid/keymap.js';
-import { useTimetableCommands } from '../grid/useTimetableCommands.js';
-import {
-  canEnterRenzoku,
-  calcJikokuRowToNext,
-  renzokuEditMark,
-  isHatsuChakuHyouji,
-} from '../grid/renzoku.js';
-import type { RenzokuState } from '../grid/renzoku.js';
-import { TrainSearchBar } from '../grid/TrainSearchBar.js';
-import { EkiJikokuDialog } from '../dialog/EkiJikokuDialog.js';
-import type { EkiJikokuDialogTarget } from '../dialog/EkiJikokuDialog.js';
-import { RessyaPropDialog } from '../dialog/RessyaPropDialog.js';
-import type { RessyaPropDialogTarget } from '../dialog/RessyaPropDialog.js';
-import { ModifyEkijikokuDialog, DEFAULT_MODIFY_OP2 } from '../dialog/ModifyEkijikokuDialog.js';
-import { getCommandRessyaIndices } from '../grid/selection.js';
-import { ViewToggleMenu } from '../grid/ViewToggleMenu.js';
 
 const THEME: GridTheme = {
   cellFont: { pointTextHeight: 9, facename: '', bold: false, italic: false },
@@ -56,7 +55,7 @@ const EKIMEI_W = 96;
 const FIXED_ROWS = 0; // ヘッダ固定は M1 では簡略(全行スクロール)。
 const FIXED_COLS = 2;
 
-const EMPTY_RESSYA_LIST: readonly import('@oudia/format').Ressya[] = [];
+const EMPTY_RESSYA_LIST: readonly import('@oudia-web/format').Ressya[] = [];
 
 /** 開いているダイアログの状態(initial は常に指定・キー転送でなければ undefined)。 */
 type ActiveDialog =
@@ -691,7 +690,7 @@ export function TimetableView(props: {
 /** フォーカス枠(点線)+ 選択列ハイライトを Canvas に重ね描き(design §6.1)。 */
 function drawSelectionOverlay(
   ctx: CanvasRenderingContext2D,
-  grid: import('@oudia/derive').TimetableGridSpec,
+  grid: import('@oudia-web/derive').TimetableGridSpec,
   geom: GridGeometry,
   view: { scrollX: number; scrollY: number; fixedCols: number; fixedRows: number },
   focus: { row: number; col: number },
