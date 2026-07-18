@@ -115,6 +115,64 @@ export interface RessyaModifyBangouCommand {
   delta: number;
 }
 
+/**
+ * 直通化(原典 OnJikokuhyouDirect + CentDedRessya::direct、CentDedRessya.cpp 1087-1241)。
+ * 終着側(syuuchakuIndex)と始発側(sihatsuIndex)を 1 本に接続し、始発側を削除する。
+ * 接続駅 = ekiOrder(呼出側が findTrainToDirect で相手を特定済み)。
+ */
+export interface RessyaDirectCommand {
+  type: 'ressya/direct';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  /** 終着側(フォーカス列車)。合成結果はこの位置に残る。 */
+  syuuchakuIndex: number;
+  /** 始発側(相手列車)。実行後に削除される。 */
+  sihatsuIndex: number;
+  /** 接続駅(フォーカス駅 Order)。 */
+  ekiOrder: number;
+}
+
+/**
+ * 分断(原典 OnJikokuhyouUndirect + CentDedRessya::undirect、CentDedRessya.cpp 1243-1302)。
+ * フォーカス列車を ekiOrder で 2 本に分割する(前半 = 当駅止まり、後半 = 当駅始発を
+ * 直後に挿入)。実行可否(始発 < ekiOrder < 終着・時刻あり)は呼出側の責務。
+ */
+export interface RessyaUndirectCommand {
+  type: 'ressya/undirect';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndex: number;
+  ekiOrder: number;
+}
+
+/**
+ * 時刻のみ貼り付け(原典 OnEditPasteEkiJikoku + CentDedRessya::pasteEkiJikoku、
+ * CentDedRessya.cpp 1054-1085)。src の運行なし駅は維持、停車/通過駅は駅扱上書き +
+ * 着/発は非 null のときだけ上書き + 番線・前後作業は常に上書き。列車情報は不変。
+ * 貼り付け移動量の累積加算はない(通常貼り付けとの相違)。
+ */
+export interface RessyaPasteEkiJikokuCommand {
+  type: 'ressya/pasteEkiJikoku';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndex: number;
+  /** クリップボード先頭列車(複数あっても先頭のみ使用。レデューサが deep copy)。 */
+  src: Ressya;
+}
+
+/**
+ * 列車番号で一本化(原典 OnJikokuhyouUnify + CRessyaContUnifier::unify、
+ * CRessyaContUnifier.cpp 94-303)。番号非空一致 + 種別一致 + 有効始発終着ありのペアを
+ * 連鎖併合する(インデクスの小さい方が生き残る)。時刻の整合チェックはない。
+ */
+export interface RessyaUnifyCommand {
+  type: 'ressya/unify';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  /** 対象列車(明示選択時)。null = 全列車。 */
+  targetIndices: number[] | null;
+}
+
 /** 当駅始発(原典 CentDedRessya::setSihatsuEki)。前方駅を全 None 化 + 発ありなら着消去。 */
 export interface RessyaSetSihatsuEkiCommand {
   type: 'ressya/setSihatsuEki';
@@ -333,6 +391,10 @@ export type EditCommand =
   | RessyaModifyBangouCommand
   | RessyaSetSihatsuEkiCommand
   | RessyaSetSyuuchakuEkiCommand
+  | RessyaDirectCommand
+  | RessyaUndirectCommand
+  | RessyaPasteEkiJikokuCommand
+  | RessyaUnifyCommand
   | EkiJikokuSetChakuCommand
   | EkiJikokuSetHatsuCommand
   | EkiJikokuWriteJikokuCommand

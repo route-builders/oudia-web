@@ -32,6 +32,10 @@ export type EditAction =
   | 'keiyunasi' // 経由なし
   | 'sihatsuEki' // 当駅始発
   | 'syuuchakuEki' // 当駅止り
+  | 'tyokutsuu' // Ctrl+Shift+U: 直通化
+  | 'bundan' // Ctrl+Shift+I: 分断
+  | 'pasteJikokuOnly' // Ctrl+Shift+V: 時刻のみ貼り付け
+  | 'unify' // 列車番号で一本化(原典ショートカットなし。メニューから)
   | 'toggleCanceled' // 運休トグル
   | 'swapLeft' // 左へ(並び順)
   | 'swapRight' // 右へ
@@ -168,6 +172,13 @@ export function resolveEditAction(e: KeyEventLike, mode: KeymapMode): ResolvedAc
     const variant = shift ? ('any2' as const) : ('any1' as const);
     if (mod && alt) return step(sign, variant, true);
     if (single) return step(sign, variant, false);
+  }
+
+  // ---- 直通化/分断/時刻のみ貼り付け(Ctrl+Shift または Alt+Shift)----
+  if (single && shift) {
+    if (letter === 'u') return 'tyokutsuu';
+    if (letter === 'i') return 'bundan';
+    if (letter === 'v') return 'pasteJikokuOnly';
   }
 
   // ---- 当駅始発/止り・運休・駅時刻変更(Ctrl または Alt、Shift なし)----

@@ -117,3 +117,19 @@ export function isRunBetweenNextEki(ressya: Ressya, iEkiOrder: number): boolean 
   const b = getEkiJikoku(ressya, iEkiOrder + 1).ekiatsukai;
   return (a === 'teisya' || a === 'tsuuka') && (b === 'teisya' || b === 'tsuuka');
 }
+
+/** 最初に isRunBetweenNextEki が真になる駅Order。なければ -1(原典 getRunFirstEkiOrder)。 */
+export function getRunFirstEkiOrder(ressya: Ressya): number {
+  for (let i = 0; i < ressya.ekiJikokuCont.length; i++) {
+    if (isRunBetweenNextEki(ressya, i)) return i;
+  }
+  return -1;
+}
+
+/** 最後に isRunBetweenNextEki が真になる駅Order + 1。なければ -1(原典 getRunLastEkiOrder)。 */
+export function getRunLastEkiOrder(ressya: Ressya): number {
+  for (let i = ressya.ekiJikokuCont.length - 2; i >= 0; i--) {
+    if (isRunBetweenNextEki(ressya, i)) return i + 1;
+  }
+  return -1;
+}

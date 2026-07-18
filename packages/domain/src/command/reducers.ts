@@ -13,9 +13,25 @@
  * - ekiatsukai==='none' の駅は ressyaTrackIndex=null(reader/writer と一致)。
  */
 
-import type { EkiJikoku, Jikoku, Ressya, Ressyahoukou, RosenFileData } from '@oudia/format';
+import type {
+  AfterOperation,
+  BeforeOperation,
+  EkiJikoku,
+  Jikoku,
+  Ressya,
+  Ressyahoukou,
+  RosenFileData,
+} from '@oudia/format';
 import { asSeconds } from '@oudia/format';
-import { getEkiJikoku, findRevJikokuItem } from '../runRange.js';
+import {
+  getEkiJikoku,
+  findRevJikokuItem,
+  getRunFirstEkiOrder,
+  getRunLastEkiOrder,
+  isRunBetweenNextEki,
+  getValidSihatsuEki,
+  getValidSyuuchakuEki,
+} from '../runRange.js';
 import { ekiIndexOfEkiOrder } from '../ekiOrder.js';
 import type { EditCommand } from './types.js';
 import { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
@@ -73,6 +89,48 @@ function slotAt(draft: RosenFileData, ressya: Ressya, ekiOrder: number): EkiJiko
   return ej;
 }
 
+/**
+ * 前後作業の deep copy(JSON 経由。作業は入れ子コンテナ(増結/解結の編成作業)を含むため
+ * 浅い spread では共有が起きる。Immer draft からも安全に平オブジェクト化できる)。
+ */
+function deepCloneOps<T>(ops: readonly T[]): T[] {
+  return JSON.parse(JSON.stringify(ops)) as T[];
+}
+
+/** 列車の平コピー(draft からも可。Immer draft は structuredClone 不可のため手動 deep copy)。 */
+function cloneRessyaPlain(r: Ressya): Ressya {
+  const out: Ressya = {
+    ...r,
+    ekiJikokuCont: r.ekiJikokuCont.map((ej) => ({
+      ...ej,
+      beforeOperationCont: deepCloneOps(ej.beforeOperationCont),
+      afterOperationCont: deepCloneOps(ej.afterOperationCont),
+    })),
+  };
+  if (r.unknownEntries !== undefined) out.unknownEntries = r.unknownEntries.map((u) => ({ ...u }));
+  return out;
+}
+
+/** 原典 CentDedRessya::setSihatsuEki(378-419): 前方駅を全 None 化 + 発ありなら当駅の着消去。 */
+function applySihatsuEki(draft: RosenFileData, r: Ressya, ekiOrder: number): void {
+  for (let o = 0; o < ekiOrder; o++) {
+    const ej = r.ekiJikokuCont[o];
+    if (ej !== undefined) clearToNone(ej);
+  }
+  const ej = slotAt(draft, r, ekiOrder);
+  if (ej.hatsuJikoku !== null) ej.chakuJikoku = null; // 発ありのときだけ着消去
+}
+
+/** 原典 CentDedRessya::setSyuuchakuEki(442-484): 着ありなら当駅の発消去 + 後方駅を全 None 化。 */
+function applySyuuchakuEki(draft: RosenFileData, r: Ressya, ekiOrder: number): void {
+  const ej = slotAt(draft, r, ekiOrder);
+  if (ej.chakuJikoku !== null) ej.hatsuJikoku = null; // 着ありのときだけ発消去
+  for (let o = ekiOrder + 1; o < r.ekiJikokuCont.length; o++) {
+    const later = r.ekiJikokuCont[o];
+    if (later !== undefined) clearToNone(later);
+  }
+}
+
 /** 原典 setEkiatsukai(None) の副作用を再現(全消去)。 */
 function clearToNone(ej: EkiJikoku): void {
   ej.ekiatsukai = 'none';
@@ -107,30 +165,118 @@ function addWrapped(j: Jikoku, delta: number): Jikoku {
 }
 
 /**
+ * 前作業の時刻シフト(原典 CentDedBeforeOperation::modifyOperationJikoku 400-433)。
+ * 種別ごとの対象フィールドへ delta 加算(null は不変)。増結は相手編成の前作業、
+ * 解結は後作業へ再帰。junction の JikokuData2/3 は非永続(モデル外)のため対象外。
+ */
+function shiftBeforeOps(ops: BeforeOperation[], delta: number): void {
+  for (const op of ops) {
+    switch (op.kind) {
+      case 'shunt':
+        op.shuntHatsuJikoku = addWrapped(op.shuntHatsuJikoku, delta);
+        op.shuntChakuJikoku = addWrapped(op.shuntChakuJikoku, delta);
+        break;
+      case 'connect':
+        op.connectJikoku = addWrapped(op.connectJikoku, delta);
+        shiftBeforeOps(op.formationBeforeOperationCont, delta);
+        break;
+      case 'release':
+        op.releaseJikoku = addWrapped(op.releaseJikoku, delta);
+        shiftAfterOps(op.formationAfterOperationCont, delta);
+        break;
+      case 'out':
+        op.outJikoku = addWrapped(op.outJikoku, delta);
+        break;
+      case 'outer':
+        op.outerHatsuJikoku = addWrapped(op.outerHatsuJikoku, delta);
+        op.chakuJikoku = addWrapped(op.chakuJikoku, delta);
+        break;
+      case 'junction':
+        op.kitenJikoku = addWrapped(op.kitenJikoku, delta);
+        break;
+      case 'numberChange':
+        break;
+    }
+  }
+}
+
+/** 後作業の時刻シフト(原典 CentDedAfterOperation::modifyOperationJikoku 434-464)。 */
+function shiftAfterOps(ops: AfterOperation[], delta: number): void {
+  for (const op of ops) {
+    switch (op.kind) {
+      case 'shunt':
+        op.shuntHatsuJikoku = addWrapped(op.shuntHatsuJikoku, delta);
+        op.shuntChakuJikoku = addWrapped(op.shuntChakuJikoku, delta);
+        break;
+      case 'connect':
+        op.connectJikoku = addWrapped(op.connectJikoku, delta);
+        shiftBeforeOps(op.formationBeforeOperationCont, delta);
+        break;
+      case 'release':
+        op.releaseJikoku = addWrapped(op.releaseJikoku, delta);
+        shiftAfterOps(op.formationAfterOperationCont, delta);
+        break;
+      case 'in':
+        op.inJikoku = addWrapped(op.inJikoku, delta);
+        break;
+      case 'outer':
+        op.hatsuJikoku = addWrapped(op.hatsuJikoku, delta);
+        op.outerChakuJikoku = addWrapped(op.outerChakuJikoku, delta);
+        break;
+      case 'junction':
+        op.syuutenJikoku = addWrapped(op.syuutenJikoku, delta); // Before と非対称(JD1 のみ)
+        break;
+      case 'numberChange':
+        break;
+    }
+  }
+}
+
+/**
  * 原典 modifyRessyaJikoku(CentDedRessya.cpp 717-767): 基準 (order, item) 自身を含み、
  * 着→発→次駅着…の順で末尾まで、非 null 時刻へ delta 秒加算(null はスキップして続行)。
- * 駅扱は見ない。前後作業の時刻シフトは M7(enableOperation=0 では常に空)。
+ * 駅扱は見ない。各 Order で着なら前作業・発なら後作業の時刻を無条件シフトし、
+ * 基準が(有効始発駅, 発)ならその駅の前作業も先にシフトする(732-739)。
  */
 function shiftWalkFwd(ressya: Ressya, order: number, item: 'chaku' | 'hatsu', delta: number): void {
   if (delta === 0) return;
+  if (item === 'hatsu' && order === getValidSihatsuEki(ressya)) {
+    const ej0 = ressya.ekiJikokuCont[order];
+    if (ej0 !== undefined) shiftBeforeOps(ej0.beforeOperationCont, delta);
+  }
   const cont = ressya.ekiJikokuCont;
   for (let o = order; o < cont.length; o++) {
     const ej = cont[o];
     if (ej === undefined) continue;
-    if (o > order || item === 'chaku') ej.chakuJikoku = addWrapped(ej.chakuJikoku, delta);
+    if (o > order || item === 'chaku') {
+      ej.chakuJikoku = addWrapped(ej.chakuJikoku, delta);
+      shiftBeforeOps(ej.beforeOperationCont, delta); // 着 Order → 前作業(時刻 null でも無条件)
+    }
     ej.hatsuJikoku = addWrapped(ej.hatsuJikoku, delta);
+    shiftAfterOps(ej.afterOperationCont, delta); // 発 Order → 後作業
   }
 }
 
-/** 原典 modifyRessyaJikokuRev(CentDedRessya.cpp 769-821): 基準自身を含み駅 0 の着まで逆走査。 */
+/**
+ * 原典 modifyRessyaJikokuRev(CentDedRessya.cpp 769-821): 基準自身を含み駅 0 の着まで逆走査。
+ * 基準が(有効終着駅, 着)ならその駅の後作業も先にシフト(784-791)。
+ */
 function shiftWalkRev(ressya: Ressya, order: number, item: 'chaku' | 'hatsu', delta: number): void {
   if (delta === 0) return;
+  if (item === 'chaku' && order === getValidSyuuchakuEki(ressya)) {
+    const ej0 = ressya.ekiJikokuCont[order];
+    if (ej0 !== undefined) shiftAfterOps(ej0.afterOperationCont, delta);
+  }
   const cont = ressya.ekiJikokuCont;
   for (let o = order; o >= 0; o--) {
     const ej = cont[o];
     if (ej === undefined) continue;
-    if (o < order || item === 'hatsu') ej.hatsuJikoku = addWrapped(ej.hatsuJikoku, delta);
+    if (o < order || item === 'hatsu') {
+      ej.hatsuJikoku = addWrapped(ej.hatsuJikoku, delta);
+      shiftAfterOps(ej.afterOperationCont, delta);
+    }
     ej.chakuJikoku = addWrapped(ej.chakuJikoku, delta);
+    shiftBeforeOps(ej.beforeOperationCont, delta);
   }
 }
 
@@ -269,13 +415,7 @@ export const commandReducers: {
     const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
-      if (r === undefined) continue;
-      for (let o = 0; o < cmd.ekiOrder; o++) {
-        const ej = r.ekiJikokuCont[o];
-        if (ej !== undefined) clearToNone(ej); // 前方全 None
-      }
-      const ej = slotAt(draft, r, cmd.ekiOrder);
-      if (ej.hatsuJikoku !== null) ej.chakuJikoku = null; // 発ありのときだけ着消去
+      if (r !== undefined) applySihatsuEki(draft, r, cmd.ekiOrder);
     }
   },
 
@@ -283,12 +423,154 @@ export const commandReducers: {
     const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
-      if (r === undefined) continue;
-      const ej = slotAt(draft, r, cmd.ekiOrder);
-      if (ej.chakuJikoku !== null) ej.hatsuJikoku = null; // 着ありのときだけ発消去
-      for (let o = cmd.ekiOrder + 1; o < r.ekiJikokuCont.length; o++) {
-        const later = r.ekiJikokuCont[o];
-        if (later !== undefined) clearToNone(later); // 後方全 None
+      if (r !== undefined) applySyuuchakuEki(draft, r, cmd.ekiOrder);
+    }
+  },
+
+  'ressya/direct': (draft, cmd) => {
+    // 原典 CentDedRessya::direct(1087-1241)+ OnJikokuhyouDirect(5361-5411)。
+    const cont = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    const syu = cont[cmd.syuuchakuIndex]; // 終着側(this)
+    const si = cont[cmd.sihatsuIndex]; // 始発側
+    if (syu === undefined || si === undefined) return;
+    const terminal = getRunLastEkiOrder(syu);
+    const start = getRunFirstEkiOrder(si);
+    // 原典 -1/-2/-3 相当(データ無変更。原典は空 Undo を積むがここでは no-op)。
+    if (terminal === -1 || start === -1 || !(terminal <= start)) return;
+
+    // 始発側のデータを先に平コピー(splice 前に読み切る)。
+    const siPlain = cloneRessyaPlain(si);
+
+    // (terminal, start) 間の駅は運行なし化。
+    for (let o = terminal + 1; o < start; o++) clearToNone(slotAt(draft, syu, o));
+
+    // 接続駅の合成(ベース = 終着側の start 駅。駅扱は変えない)。
+    const dst = slotAt(draft, syu, start);
+    const siStart = getEkiJikoku(siPlain, start);
+    dst.chakuJikoku = dst.chakuJikoku ?? dst.hatsuJikoku; // 着 = this の着(なければ発)
+    dst.hatsuJikoku = siStart.hatsuJikoku ?? siStart.chakuJikoku; // 発 = 始発側の発(なければ着)
+    if (terminal < start) dst.ressyaTrackIndex = siStart.ressyaTrackIndex; // 別駅なら始発側
+    autoTeisya(dst);
+
+    // start より後は始発側を丸ごとコピー。
+    for (let o = start + 1; o < draft.rosen.ekiCont.length; o++) {
+      const src = getEkiJikoku(siPlain, o);
+      const d = slotAt(draft, syu, o);
+      d.ekiatsukai = src.ekiatsukai;
+      d.chakuJikoku = src.chakuJikoku;
+      d.hatsuJikoku = src.hatsuJikoku;
+      d.ressyaTrackIndex = src.ressyaTrackIndex;
+      d.beforeOperationCont = deepCloneOps(src.beforeOperationCont);
+      d.afterOperationCont = deepCloneOps(src.afterOperationCont);
+    }
+
+    // 列車情報は終着側優先(空のときだけ始発側)。種別は常に終着側。
+    if (syu.ressyabangou === '' && siPlain.ressyabangou !== '')
+      syu.ressyabangou = siPlain.ressyabangou;
+    if (syu.ressyamei === '' && siPlain.ressyamei !== '') syu.ressyamei = siPlain.ressyamei;
+    if (syu.gousuu === '' && siPlain.gousuu !== '') syu.gousuu = siPlain.gousuu;
+    if (syu.bikou === '' && siPlain.bikou !== '') syu.bikou = siPlain.bikou;
+    syu.isNull = false;
+
+    cont.splice(cmd.sihatsuIndex, 1); // 始発側を削除
+  },
+
+  'ressya/undirect': (draft, cmd) => {
+    // 原典 CentDedRessya::undirect(1243-1302)。実行可否は呼出側(-21/-22)。
+    const cont = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    const r = cont[cmd.ressyaIndex];
+    if (r === undefined) return;
+    const ekiCount = draft.rosen.ekiCont.length;
+
+    // 前半終着: 直下に運行区間がある駅まで下げる。0 到達で -31 相当(no-op)。
+    let terminalOrd = cmd.ekiOrder;
+    while (terminalOrd > 0 && !isRunBetweenNextEki(r, terminalOrd - 1)) terminalOrd -= 1;
+    if (terminalOrd === 0) return;
+    // 後半始発: 直上に運行区間がある駅まで上げる。駅数-1 到達で -1 相当。
+    let startOrd = cmd.ekiOrder;
+    while (startOrd < ekiCount - 1 && !isRunBetweenNextEki(r, startOrd)) startOrd += 1;
+    if (startOrd >= ekiCount - 1 && !isRunBetweenNextEki(r, startOrd)) return;
+
+    const front = cloneRessyaPlain(r); // 全属性コピー(列車番号等も複製)
+    applySyuuchakuEki(draft, front, terminalOrd);
+    slotAt(draft, front, terminalOrd).afterOperationCont = []; // 当駅の後作業を全削除
+    const back = cloneRessyaPlain(r);
+    applySihatsuEki(draft, back, startOrd);
+    slotAt(draft, back, startOrd).beforeOperationCont = []; // 当駅の前作業を全削除
+
+    cont.splice(cmd.ressyaIndex, 1, front, back); // 後半はフォーカス列車の直後
+  },
+
+  'ressya/pasteEkiJikoku': (draft, cmd) => {
+    // 原典 CentDedRessya::pasteEkiJikoku(1054-1085)。
+    const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
+    for (let o = 0; o < draft.rosen.ekiCont.length; o++) {
+      const s = cmd.src.ekiJikokuCont[o];
+      if (s === undefined || s.ekiatsukai === 'none') continue; // 運行なし駅は既存維持
+      const dst = slotAt(draft, r, o);
+      dst.ekiatsukai = s.ekiatsukai;
+      if (s.chakuJikoku !== null) dst.chakuJikoku = s.chakuJikoku; // 非 null のときだけ
+      if (s.hatsuJikoku !== null) dst.hatsuJikoku = s.hatsuJikoku;
+      dst.ressyaTrackIndex = s.ressyaTrackIndex; // 番線は常に
+      dst.beforeOperationCont = deepCloneOps(s.beforeOperationCont); // 作業は常に置換
+      dst.afterOperationCont = deepCloneOps(s.afterOperationCont);
+    }
+    r.isNull = false;
+  },
+
+  'ressya/unify': (draft, cmd) => {
+    // 原典 CRessyaContUnifier::unify(170-303)。分岐環状グループ(M5)・入区出区(M7)は
+    // 未対応領域のため「同一駅 Order」のみで判定する。時刻の整合チェックは原典どおり無い。
+    const cont = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    const idxs = (
+      cmd.targetIndices === null
+        ? cont.map((_, i) => i)
+        : [...cmd.targetIndices].sort((a, b) => a - b)
+    ).filter((i) => cont[i] !== undefined);
+
+    for (let a = 0; a < idxs.length - 1; a++) {
+      const ri = cont[idxs[a] ?? -1];
+      if (ri === undefined || ri.ressyabangou === '') continue;
+      for (let b = a + 1; b < idxs.length; b++) {
+        const jIdx = idxs[b] ?? -1;
+        const rj = cont[jIdx];
+        if (rj === undefined) continue;
+        if (rj.ressyabangou !== ri.ressyabangou || rj.syubetsuIndex !== ri.syubetsuIndex) continue;
+        const iS = getValidSihatsuEki(ri);
+        const iE = getValidSyuuchakuEki(ri);
+        if (iS === -1 || iE === -1) continue;
+        const jS = getValidSihatsuEki(rj);
+        const jE = getValidSyuuchakuEki(rj);
+        if (jS === -1 || jE === -1) continue;
+        if (iE <= jS) {
+          if (iE !== jS) continue; // 接続駅が同一駅 Order のときのみ(分岐環状グループは M5)
+        } else if (jE <= iS) {
+          if (jE !== iS) continue;
+        }
+        // 運行範囲が重なる場合は追加条件なしで併合。
+        // 併合: j の有効始発〜有効終着のうち j が停車/通過の駅だけコピー。
+        for (let o = jS; o <= jE; o++) {
+          const src = getEkiJikoku(rj, o);
+          if (src.ekiatsukai !== 'teisya' && src.ekiatsukai !== 'tsuuka') continue;
+          const dst = slotAt(draft, ri, o);
+          dst.ekiatsukai = src.ekiatsukai;
+          if (src.chakuJikoku !== null) dst.chakuJikoku = src.chakuJikoku;
+          if (src.hatsuJikoku !== null) dst.hatsuJikoku = src.hatsuJikoku;
+          dst.ressyaTrackIndex = src.ressyaTrackIndex;
+          // 前作業: j の有効始発駅で i の始発が手前なら捨てる(U 131-136)。
+          if (!(o === jS && iS < jS))
+            dst.beforeOperationCont = deepCloneOps(src.beforeOperationCont);
+          // 後作業: j の有効終着駅で i の終着が後ろなら捨てる(U 137-142)。
+          if (!(o === jE && iE > jE)) dst.afterOperationCont = deepCloneOps(src.afterOperationCont);
+        }
+        ri.isNull = false;
+        cont.splice(jIdx, 1); // 生き残りは常にインデクスの小さい方
+        idxs.splice(b, 1);
+        for (let k = 0; k < idxs.length; k++) {
+          const v = idxs[k];
+          if (v !== undefined && v > jIdx) idxs[k] = v - 1;
+        }
+        b -= 1; // 連鎖併合(同番号 3 本以上)
       }
     }
   },
@@ -338,12 +620,18 @@ export const commandReducers: {
     // modifyCentDedEkiJikoku(CentDedRessya.cpp 284-356): 発優先で 1 回だけ伝播。
     if (oldHatsu !== null && decHatsu !== null) {
       const delta = subJikokuWrapped(decHatsu, oldHatsu);
+      shiftAfterOps(slot.afterOperationCont, delta); // 当駅の後作業(318-319)
+      if (cmd.ekiOrder === getValidSihatsuEki(r)) {
+        shiftBeforeOps(slot.beforeOperationCont, delta); // 有効始発駅なら前作業も発差分(320-324)
+      } else if (oldChaku !== null && decChaku !== null) {
+        shiftBeforeOps(slot.beforeOperationCont, subJikokuWrapped(decChaku, oldChaku)); // 着差分(325-332)
+      }
       shiftWalkFwd(r, cmd.ekiOrder + 1, 'chaku', delta); // 次駅の着以後
     } else if (oldChaku !== null && decChaku !== null) {
       const delta = subJikokuWrapped(decChaku, oldChaku);
-      shiftWalkFwd(r, cmd.ekiOrder, 'hatsu', delta); // 当該駅の発以後(発が非 null なら発も動く)
+      shiftBeforeOps(slot.beforeOperationCont, delta); // 当駅の前作業(347-348)
+      shiftWalkFwd(r, cmd.ekiOrder, 'hatsu', delta); // 当該駅の発以後(当駅後作業はループ内で)
     }
-    // 前後作業の時刻シフト(318-332)は M7(enableOperation=0 では常に空)。
   },
 
   'ekiJikoku/shiftJikoku': (draft, cmd) => {
@@ -548,6 +836,18 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'ressya/setSyuuchakuEki':
       commandReducers['ressya/setSyuuchakuEki'](draft, cmd);
+      return;
+    case 'ressya/direct':
+      commandReducers['ressya/direct'](draft, cmd);
+      return;
+    case 'ressya/undirect':
+      commandReducers['ressya/undirect'](draft, cmd);
+      return;
+    case 'ressya/pasteEkiJikoku':
+      commandReducers['ressya/pasteEkiJikoku'](draft, cmd);
+      return;
+    case 'ressya/unify':
+      commandReducers['ressya/unify'](draft, cmd);
       return;
     case 'ekiJikoku/setChaku':
       commandReducers['ekiJikoku/setChaku'](draft, cmd);

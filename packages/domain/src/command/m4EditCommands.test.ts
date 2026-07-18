@@ -169,6 +169,42 @@ describe('ekiJikoku/shiftJikoku(modifyRessyaJikoku 忠実)', () => {
       deltaSeconds: -60,
     });
   });
+
+  it('作業時刻もシフトされる(着 Order=前作業・発 Order=後作業。原典 753-762)', () => {
+    // 列車 0: 駅 0 前作業 out(86340)/ 駅 13 前作業 release(2040)/ 駅 32 後作業 in(4290)。
+    const next = run(base(), {
+      type: 'ekiJikoku/shiftJikoku',
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndices: [0],
+      ekiOrder: 0,
+      item: 'chaku',
+      deltaSeconds: 60,
+    });
+    const cont = next.rosen.diaCont[DIA]!.ressyaCont[DOWN][0]!.ekiJikokuCont;
+    const out = cont[0]!.beforeOperationCont[0]!;
+    expect(out.kind).toBe('out');
+    if (out.kind === 'out') expect(out.outJikoku).toBe(0); // 86340 + 60 → 24h wrap
+    const rel = cont[13]!.beforeOperationCont[0]!;
+    if (rel.kind === 'release') expect(rel.releaseJikoku).toBe(2040 + 60);
+    const inn = cont[32]!.afterOperationCont[0]!;
+    if (inn.kind === 'in') expect(inn.inJikoku).toBe(4290 + 60);
+  });
+
+  it('(有効始発駅, 発)基準では当駅の前作業もシフトされる(原典 732-739)', () => {
+    const next = run(base(), {
+      type: 'ekiJikoku/shiftJikoku',
+      diaIndex: DIA,
+      houkou: DOWN,
+      ressyaIndices: [0],
+      ekiOrder: 0,
+      item: 'hatsu', // 駅 0 は有効始発駅(発 0・次駅停車)
+      deltaSeconds: 60,
+    });
+    const out =
+      next.rosen.diaCont[DIA]!.ressyaCont[DOWN][0]!.ekiJikokuCont[0]!.beforeOperationCont[0]!;
+    if (out.kind === 'out') expect(out.outJikoku).toBe(0); // 1 回だけシフト(二重にならない)
+  });
 });
 
 describe('ekiJikoku/writeJikoku(modifyCentDedEkiJikoku 忠実)', () => {

@@ -18,11 +18,24 @@ import { useCallback } from 'react';
 import type { RosenFileData } from '@oudia/format';
 import type { TimetableGridSpec } from '@oudia/derive';
 import type { EkijikokuModifyOperation2 } from '@oudia/domain';
-import { copyRessyaToClipboard, computePasteTrains, isNullModifyOperation2 } from '@oudia/domain';
+import {
+  copyRessyaToClipboard,
+  computePasteTrains,
+  isNullModifyOperation2,
+  findTrainToDirect,
+  getEkiJikoku,
+  getSihatsuEki,
+  getSyuuchakuEki,
+} from '@oudia/domain';
 import { useDocStore } from '../store/docStore.js';
 import type { JikokuStepAction, ResolvedAction } from './keymap.js';
 import type { SelectionState } from './selection.js';
-import { getEffectiveRessyaIndices, focusRessyaIndex } from './selection.js';
+import {
+  getEffectiveRessyaIndices,
+  getSelectedRessyaIndices,
+  focusRessyaIndex,
+  hasMultiSelection,
+} from './selection.js';
 import { resolveCellTarget } from './cellSemantics.js';
 
 export interface TimetableCommandCtx {
@@ -317,6 +330,73 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
             ressyaIndices: targets,
           });
           moveNext(true); // 原典 9994
+          return;
+        }
+
+        case 'tyokutsuu': {
+          // 原典 OnJikokuhyouDirect(5284-5437): 複数選択中は不可(ECreateCmd_Focus)、
+          // フォーカスは駅時刻/番線行かつ終着駅以降、相手不在なら無効。
+          if (ekiOrder === null || hasMultiSelection(selection, grid)) return;
+          const fi = focusRessyaIndex(selection, grid);
+          if (fi === null) return;
+          const focusTrain = list[fi];
+          if (focusTrain === undefined) return;
+          if (ekiOrder < getSyuuchakuEki(focusTrain)) return; // -13
+          const partner = findTrainToDirect(list, fi, ekiOrder);
+          if (partner === null) return; // -14
+          dispatch({
+            type: 'ressya/direct',
+            diaIndex,
+            houkou,
+            syuuchakuIndex: fi,
+            sihatsuIndex: partner,
+            ekiOrder,
+          });
+          moveNext(true); // 原典 5407-5411
+          return;
+        }
+
+        case 'bundan': {
+          // 原典 OnJikokuhyouUndirect(5438-5576): 始発 < フォーカス駅 < 終着(厳密)かつ
+          // フォーカス駅に着か発の時刻があること。
+          if (ekiOrder === null || hasMultiSelection(selection, grid)) return;
+          const fi = focusRessyaIndex(selection, grid);
+          if (fi === null) return;
+          const focusTrain = list[fi];
+          if (focusTrain === undefined) return;
+          if (!(getSihatsuEki(focusTrain) < ekiOrder && ekiOrder < getSyuuchakuEki(focusTrain))) {
+            return; // -21
+          }
+          const slot = getEkiJikoku(focusTrain, ekiOrder);
+          if (slot.chakuJikoku === null && slot.hatsuJikoku === null) return; // -22
+          dispatch({ type: 'ressya/undirect', diaIndex, houkou, ressyaIndex: fi, ekiOrder });
+          moveNext(true); // 原典 5546-5551
+          return;
+        }
+
+        case 'pasteJikokuOnly': {
+          // 原典 OnEditPasteEkiJikoku(3881-3972): 内部形式のみ・先頭 1 本のみ使用・
+          // フォーカス行の駅種別チェックなし・貼り付け移動量の累積なし・フォーカス移動なし。
+          if (clipboard === null || hasMultiSelection(selection, grid)) return;
+          const fi = focusRessyaIndex(selection, grid);
+          if (fi === null) return;
+          const src = clipboard.trains[0];
+          if (src === undefined) return;
+          dispatch({ type: 'ressya/pasteEkiJikoku', diaIndex, houkou, ressyaIndex: fi, src });
+          return;
+        }
+
+        case 'unify': {
+          // 原典 OnJikokuhyouUnify(4494-4587): フォーカスは駅時刻/番線行。
+          // 選択なし → 全列車、選択あり → 選択列車のみ。フォーカス移動なし。
+          if (ekiOrder === null) return;
+          const explicit = getSelectedRessyaIndices(selection, grid);
+          dispatch({
+            type: 'ressya/unify',
+            diaIndex,
+            houkou,
+            targetIndices: explicit.length > 0 ? explicit : null,
+          });
           return;
         }
 

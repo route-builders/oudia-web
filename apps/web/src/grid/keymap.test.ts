@@ -54,8 +54,17 @@ describe('resolveEditAction', () => {
     expect(resolveEditAction(ev({ key: 'u', ctrlKey: true }), TAB)).toBe('sihatsuEki');
   });
 
-  it('Ctrl+Shift+U(直通化)は M4-4 まで未対応 → null', () => {
-    expect(resolveEditAction(ev({ key: 'u', ctrlKey: true, shiftKey: true }), PWA)).toBeNull();
+  it('Ctrl+Shift+U/I/V = 直通化/分断/時刻のみ貼り付け(Alt+Shift でも)', () => {
+    expect(resolveEditAction(ev({ key: 'u', ctrlKey: true, shiftKey: true }), TAB)).toBe(
+      'tyokutsuu',
+    );
+    expect(resolveEditAction(ev({ key: 'i', ctrlKey: true, shiftKey: true }), TAB)).toBe('bundan');
+    expect(resolveEditAction(ev({ key: 'v', ctrlKey: true, shiftKey: true }), TAB)).toBe(
+      'pasteJikokuOnly',
+    );
+    expect(resolveEditAction(ev({ key: 'u', altKey: true, shiftKey: true }), TAB)).toBe(
+      'tyokutsuu',
+    );
   });
 
   it('通過 = テンキー- / Ctrl+-(両モード)、経由なし = テンキー/ ', () => {
