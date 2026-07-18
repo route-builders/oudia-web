@@ -50,6 +50,10 @@ export type {
 export { computeDiagramLayout } from './layout/computeDiagramLayout.js';
 export type { ComputeDiagramLayoutResult } from './layout/computeDiagramLayout.js';
 export { buildDiaLayoutFrame, findEkikanSaisyouSec } from './layout/ekiLayout.js';
+export { computeEstimateJikoku } from './layout/ressyaLayout.js';
+export type { EstimateSlot } from './layout/ressyaLayout.js';
+export { transferSortOrder } from './sort/transferSort.js';
+export type { TransferSortInput } from './sort/transferSort.js';
 export type {
   DiagramLayout,
   DiaLayoutFrame,

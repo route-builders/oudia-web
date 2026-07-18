@@ -736,8 +736,17 @@ export function readDispProp(dir: PtDirectory): DispProp {
 
   const ekimeiLength = readInt(cur, 'EkimeiLength', def.ekimeiLength);
   const jikokuhyouRessyaWidth = readInt(cur, 'JikokuhyouRessyaWidth', def.jikokuhyouRessyaWidth);
-  const anySecondIncDec1 = readInt(cur, 'AnySecondIncDec1', def.anySecondIncDec1);
-  const anySecondIncDec2 = readInt(cur, 'AnySecondIncDec2', def.anySecondIncDec2);
+  // 原典 CconvCdDedDispProp: -60 未満は既定値のまま、それ以外は setter が [-60,60] へクランプ
+  // (CdDedDispProp.cpp 359-390)。原典もクランプ後の値を書き出すため byte 一致に影響しない。
+  const clampAnySec = (v: number, defVal: number): number => (v < -60 ? defVal : Math.min(v, 60));
+  const anySecondIncDec1 = clampAnySec(
+    readInt(cur, 'AnySecondIncDec1', def.anySecondIncDec1),
+    def.anySecondIncDec1,
+  );
+  const anySecondIncDec2 = clampAnySec(
+    readInt(cur, 'AnySecondIncDec2', def.anySecondIncDec2),
+    def.anySecondIncDec2,
+  );
 
   // DisplayRessyamei: 既定 true。"0" のときのみ false(原典)。
   const displayRessyameiRaw = cur.value('DisplayRessyamei');

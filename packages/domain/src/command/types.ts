@@ -70,13 +70,124 @@ export interface RessyaSetPropCommand {
     | { key: 'bikou'; value: string };
 }
 
-/** 運休設定(原典 OnJikokuhyouCanceled → setIsCanceled)。反転結果を呼出側で計算して渡す。 */
+/** 運休設定(setIsCanceled の直接指定形。UI の運休トグルは ressya/toggleCanceled を使う)。 */
 export interface RessyaSetCanceledCommand {
   type: 'ressya/setCanceled';
   diaIndex: number;
   houkou: Ressyahoukou;
   ressyaIndices: number[];
   canceled: boolean;
+}
+
+/**
+ * 運休トグル(原典 OnJikokuhyouCanceled、CWjkState_Ressyahensyu.cpp 9942-9997)。
+ * 各列車を独立に反転する(setIsCanceled(!isCanceled())。代表値方式ではない)。
+ */
+export interface RessyaToggleCanceledCommand {
+  type: 'ressya/toggleCanceled';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+}
+
+/**
+ * 種別を前/次へ(原典 ChangeRessyasyubetsuPrev/Next、CWjkState_Ressyahensyu.cpp 14585-14621)。
+ * 各列車の syubetsuIndex を step 分進め、端でラップする。
+ */
+export interface RessyaStepSyubetsuCommand {
+  type: 'ressya/stepSyubetsu';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  step: 1 | -1;
+}
+
+/**
+ * 列車番号/号数の末尾連続数字への加算(原典 modifyRessyaBangou/modifyGou、
+ * CentDedRessya.cpp 822-1010)。数字なしは no-op、負は 0 クランプ、列車番号は元桁数 0 詰め。
+ */
+export interface RessyaModifyBangouCommand {
+  type: 'ressya/modifyBangou';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  target: 'ressyabangou' | 'gousuu';
+  delta: number;
+}
+
+/**
+ * 直通化(原典 OnJikokuhyouDirect + CentDedRessya::direct、CentDedRessya.cpp 1087-1241)。
+ * 終着側(syuuchakuIndex)と始発側(sihatsuIndex)を 1 本に接続し、始発側を削除する。
+ * 接続駅 = ekiOrder(呼出側が findTrainToDirect で相手を特定済み)。
+ */
+export interface RessyaDirectCommand {
+  type: 'ressya/direct';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  /** 終着側(フォーカス列車)。合成結果はこの位置に残る。 */
+  syuuchakuIndex: number;
+  /** 始発側(相手列車)。実行後に削除される。 */
+  sihatsuIndex: number;
+  /** 接続駅(フォーカス駅 Order)。 */
+  ekiOrder: number;
+}
+
+/**
+ * 分断(原典 OnJikokuhyouUndirect + CentDedRessya::undirect、CentDedRessya.cpp 1243-1302)。
+ * フォーカス列車を ekiOrder で 2 本に分割する(前半 = 当駅止まり、後半 = 当駅始発を
+ * 直後に挿入)。実行可否(始発 < ekiOrder < 終着・時刻あり)は呼出側の責務。
+ */
+export interface RessyaUndirectCommand {
+  type: 'ressya/undirect';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndex: number;
+  ekiOrder: number;
+}
+
+/**
+ * 時刻のみ貼り付け(原典 OnEditPasteEkiJikoku + CentDedRessya::pasteEkiJikoku、
+ * CentDedRessya.cpp 1054-1085)。src の運行なし駅は維持、停車/通過駅は駅扱上書き +
+ * 着/発は非 null のときだけ上書き + 番線・前後作業は常に上書き。列車情報は不変。
+ * 貼り付け移動量の累積加算はない(通常貼り付けとの相違)。
+ */
+export interface RessyaPasteEkiJikokuCommand {
+  type: 'ressya/pasteEkiJikoku';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndex: number;
+  /** クリップボード先頭列車(複数あっても先頭のみ使用。レデューサが deep copy)。 */
+  src: Ressya;
+}
+
+/**
+ * 列車番号で一本化(原典 OnJikokuhyouUnify + CRessyaContUnifier::unify、
+ * CRessyaContUnifier.cpp 94-303)。番号非空一致 + 種別一致 + 有効始発終着ありのペアを
+ * 連鎖併合する(インデクスの小さい方が生き残る)。時刻の整合チェックはない。
+ */
+export interface RessyaUnifyCommand {
+  type: 'ressya/unify';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  /** 対象列車(明示選択時)。null = 全列車。 */
+  targetIndices: number[] | null;
+}
+
+/**
+ * 選択スロット間の並べ替え適用(原典の並べ替えコマンド = CRfEditCmd_Ressya 範囲置換)。
+ * 並べ替えの計算(比較・乗継配置)は呼出側(domain/sort・derive)で行い、結果の
+ * permutation をここで適用する。targetIndices[k] の位置に、元の
+ * targetIndices[order[k]] の列車が入る。非連続選択では選択位置だけが入れ替わり、
+ * 間の非選択列車は絶対位置を維持する(原典 4479-4486)。
+ */
+export interface RessyaReorderCommand {
+  type: 'ressya/reorder';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  /** 並べ替え対象の実 index(昇順)。 */
+  targetIndices: number[];
+  /** targetIndices 内位置の permutation。 */
+  order: number[];
 }
 
 /** 当駅始発(原典 CentDedRessya::setSihatsuEki)。前方駅を全 None 化 + 発ありなら着消去。 */
@@ -100,7 +211,7 @@ export interface RessyaSetSyuuchakuEkiCommand {
 // ---- 駅時刻(ekiJikoku)----
 
 /**
- * 着時刻設定(グリッド入力/ダイアログ)。原典 setChakujikoku 経由(none→teisya 自動昇格)。
+ * 着時刻設定(グリッド入力/連続入力)。原典 setChakujikoku 経由(none→teisya 自動昇格)。
  * input は生文字列。レデューサが decode + 時補完。空文字 = クリア。
  */
 export interface EkiJikokuSetChakuCommand {
@@ -110,8 +221,6 @@ export interface EkiJikokuSetChakuCommand {
   ressyaIndex: number;
   ekiOrder: number;
   input: string;
-  /** 繰上げ繰下げ(発以後へ delta 伝播)。既定 false = 当該駅のみ。 */
-  modify?: boolean;
 }
 
 /** 発時刻設定。原典 setHatsujikoku 経由(none→teisya 自動昇格)。 */
@@ -122,7 +231,50 @@ export interface EkiJikokuSetHatsuCommand {
   ressyaIndex: number;
   ekiOrder: number;
   input: string;
-  modify?: boolean;
+}
+
+/**
+ * 着・発の一括書込(駅時刻ダイアログの確定経路)。
+ * modify=true は原典 CentDedRessya::modifyCentDedEkiJikoku(CentDedRessya.cpp 284-356)の
+ * 繰上げ・繰下げ: 発が前後とも非 null なら発差分を次駅の着以後へ、そうでなく着が前後とも
+ * 非 null なら着差分を当該駅の発以後へ伝播する(発優先。他は伝播なし)。
+ * modify=false は setCentDedEkiJikoku 相当(置換のみ)。
+ */
+export interface EkiJikokuWriteJikokuCommand {
+  type: 'ekiJikoku/writeJikoku';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndex: number;
+  ekiOrder: number;
+  /** 生入力(decode + 時補完はレデューサ)。空文字 = クリア。 */
+  chakuInput: string;
+  hatsuInput: string;
+  /** 繰上げ・繰下げ(ダイアログのチェック。原典既定 ON)。 */
+  modify: boolean;
+  /**
+   * 駅扱の同時変更(teisya/tsuuka)。原典 UiDataToTarget は駅扱 + 着発を 1 つの
+   * EkiJikoku として書くため、ダイアログ OK 1 回 = Undo 1 単位になるようここで併走させる。
+   * none 化は時刻書込がないため別コマンド(setEkiatsukai)のまま。
+   */
+  ekiatsukai?: 'teisya' | 'tsuuka';
+}
+
+/**
+ * 駅時刻の連続シフト(原典 CentDedRessya::modifyRessyaJikoku / modifyRessyaJikokuRev、
+ * CentDedRessya.cpp 717-821)。基準 (ekiOrder, item) 自身を含み、rev=false は末尾方向
+ * (着→発→次駅着…)、rev=true は起点方向(発→着→前駅発…)の全非 null 時刻へ
+ * deltaSeconds を加算する(24h wrap)。駅扱は見ない。null はスキップして走査続行。
+ */
+export interface EkiJikokuShiftJikokuCommand {
+  type: 'ekiJikoku/shiftJikoku';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  ekiOrder: number;
+  item: 'chaku' | 'hatsu';
+  deltaSeconds: number;
+  /** true = Rev 系(フォーカス以前へ伝播)。既定 false。 */
+  rev?: boolean;
 }
 
 /** 番線設定(原典 setRessyaTrackIndex)。null = 未設定。 */
@@ -143,11 +295,85 @@ export interface EkiJikokuClearCommand {
   ressyaIndices: number[];
   ekiOrder: number;
   target: 'chaku' | 'hatsu';
+  /**
+   * 連続入力モード版(CWjkState_Renzoku.cpp 1118-1138): 消去前に駅扱をいったん停車にする。
+   * 通過駅の片側消去で駅扱が停車へ変わる点が通常版と異なる。既定 false。
+   */
+  teisyaFirst?: boolean;
+}
+
+/**
+ * 駅時刻変更の操作内容(原典 CentDedRessya_EkijikokuModifyOperation2)。
+ * ビュー単位で記憶され、[再実行](Ctrl+'.')で別セルへ連続適用される。
+ * seconds は秒単位(Ver2.00.05 で分→秒化)。
+ */
+export interface EkijikokuModifyOperation2 {
+  /** [駅扱] 変更する。 */
+  setEkiatsukai: boolean;
+  /** 変更後の駅扱(setEkiatsukai=true のとき有効)。 */
+  ekiatsukai: Ekiatsukai;
+  /** [駅時刻] nop=変更しない / modify=繰下げ(負で繰上げ) / copy=他駅からコピー / toNull=設定なし化。 */
+  operation: 'nop' | 'modify' | 'copy' | 'toNull';
+  /** シフト秒数(modify)/ コピー元への加算秒数(copy)。 */
+  seconds: number;
+  /** コピー元の時刻 Order(copy のとき)。記憶時は絶対(適用先が変わっても固定)。 */
+  copySrc: { ekiOrder: number; item: 'chaku' | 'hatsu' } | null;
+}
+
+/** NULL 状態(未実行 or「変更しない」で OK)。再実行は無効。 */
+export function isNullModifyOperation2(op: EkijikokuModifyOperation2): boolean {
+  return !op.setEkiatsukai && op.operation === 'nop';
+}
+
+/**
+ * 駅時刻変更の適用(原典 CentDedRessya_EkijikokuModifyOperation2::execute +
+ * execCdModifyEkijikokuCmd)。①駅扱変更 → ②時刻変更(modify のみフォーカス以後へ伝播、
+ * copy/toNull は片側のみ・伝播なし)の順。選択全列車へ同じ時刻 Order で適用し 1 Undo 単位。
+ */
+export interface EkiJikokuModifyOperation2Command {
+  type: 'ekiJikoku/modifyOperation2';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  ekiOrder: number;
+  /** 適用先の着/発(その時のフォーカスセルに従う)。 */
+  item: 'chaku' | 'hatsu';
+  op: EkijikokuModifyOperation2;
+}
+
+/**
+ * 連続入力モードの分 2 桁確定(原典 CWjkState_Renzoku::OnChar 919-1028)。
+ * 時 = findrevJikoku(直前の非 null 時刻)の「時」、分 = minutes、秒 = 0。直前より前に
+ * なるなら +1 時間(24h wrap)。運行なし駅は停車化 + 基準番線(主本線)適用、
+ * 停車/通過駅は明示停車化(番線不変)。書込先はフォーカス行(item)。
+ */
+export interface EkiJikokuRenzokuInputCommand {
+  type: 'ekiJikoku/renzokuInput';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndex: number;
+  ekiOrder: number;
+  item: 'chaku' | 'hatsu';
+  /** 入力された分(0-59)。 */
+  minutes: number;
 }
 
 /** 通過(原典 OnJikokuhyouTsuuka)。ekiatsukai=tsuuka + 両時刻 null(破壊的)。 */
 export interface EkiJikokuToggleTsuukaCommand {
   type: 'ekiJikoku/toggleTsuuka';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  ekiOrder: number;
+}
+
+/**
+ * 通過-停車トグル(原典 OnJikokuhyouTsuukateisya、CWjkState_Ressyahensyu.cpp 4919-5042)。
+ * 各列車が自身の駅扱で独立に 3 分岐: 通過→停車 / 停車→通過(いずれも時刻・番線維持)/
+ * 運行なし→通過(基準番線=主本線を設定)。代表値方式ではない。
+ */
+export interface EkiJikokuToggleTsuukaTeisyaCommand {
+  type: 'ekiJikoku/toggleTsuukaTeisya';
   diaIndex: number;
   houkou: Ressyahoukou;
   ressyaIndices: number[];
@@ -183,13 +409,26 @@ export type EditCommand =
   | RessyaSwapCommand
   | RessyaSetPropCommand
   | RessyaSetCanceledCommand
+  | RessyaToggleCanceledCommand
+  | RessyaStepSyubetsuCommand
+  | RessyaModifyBangouCommand
   | RessyaSetSihatsuEkiCommand
   | RessyaSetSyuuchakuEkiCommand
+  | RessyaDirectCommand
+  | RessyaUndirectCommand
+  | RessyaPasteEkiJikokuCommand
+  | RessyaUnifyCommand
+  | RessyaReorderCommand
   | EkiJikokuSetChakuCommand
   | EkiJikokuSetHatsuCommand
+  | EkiJikokuWriteJikokuCommand
+  | EkiJikokuShiftJikokuCommand
   | EkiJikokuSetTrackCommand
   | EkiJikokuClearCommand
+  | EkiJikokuRenzokuInputCommand
+  | EkiJikokuModifyOperation2Command
   | EkiJikokuToggleTsuukaCommand
+  | EkiJikokuToggleTsuukaTeisyaCommand
   | EkiJikokuSetKeiyunasiCommand
   | EkiJikokuSetEkiatsukaiCommand;
 

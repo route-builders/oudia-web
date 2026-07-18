@@ -132,9 +132,11 @@ export function getSelectedRessyaIndices(state: SelectionState, grid: TimetableG
 }
 
 /**
- * コマンドの実効対象となる列車 index(昇順)。原典 ECreateCmd_Select/Focus の解決:
+ * コマンドの実効対象となる列車 index(昇順)。
  * 明示選択があればそれを、無ければフォーカスセルの 1 列車を対象とする。
  * フォーカスが列車列でなく明示選択も無ければ空。
+ * ※原典 ECreateCmd_Select の「選択 1 列車のみは無効」規則は含まない
+ *   (それを要する経路は getCommandRessyaIndices を使う)。
  */
 export function getEffectiveRessyaIndices(
   state: SelectionState,
@@ -146,6 +148,32 @@ export function getEffectiveRessyaIndices(
   return fi === null ? [] : [fi];
 }
 
+/**
+ * Select 系コマンドの対象列車(原典 createCmd(ECreateCmd_Select)、CWndJikokuhyou.cpp
+ * 2383-2500)。セル選択なし → フォーカス列車 1 本 / 選択あり → 選択列車が 2 本以上の
+ * ときのみ有効(1 本だけの選択はコマンド無効 = 空配列)。
+ */
+export function getCommandRessyaIndices(state: SelectionState, grid: TimetableGridSpec): number[] {
+  const selected = getSelectedRessyaIndices(state, grid);
+  if (selected.length === 1) return []; // 原典 2496: contiRessyaIndex.size() > 1 のみ成立
+  if (selected.length > 1) return selected;
+  const fi = focusRessyaIndex(state, grid);
+  return fi === null ? [] : [fi];
+}
+
+/**
+ * Focus 系コマンド(直通化/分断/時刻のみ貼り付け/連続入力)の対象列車
+ * (原典 createCmd(ECreateCmd_Focus)、CWndJikokuhyou.cpp 2346-2380)。
+ * セル選択が 1 つでもあれば無効(getSelectedCellCount()==0 必須)。
+ */
+export function getFocusCommandRessyaIndex(
+  state: SelectionState,
+  grid: TimetableGridSpec,
+): number | null {
+  if (getSelectedRessyaIndices(state, grid).length > 0) return null;
+  return focusRessyaIndex(state, grid);
+}
+
 /** フォーカスセルの列車 index(列車列でなければ null)。 */
 export function focusRessyaIndex(state: SelectionState, grid: TimetableGridSpec): number | null {
   const col = grid.columns[state.focus.col];
@@ -155,6 +183,130 @@ export function focusRessyaIndex(state: SelectionState, grid: TimetableGridSpec)
 /** 複数列車が明示選択されているか。原典「複数選択中は不可(新規列車挿入等)」判定用。 */
 export function hasMultiSelection(state: SelectionState, grid: TimetableGridSpec): boolean {
   return getSelectedRessyaIndices(state, grid).length > 1;
+}
+
+/** 明示選択(箱型 ∪ ランダム)を randomCols に畳み、フォーカスだけを pos へ移す(選択保持)。 */
+function moveFocusKeepSelection(state: SelectionState, pos: CellPos): SelectionState {
+  return { focus: pos, anchor: null, randomCols: explicitCols(state) };
+}
+
+/**
+ * 編集コマンド後・Ctrl+K のフォーカス移動(原典 CWndJikokuhyou::moveFocusCellToNext、
+ * CWndJikokuhyou.cpp 1787-1930)。
+ *
+ * 下移動モード(moveRight=false):
+ * - 駅時刻ブロックより上 → 最初の駅時刻行へ(番線行はスキップ)。列は維持。
+ * - ブロック内:
+ *   - nextEkiOrder=false → 1 行下へ、番線行だけスキップ(同駅の発・次駅の着どちらもあり得る)。
+ *   - nextEkiOrder=true → 次駅の着行(なければ発行)へ。次駅がなければブロック後の行へ。
+ * - ブロックより後(備考等)→ 次の列車の先頭行(行 0)へ。右端なら動かない。
+ * - 移動中は列車選択を保持する(原典 1799-1801)。
+ *
+ * 右移動モード(moveRight=true): 同一行のまま 1 列車右へ移動し、選択を解除(1911-1925)。
+ */
+export function moveFocusCellToNext(
+  state: SelectionState,
+  grid: TimetableGridSpec,
+  moveRight: boolean,
+  nextEkiOrder: boolean,
+): SelectionState {
+  const { begin, end } = grid.ekijikokuRowRange;
+  const { row, col } = state.focus;
+
+  if (moveRight) {
+    const next = nextRessyaCol(grid, col, 1);
+    return next === null ? state : setFocus({ row, col: next });
+  }
+
+  if (row < begin) {
+    // 上部(列車プロパティ行)→ 先頭の駅時刻行へ直行(原典 1806-1816。番線行スキップなし)。
+    if (begin < end) return moveFocusKeepSelection(state, { row: begin, col });
+    return state;
+  }
+  if (row < end) {
+    if (nextEkiOrder) {
+      // 原典 1828-1855: フォーカス行の時刻 Order(着/発行のみ非 null)が基準。
+      // 番線行では JikokuOrder が null → フォーカス不動(CdDedJikokuOrderOf 1677-1695)。
+      const curType = grid.rows[row]?.type;
+      if (curType !== 'chaku' && curType !== 'hatsu') return state;
+      // 次駅の着行(なければ発行)へ。無ければブロック直後の行へ。
+      const curOrder = grid.rows[row]?.ekiOrder ?? null;
+      for (let r = row + 1; r < end; r++) {
+        const spec = grid.rows[r];
+        if (spec === undefined || spec.type === 'track') continue;
+        if (curOrder === null || (spec.ekiOrder ?? -1) > curOrder) {
+          return moveFocusKeepSelection(state, { row: r, col });
+        }
+      }
+      if (end < grid.rows.length) return moveFocusKeepSelection(state, { row: end, col });
+      return state;
+    }
+    // 1 行下へ(番線行スキップ)。ブロックを出たら備考等にそのまま着地。
+    const target = scanRow(grid, row + 1, 1, grid.rows.length);
+    return target === null ? state : moveFocusKeepSelection(state, { row: target, col });
+  }
+  // ブロック後(備考等)→ 次の列車の行 0 へ。
+  const next = nextRessyaCol(grid, col, 1);
+  return next === null ? state : moveFocusKeepSelection(state, { row: 0, col: next });
+}
+
+/** moveFocusCellToNext の逆方向(原典 moveFocusCellToPrev、CWndJikokuhyou.cpp 1934-2077)。 */
+export function moveFocusCellToPrev(
+  state: SelectionState,
+  grid: TimetableGridSpec,
+  moveRight: boolean,
+): SelectionState {
+  const { begin, end } = grid.ekijikokuRowRange;
+  const { row, col } = state.focus;
+
+  if (moveRight) {
+    const prev = nextRessyaCol(grid, col, -1);
+    return prev === null ? state : setFocus({ row, col: prev });
+  }
+
+  if (row < begin) {
+    // 上部 → 前列車の最終行(備考)へ。
+    const prev = nextRessyaCol(grid, col, -1);
+    return prev === null
+      ? state
+      : moveFocusKeepSelection(state, { row: grid.rows.length - 1, col: prev });
+  }
+  if (row < end) {
+    // 1 行上へ(番線行スキップ)。ブロックの上に出たら上部行にそのまま着地。
+    const target = scanRow(grid, row - 1, -1, -1);
+    return target === null ? state : moveFocusKeepSelection(state, { row: target, col });
+  }
+  // ブロック後 → 最終の非番線駅時刻行へ。
+  const target = scanRow(grid, end - 1, -1, begin - 1);
+  return target === null ? state : moveFocusKeepSelection(state, { row: target, col });
+}
+
+/** from から step 方向へ走査し、until(排他)の手前までで最初の非番線行を返す。 */
+function scanRow(
+  grid: TimetableGridSpec,
+  from: number,
+  step: 1 | -1,
+  until: number,
+): number | null {
+  for (let r = from; r !== until; r += step) {
+    if (r < 0 || r >= grid.rows.length) return null;
+    if (grid.rows[r]?.type !== 'track') return r;
+  }
+  return null;
+}
+
+/** col から step 方向で次の列車列。無ければ null。駅名/着発列からは最初の列車列へ。 */
+function nextRessyaCol(grid: TimetableGridSpec, col: number, step: 1 | -1): number | null {
+  const cur = grid.columns[col];
+  if (cur?.type !== 'ressya') {
+    // 駅名列側からは先頭列車へ(原典 1887-1895)。
+    const first = grid.columns.findIndex((c) => c.type === 'ressya');
+    return first === -1 ? null : first;
+  }
+  for (let c = col + step; c >= 0 && c < grid.columns.length; c += step) {
+    if (grid.columns[c]?.type === 'ressya') return c;
+  }
+  return null;
 }
 
 /**

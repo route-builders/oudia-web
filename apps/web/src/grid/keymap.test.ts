@@ -49,19 +49,131 @@ describe('resolveEditAction', () => {
     expect(resolveEditAction(ev({ key: 'b', altKey: true }), TAB)).toBe('toggleCanceled');
   });
 
-  it('当駅始発は Ctrl 系では PWA のみ有効', () => {
+  it('当駅始発は Ctrl 系でもタブ表示で有効(design §4.1: 傍受可能な Ctrl 系は常時)', () => {
     expect(resolveEditAction(ev({ key: 'u', ctrlKey: true }), PWA)).toBe('sihatsuEki');
-    expect(resolveEditAction(ev({ key: 'u', ctrlKey: true }), TAB)).toBeNull();
+    expect(resolveEditAction(ev({ key: 'u', ctrlKey: true }), TAB)).toBe('sihatsuEki');
   });
 
-  it('Ctrl+Shift+U(直通化)は M3 では未対応 → null', () => {
-    expect(resolveEditAction(ev({ key: 'u', ctrlKey: true, shiftKey: true }), PWA)).toBeNull();
+  it('Ctrl+Shift+U/I/V = 直通化/分断/時刻のみ貼り付け(Alt+Shift でも)', () => {
+    expect(resolveEditAction(ev({ key: 'u', ctrlKey: true, shiftKey: true }), TAB)).toBe(
+      'tyokutsuu',
+    );
+    expect(resolveEditAction(ev({ key: 'i', ctrlKey: true, shiftKey: true }), TAB)).toBe('bundan');
+    expect(resolveEditAction(ev({ key: 'v', ctrlKey: true, shiftKey: true }), TAB)).toBe(
+      'pasteJikokuOnly',
+    );
+    expect(resolveEditAction(ev({ key: 'u', altKey: true, shiftKey: true }), TAB)).toBe(
+      'tyokutsuu',
+    );
   });
 
-  it('通過 = テンキー- / Ctrl+-(PWA)、経由なし = テンキー/ ', () => {
+  it('通過 = テンキー- / Ctrl+-(両モード)、経由なし = テンキー/ ', () => {
     expect(resolveEditAction(ev({ key: '-', code: 'NumpadSubtract' }), TAB)).toBe('tsuuka');
     expect(resolveEditAction(ev({ key: '-', ctrlKey: true }), PWA)).toBe('tsuuka');
+    expect(resolveEditAction(ev({ key: '-', ctrlKey: true }), TAB)).toBe('tsuuka');
     expect(resolveEditAction(ev({ key: '/', code: 'NumpadDivide' }), TAB)).toBe('keiyunasi');
+  });
+
+  it('Alt+- は通過-停車トグル(テンキー- でも)', () => {
+    expect(resolveEditAction(ev({ key: '-', altKey: true }), TAB)).toBe('tsuukaTeisya');
+    expect(resolveEditAction(ev({ key: '-', code: 'NumpadSubtract', altKey: true }), TAB)).toBe(
+      'tsuukaTeisya',
+    );
+    // Ctrl+Alt+- は対象外(Rev 系でもない)。
+    expect(resolveEditAction(ev({ key: '-', ctrlKey: true, altKey: true }), TAB)).toBeNull();
+  });
+
+  it('Ctrl+J/L = ±1分し次へ、Ctrl+Shift+J/L = ±1分(タブ表示でも有効)', () => {
+    expect(resolveEditAction(ev({ key: 'j', ctrlKey: true }), TAB)).toEqual({
+      kind: 'jikokuStep',
+      sign: -1,
+      variant: 'move',
+      rev: false,
+    });
+    expect(resolveEditAction(ev({ key: 'l', ctrlKey: true }), TAB)).toEqual({
+      kind: 'jikokuStep',
+      sign: 1,
+      variant: 'move',
+      rev: false,
+    });
+    expect(resolveEditAction(ev({ key: 'j', ctrlKey: true, shiftKey: true }), TAB)).toEqual({
+      kind: 'jikokuStep',
+      sign: -1,
+      variant: 'noMove',
+      rev: false,
+    });
+  });
+
+  it('Alt+J/L は代替バインド(macOS の Alt+J = ∆ でも code から解決)', () => {
+    expect(resolveEditAction(ev({ key: 'j', altKey: true }), TAB)).toEqual({
+      kind: 'jikokuStep',
+      sign: -1,
+      variant: 'move',
+      rev: false,
+    });
+    expect(resolveEditAction(ev({ key: '∆', code: 'KeyJ', altKey: true }), TAB)).toEqual({
+      kind: 'jikokuStep',
+      sign: -1,
+      variant: 'move',
+      rev: false,
+    });
+  });
+
+  it('Ctrl+Alt+J/L は Rev 系', () => {
+    expect(resolveEditAction(ev({ key: 'j', ctrlKey: true, altKey: true }), TAB)).toEqual({
+      kind: 'jikokuStep',
+      sign: -1,
+      variant: 'move',
+      rev: true,
+    });
+    expect(
+      resolveEditAction(ev({ key: 'l', ctrlKey: true, altKey: true, shiftKey: true }), TAB),
+    ).toEqual({ kind: 'jikokuStep', sign: 1, variant: 'noMove', rev: true });
+  });
+
+  it('Ctrl+K / Ctrl+Shift+K = フォーカスを次へ/前へ', () => {
+    expect(resolveEditAction(ev({ key: 'k', ctrlKey: true }), TAB)).toBe('focusNext');
+    expect(resolveEditAction(ev({ key: 'k', ctrlKey: true, shiftKey: true }), TAB)).toBe(
+      'focusPrev',
+    );
+    expect(resolveEditAction(ev({ key: 'k', altKey: true }), TAB)).toBe('focusNext');
+  });
+
+  it("Ctrl+';' / Ctrl+':' = 任意秒 1(Shift で任意秒 2。code は Semicolon/Quote)", () => {
+    expect(resolveEditAction(ev({ key: ';', code: 'Semicolon', ctrlKey: true }), TAB)).toEqual({
+      kind: 'jikokuStep',
+      sign: -1,
+      variant: 'any1',
+      rev: false,
+    });
+    expect(resolveEditAction(ev({ key: ':', code: 'Quote', ctrlKey: true }), TAB)).toEqual({
+      kind: 'jikokuStep',
+      sign: 1,
+      variant: 'any1',
+      rev: false,
+    });
+    expect(
+      resolveEditAction(ev({ key: ';', code: 'Semicolon', ctrlKey: true, shiftKey: true }), TAB),
+    ).toEqual({ kind: 'jikokuStep', sign: -1, variant: 'any2', rev: false });
+  });
+
+  it('駅時刻変更 = Ctrl+M / Alt+M、再実行 = Ctrl+. / Alt+.(素の . は原典に存在しない)', () => {
+    expect(resolveEditAction(ev({ key: 'm', ctrlKey: true }), TAB)).toBe('modifyEkijikoku');
+    expect(resolveEditAction(ev({ key: 'm', altKey: true }), TAB)).toBe('modifyEkijikoku');
+    expect(resolveEditAction(ev({ key: '.', code: 'Period', ctrlKey: true }), TAB)).toBe(
+      'modifyRepeat',
+    );
+    expect(resolveEditAction(ev({ key: '.', code: 'Period', altKey: true }), TAB)).toBe(
+      'modifyRepeat',
+    );
+    // 素の '.' はダイアログへのキー転送に回す(原典もバインドなし)。
+    expect(resolveEditAction(ev({ key: '.', code: 'Period' }), TAB)).toBeNull();
+  });
+
+  it('連続入力: Alt+T は常時、Ctrl+T は standalone のみ(傍受不能リスト)', () => {
+    expect(resolveEditAction(ev({ key: 't', altKey: true }), TAB)).toBe('renzoku');
+    expect(resolveEditAction(ev({ key: 't', ctrlKey: true }), TAB)).toBeNull();
+    expect(resolveEditAction(ev({ key: 't', ctrlKey: true }), PWA)).toBe('renzoku');
   });
 
   it('Ctrl+←/→ は左へ/右へ(両モード)', () => {

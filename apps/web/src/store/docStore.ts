@@ -20,7 +20,12 @@ import {
   canUndo as canUndoState,
   canRedo as canRedoState,
 } from '@oudia/domain';
-import type { DocumentState, EditCommand, RessyaClipboard } from '@oudia/domain';
+import type {
+  DocumentState,
+  EditCommand,
+  EkijikokuModifyOperation2,
+  RessyaClipboard,
+} from '@oudia/domain';
 import type { ViewDescriptor } from '../tabs/viewDescriptor.js';
 import { descriptorKey } from '../tabs/viewDescriptor.js';
 
@@ -44,6 +49,11 @@ interface DocState {
   activeKey: string | null;
   /** 列車クリップボード(アプリ内。null = 空)。貼り付け移動量の累積を保持する。 */
   clipboard: RessyaClipboard | null;
+  /**
+   * 駅時刻変更の記憶(原典 CWndJikokuhyou::m_EkijikokuModifyOperation2)。
+   * ビュー(ダイヤ×方向)単位・非永続。キーは "diaIndex:houkou"。
+   */
+  modifyOp2ByView: Record<string, EkijikokuModifyOperation2>;
   /** SW 更新が利用可能なら reload コールバック(null = なし)。 */
   swReload: (() => void) | null;
   /** オフライン利用可能になったか。 */
@@ -61,6 +71,8 @@ interface DocState {
   markSaved: () => void;
   /** 列車クリップボードを設定(コピー/切り取り時。累積は 0 リセット済みで渡す)。 */
   setClipboard: (clip: RessyaClipboard | null) => void;
+  /** 駅時刻変更の記憶を更新(ダイアログ OK 時。実行成否より先に保存)。 */
+  setModifyOp2: (viewKey: string, op: EkijikokuModifyOperation2) => void;
   /** ビューを開く(重複は既存タブをアクティブ化)。 */
   openView: (descriptor: ViewDescriptor) => void;
   /** タブを閉じる。 */
@@ -81,6 +93,7 @@ export const useDocStore = create<DocState>((set) => ({
   tabs: [],
   activeKey: null,
   clipboard: null,
+  modifyOp2ByView: {},
   swReload: null,
   offlineReady: false,
 
@@ -93,6 +106,7 @@ export const useDocStore = create<DocState>((set) => ({
       warningCount,
       tabs: [],
       activeKey: null,
+      modifyOp2ByView: {}, // 記憶はドキュメント単位でリセット
     });
   },
 
@@ -130,6 +144,10 @@ export const useDocStore = create<DocState>((set) => ({
 
   setClipboard: (clip) => {
     set({ clipboard: clip });
+  },
+
+  setModifyOp2: (viewKey, op) => {
+    set((s) => ({ modifyOp2ByView: { ...s.modifyOp2ByView, [viewKey]: op } }));
   },
 
   openView: (descriptor) => {

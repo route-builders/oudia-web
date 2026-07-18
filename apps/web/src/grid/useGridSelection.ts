@@ -17,6 +17,8 @@ import {
   toggleRandom,
   moveFocus,
   clampSelection,
+  moveFocusCellToNext,
+  moveFocusCellToPrev,
 } from './selection.js';
 
 export interface GridSelectionApi {
@@ -27,6 +29,10 @@ export interface GridSelectionApi {
   arrow: (dRow: number, dCol: number, extend: boolean) => void;
   /** 明示的にフォーカスを設定(検索ヒット・Undo 後のフォーカス移動等)。 */
   focusCell: (pos: CellPos) => void;
+  /** 編集後・Ctrl+K の次セル移動(原典 moveFocusCellToNext。moveRight はビュー設定)。 */
+  moveNext: (moveRight: boolean, nextEkiOrder: boolean) => void;
+  /** Ctrl+Shift+K の前セル移動。 */
+  movePrev: (moveRight: boolean) => void;
 }
 
 export function useGridSelection(grid: TimetableGridSpec, resetKey = ''): GridSelectionApi {
@@ -63,5 +69,19 @@ export function useGridSelection(grid: TimetableGridSpec, resetKey = ''): GridSe
     setSelection(setFocus(pos));
   }, []);
 
-  return { selection, clickCell, arrow, focusCell };
+  const moveNext = useCallback(
+    (moveRight: boolean, nextEkiOrder: boolean) => {
+      setSelection((s) => moveFocusCellToNext(s, grid, moveRight, nextEkiOrder));
+    },
+    [grid],
+  );
+
+  const movePrev = useCallback(
+    (moveRight: boolean) => {
+      setSelection((s) => moveFocusCellToPrev(s, grid, moveRight));
+    },
+    [grid],
+  );
+
+  return { selection, clickCell, arrow, focusCell, moveNext, movePrev };
 }

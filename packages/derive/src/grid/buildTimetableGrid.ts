@@ -51,10 +51,14 @@ export interface BuildTimetableGridOptions {
   readonly houkou: Ressyahoukou;
   readonly displayRessyamei: boolean;
   readonly displayTsuukaEkiJikoku: boolean;
+  /** [全時刻を表示](m_bDisplayAllEkiJikoku): 全駅に着・発の両行を生成。既定 false。 */
+  readonly displayAllEkiJikoku?: boolean;
+  /** [親種別を有効にする](m_bDisplayParentSyubetsu): 子種別を親種別の略称で表示。既定 false。 */
+  readonly displayParentSyubetsu?: boolean;
   readonly conv: JikokuConvOptions;
 }
 
-/** DispProp から既定オプションを組む(M1 .ini 既定)。 */
+/** DispProp から既定オプションを組む(原典 .ini 既定)。 */
 export function defaultTimetableGridOptions(
   data: RosenFileData,
   houkou: Ressyahoukou,
@@ -77,9 +81,14 @@ export type BuildTimetableGridResult =
   | { readonly ok: true; readonly grid: TimetableGridSpec }
   | { readonly ok: false; readonly code: -1 };
 
-/** 種別略称(親種別置換なし。M1 は既定)。 */
-function ryakusyou(data: RosenFileData, ressya: Ressya): string {
-  return data.rosen.ressyasyubetsuCont[ressya.syubetsuIndex]?.ryakusyou ?? '';
+/** 種別略称(displayParentSyubetsu なら親種別へ差し替え。原典 CCellBuilder.cpp 6032)。 */
+function ryakusyou(data: RosenFileData, ressya: Ressya, parentSubst: boolean): string {
+  let idx = ressya.syubetsuIndex;
+  if (parentSubst) {
+    const parent = data.rosen.ressyasyubetsuCont[idx]?.parentSyubetsuIndex;
+    if (parent !== undefined && parent !== null && parent >= 0) idx = parent;
+  }
+  return data.rosen.ressyasyubetsuCont[idx]?.ryakusyou ?? '';
 }
 
 /** 通常時刻表グリッドを組み立てる。 */
@@ -98,6 +107,7 @@ export function buildTimetableGrid(
 
   const rows = buildJikokuhyouRowSpec(ekiCont, houkou, {
     displayRessyamei: opts.displayRessyamei,
+    displayAllEkiJikoku: opts.displayAllEkiJikoku ?? false,
   });
 
   const columns: GridColumn[] = [
@@ -128,7 +138,19 @@ export function buildTimetableGrid(
     // X>=2 列車列。
     ressyaList.forEach((ressya, i) => {
       const rr = runRanges[i] ?? { sihatsu: -1, syuuchaku: -1 };
-      rowCells.push(trainCell(ctx, data, row, ressya, rr.sihatsu, rr.syuuchaku, ekiCount, houkou));
+      rowCells.push(
+        trainCell(
+          ctx,
+          data,
+          row,
+          ressya,
+          rr.sihatsu,
+          rr.syuuchaku,
+          ekiCount,
+          houkou,
+          opts.displayParentSyubetsu ?? false,
+        ),
+      );
     });
     return rowCells;
   });
@@ -190,6 +212,7 @@ function trainCell(
   syuuchaku: number,
   ekiCount: number,
   houkou: Ressyahoukou,
+  parentSubst: boolean,
 ): CellSpec {
   if (ressya.isNull) return { text: '', kind: 'empty', mark: null, style: plainStyle() };
 
@@ -209,7 +232,7 @@ function trainCell(
     case 'ressyabangou':
       return text(ressya.ressyabangou);
     case 'ressyasyubetsu':
-      return text(ryakusyou(data, ressya));
+      return text(ryakusyou(data, ressya, parentSubst));
     case 'ressyamei':
       return text(ressya.ressyamei);
     case 'gousuu':
