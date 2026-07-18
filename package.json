@@ -20,7 +20,8 @@
     "bench": "vitest bench --run",
     "cf:preview": "pnpm --filter @oudia-web/web build && pnpm --filter @oudia-web/web cf:preview",
     "cf:deploy": "pnpm --filter @oudia-web/web build && pnpm --filter @oudia-web/web cf:deploy",
-    "license-check": "node scripts/license-check.mjs"
+    "license-check": "node scripts/license-check.mjs",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.4",
@@ -31,6 +32,7 @@
     "fast-check": "^4.9.0",
     "globals": "^17.7.0",
     "happy-dom": "^20.10.6",
+    "husky": "^9.1.7",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8",
