@@ -148,6 +148,19 @@ describe('resolveEditAction', () => {
     ).toEqual({ kind: 'jikokuStep', sign: -1, variant: 'any2', rev: false });
   });
 
+  it('駅時刻変更 = Ctrl+M / Alt+M、再実行 = Ctrl+. / Alt+.(素の . は原典に存在しない)', () => {
+    expect(resolveEditAction(ev({ key: 'm', ctrlKey: true }), TAB)).toBe('modifyEkijikoku');
+    expect(resolveEditAction(ev({ key: 'm', altKey: true }), TAB)).toBe('modifyEkijikoku');
+    expect(resolveEditAction(ev({ key: '.', code: 'Period', ctrlKey: true }), TAB)).toBe(
+      'modifyRepeat',
+    );
+    expect(resolveEditAction(ev({ key: '.', code: 'Period', altKey: true }), TAB)).toBe(
+      'modifyRepeat',
+    );
+    // 素の '.' はダイアログへのキー転送に回す(原典もバインドなし)。
+    expect(resolveEditAction(ev({ key: '.', code: 'Period' }), TAB)).toBeNull();
+  });
+
   it('連続入力: Alt+T は常時、Ctrl+T は standalone のみ(傍受不能リスト)', () => {
     expect(resolveEditAction(ev({ key: 't', altKey: true }), TAB)).toBe('renzoku');
     expect(resolveEditAction(ev({ key: 't', ctrlKey: true }), TAB)).toBeNull();

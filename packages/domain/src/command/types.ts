@@ -222,6 +222,45 @@ export interface EkiJikokuClearCommand {
 }
 
 /**
+ * 駅時刻変更の操作内容(原典 CentDedRessya_EkijikokuModifyOperation2)。
+ * ビュー単位で記憶され、[再実行](Ctrl+'.')で別セルへ連続適用される。
+ * seconds は秒単位(Ver2.00.05 で分→秒化)。
+ */
+export interface EkijikokuModifyOperation2 {
+  /** [駅扱] 変更する。 */
+  setEkiatsukai: boolean;
+  /** 変更後の駅扱(setEkiatsukai=true のとき有効)。 */
+  ekiatsukai: Ekiatsukai;
+  /** [駅時刻] nop=変更しない / modify=繰下げ(負で繰上げ) / copy=他駅からコピー / toNull=設定なし化。 */
+  operation: 'nop' | 'modify' | 'copy' | 'toNull';
+  /** シフト秒数(modify)/ コピー元への加算秒数(copy)。 */
+  seconds: number;
+  /** コピー元の時刻 Order(copy のとき)。記憶時は絶対(適用先が変わっても固定)。 */
+  copySrc: { ekiOrder: number; item: 'chaku' | 'hatsu' } | null;
+}
+
+/** NULL 状態(未実行 or「変更しない」で OK)。再実行は無効。 */
+export function isNullModifyOperation2(op: EkijikokuModifyOperation2): boolean {
+  return !op.setEkiatsukai && op.operation === 'nop';
+}
+
+/**
+ * 駅時刻変更の適用(原典 CentDedRessya_EkijikokuModifyOperation2::execute +
+ * execCdModifyEkijikokuCmd)。①駅扱変更 → ②時刻変更(modify のみフォーカス以後へ伝播、
+ * copy/toNull は片側のみ・伝播なし)の順。選択全列車へ同じ時刻 Order で適用し 1 Undo 単位。
+ */
+export interface EkiJikokuModifyOperation2Command {
+  type: 'ekiJikoku/modifyOperation2';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  ekiOrder: number;
+  /** 適用先の着/発(その時のフォーカスセルに従う)。 */
+  item: 'chaku' | 'hatsu';
+  op: EkijikokuModifyOperation2;
+}
+
+/**
  * 連続入力モードの分 2 桁確定(原典 CWjkState_Renzoku::OnChar 919-1028)。
  * 時 = findrevJikoku(直前の非 null 時刻)の「時」、分 = minutes、秒 = 0。直前より前に
  * なるなら +1 時間(24h wrap)。運行なし駅は停車化 + 基準番線(主本線)適用、
@@ -301,6 +340,7 @@ export type EditCommand =
   | EkiJikokuSetTrackCommand
   | EkiJikokuClearCommand
   | EkiJikokuRenzokuInputCommand
+  | EkiJikokuModifyOperation2Command
   | EkiJikokuToggleTsuukaCommand
   | EkiJikokuToggleTsuukaTeisyaCommand
   | EkiJikokuSetKeiyunasiCommand

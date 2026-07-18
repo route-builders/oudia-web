@@ -23,12 +23,15 @@ export type {
   EkiJikokuSetTrackCommand,
   EkiJikokuClearCommand,
   EkiJikokuRenzokuInputCommand,
+  EkiJikokuModifyOperation2Command,
+  EkijikokuModifyOperation2,
   EkiJikokuToggleTsuukaCommand,
   EkiJikokuToggleTsuukaTeisyaCommand,
   EkiJikokuSetKeiyunasiCommand,
   EkiJikokuSetEkiatsukaiCommand,
   HistoryEntry,
 } from './types.js';
+export { isNullModifyOperation2 } from './types.js';
 export { commandReducers, applyCommand, normalizeToLf } from './reducers.js';
 export { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
 export {

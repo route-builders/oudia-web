@@ -38,6 +38,8 @@ import { EkiJikokuDialog } from '../dialog/EkiJikokuDialog.js';
 import type { EkiJikokuDialogTarget } from '../dialog/EkiJikokuDialog.js';
 import { RessyaPropDialog } from '../dialog/RessyaPropDialog.js';
 import type { RessyaPropDialogTarget } from '../dialog/RessyaPropDialog.js';
+import { ModifyEkijikokuDialog, DEFAULT_MODIFY_OP2 } from '../dialog/ModifyEkijikokuDialog.js';
+import { getEffectiveRessyaIndices } from '../grid/selection.js';
 
 const THEME: GridTheme = {
   cellFont: { pointTextHeight: 9, facename: '', bold: false, italic: false },
@@ -118,6 +120,12 @@ export function TimetableView(props: {
     sel.movePrev(focusMoveRight);
   }, [sel, focusMoveRight]);
 
+  // 駅時刻変更の記憶(原典 m_EkijikokuModifyOperation2。ビュー = ダイヤ×方向 単位・非永続)。
+  const viewKey = `${String(diaIndex)}:${String(houkou)}`;
+  const modifyOp2 = useDocStore((s) => s.modifyOp2ByView[viewKey] ?? null);
+  const setModifyOp2 = useDocStore((s) => s.setModifyOp2);
+  const [modifyDialogOpen, setModifyDialogOpen] = useState(false);
+
   const runCommand = useTimetableCommands({
     data,
     grid: grid ?? emptyGrid,
@@ -126,6 +134,7 @@ export function TimetableView(props: {
     selection: sel.selection,
     moveNext,
     movePrev,
+    modifyOp2,
   });
 
   // ---- 連続入力モード(原典 CWjkState_Renzoku、design §05 4.4)----
@@ -388,7 +397,11 @@ export function TimetableView(props: {
         e.preventDefault();
         if (action === 'search') setSearchOpen(true);
         else if (action === 'renzoku') tryEnterRenzoku();
-        else runCommand(action);
+        else if (action === 'modifyEkijikoku') {
+          // 有効条件: フォーカスが着/発の駅時刻行(原典 5915-5923)。
+          const t = resolveCellTarget(grid, sel.selection.focus.row, sel.selection.focus.col);
+          if (t?.kind === 'ekiJikoku') setModifyDialogOpen(true);
+        } else runCommand(action);
         return;
       }
 
@@ -553,6 +566,37 @@ export function TimetableView(props: {
           dispatch={dispatch}
           onClose={() => {
             setDialog(null);
+          }}
+        />
+      )}
+      {modifyDialogOpen && (
+        <ModifyEkijikokuDialog
+          ekiCont={data.rosen.ekiCont}
+          houkou={houkou}
+          initial={modifyOp2 ?? DEFAULT_MODIFY_OP2}
+          onOk={(op) => {
+            // 原典 5942-5963: 実行成否より先に記憶を更新 → 実行 → 成功時フォーカス前進。
+            setModifyOp2(viewKey, op);
+            setModifyDialogOpen(false);
+            const t = resolveCellTarget(grid, sel.selection.focus.row, sel.selection.focus.col);
+            if (t?.kind !== 'ekiJikoku') return;
+            const targets = getEffectiveRessyaIndices(sel.selection, grid);
+            if (targets.length === 0) return;
+            // NULL 状態(変更しない + 駅扱変更なし)は記憶のみ更新(再実行が無効化される)。
+            if (!op.setEkiatsukai && op.operation === 'nop') return;
+            dispatch({
+              type: 'ekiJikoku/modifyOperation2',
+              diaIndex,
+              houkou,
+              ressyaIndices: targets,
+              ekiOrder: t.ekiOrder,
+              item: t.target,
+              op,
+            });
+            moveNext(true);
+          }}
+          onClose={() => {
+            setModifyDialogOpen(false);
           }}
         />
       )}

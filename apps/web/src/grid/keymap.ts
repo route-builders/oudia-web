@@ -38,6 +38,8 @@ export type EditAction =
   | 'focusNext' // Ctrl+K: フォーカスを次へ
   | 'focusPrev' // Ctrl+Shift+K: フォーカスを前へ
   | 'renzoku' // Ctrl+T / Alt+T: 連続入力モード
+  | 'modifyEkijikoku' // Ctrl+M / Alt+M: 駅時刻変更ダイアログ
+  | 'modifyRepeat' // Ctrl+'.' / Alt+'.': 駅時刻変更の再実行(素の '.' は原典に存在しない)
   | 'search'; // 列車番号検索
 
 /**
@@ -168,11 +170,15 @@ export function resolveEditAction(e: KeyEventLike, mode: KeymapMode): ResolvedAc
     if (single) return step(sign, variant, false);
   }
 
-  // ---- 当駅始発/止り・運休(Ctrl または Alt、Shift なし)----
+  // ---- 当駅始発/止り・運休・駅時刻変更(Ctrl または Alt、Shift なし)----
   if (single && !shift) {
     if (letter === 'u') return 'sihatsuEki';
     if (letter === 'i') return 'syuuchakuEki';
     if (letter === 'b') return 'toggleCanceled';
+    if (letter === 'm') return 'modifyEkijikoku';
+    // 再実行: 原典は Ctrl+'.'(VK_OEM_PERIOD+CONTROL)のみ。素の '.' バインドは存在しない
+    // (DiagramEdit.rc 1518。旧マニュアルの「[.]キー」記述は OuDia 時代のもの)。
+    if (e.code === 'Period' || key === '.') return 'modifyRepeat';
   }
 
   // ---- 連続入力モード(Ctrl+T は傍受不能 → standalone のみ。Alt+T は常時)----

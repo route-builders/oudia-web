@@ -379,6 +379,48 @@ export const commandReducers: {
     }
   },
 
+  'ekiJikoku/modifyOperation2': (draft, cmd) => {
+    // 原典 CentDedRessya_EkijikokuModifyOperation2::execute(86-183)+
+    // execCdModifyEkijikokuCmd(選択全列車へ同じ時刻 Order で適用)。
+    if (cmd.ekiOrder < 0 || cmd.ekiOrder >= draft.rosen.ekiCont.length) return; // -1 相当
+    const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    const op = cmd.op;
+    for (const i of cmd.ressyaIndices) {
+      const r = list[i];
+      if (r === undefined) continue;
+      const slot = slotAt(draft, r, cmd.ekiOrder);
+      // ① 駅扱変更(駅単位)。None は全消去(setEkiatsukai の不変条件)。
+      if (op.setEkiatsukai) {
+        if (op.ekiatsukai === 'none') clearToNone(slot);
+        else slot.ekiatsukai = op.ekiatsukai;
+      }
+      // ② 時刻変更(駅扱変更の後)。
+      if (op.operation === 'modify') {
+        // フォーカスの時刻 Order 自身を含む以後へ伝播(modifyRessyaJikoku)。
+        shiftWalkFwd(r, cmd.ekiOrder, cmd.item, op.seconds);
+      } else if (op.operation === 'copy') {
+        // コピー元(絶対)の時刻 + seconds を片側へ単純代入。元が null なら null(± は no-op)。
+        const srcSlot = op.copySrc === null ? null : getEkiJikoku(r, op.copySrc.ekiOrder);
+        const srcVal =
+          srcSlot === null || op.copySrc === null
+            ? null
+            : op.copySrc.item === 'chaku'
+              ? srcSlot.chakuJikoku
+              : srcSlot.hatsuJikoku;
+        const val = srcVal === null ? null : addWrapped(srcVal, op.seconds);
+        if (cmd.item === 'chaku') slot.chakuJikoku = val;
+        else slot.hatsuJikoku = val;
+        autoTeisya(slot); // 非 null 代入は運行なし → 停車へ自動昇格
+      } else if (op.operation === 'toNull') {
+        // 片側のみ null 化。伝播なし・駅扱不変(時刻消去コマンドとは異なり None 化しない)。
+        if (cmd.item === 'chaku') slot.chakuJikoku = null;
+        else slot.hatsuJikoku = null;
+      }
+      if (op.setEkiatsukai || op.operation !== 'nop') r.isNull = false;
+      // adjustOperation(M7)・分岐環状補正(M5)は未対応領域のため no-op。
+    }
+  },
+
   'ekiJikoku/renzokuInput': (draft, cmd) => {
     // 原典 CWjkState_Renzoku::OnChar(919-1028)の 2 桁確定処理。
     const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
@@ -527,6 +569,9 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'ekiJikoku/renzokuInput':
       commandReducers['ekiJikoku/renzokuInput'](draft, cmd);
+      return;
+    case 'ekiJikoku/modifyOperation2':
+      commandReducers['ekiJikoku/modifyOperation2'](draft, cmd);
       return;
     case 'ekiJikoku/toggleTsuuka':
       commandReducers['ekiJikoku/toggleTsuuka'](draft, cmd);

@@ -17,7 +17,8 @@
 import { useCallback } from 'react';
 import type { RosenFileData } from '@oudia/format';
 import type { TimetableGridSpec } from '@oudia/derive';
-import { copyRessyaToClipboard, computePasteTrains } from '@oudia/domain';
+import type { EkijikokuModifyOperation2 } from '@oudia/domain';
+import { copyRessyaToClipboard, computePasteTrains, isNullModifyOperation2 } from '@oudia/domain';
 import { useDocStore } from '../store/docStore.js';
 import type { JikokuStepAction, ResolvedAction } from './keymap.js';
 import type { SelectionState } from './selection.js';
@@ -34,6 +35,8 @@ export interface TimetableCommandCtx {
   moveNext: (nextEkiOrder: boolean) => void;
   /** Ctrl+Shift+K のフォーカス移動(原典 moveFocusCellToPrev)。 */
   movePrev: () => void;
+  /** 駅時刻変更の記憶(ビュー単位。null = 未実行 → 再実行無効)。 */
+  modifyOp2: EkijikokuModifyOperation2 | null;
 }
 
 /** 列車番号/号数行の delta(原典対照表: Move=±1 / NoMove=±10 / Any1=±2 / Any2=±100)。 */
@@ -52,7 +55,7 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
   const clipboard = useDocStore((s) => s.clipboard);
   const setClipboard = useDocStore((s) => s.setClipboard);
 
-  const { data, grid, diaIndex, houkou, selection, moveNext, movePrev } = ctx;
+  const { data, grid, diaIndex, houkou, selection, moveNext, movePrev, modifyOp2 } = ctx;
 
   return useCallback(
     (action: ResolvedAction) => {
@@ -338,6 +341,28 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
           // 連続入力モードの起動はビュー側で処理(M4-2)。ここでは no-op。
           return;
 
+        case 'modifyEkijikoku':
+          // ダイアログの起動はビュー側で処理。ここでは no-op。
+          return;
+
+        case 'modifyRepeat': {
+          // 原典 OnJikokuhyouModifyEkijikokuCmdRepeat(5978-6040): 記憶が NULL なら完全 no-op。
+          // シフト秒数は新フォーカスに相対、コピー元は絶対、適用先の着/発はフォーカスに従う。
+          if (modifyOp2 === null || isNullModifyOperation2(modifyOp2)) return;
+          if (focusTarget?.kind !== 'ekiJikoku' || targets.length === 0) return;
+          dispatch({
+            type: 'ekiJikoku/modifyOperation2',
+            diaIndex,
+            houkou,
+            ressyaIndices: targets,
+            ekiOrder: focusTarget.ekiOrder,
+            item: focusTarget.target,
+            op: modifyOp2,
+          });
+          moveNext(true); // 成功時 moveFocusCellToNext(true)(6026-6037)
+          return;
+        }
+
         case 'search':
           // 検索バーの起動はビュー側で処理(ここでは no-op)。
           return;
@@ -356,6 +381,7 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: Resolve
       setClipboard,
       moveNext,
       movePrev,
+      modifyOp2,
     ],
   );
 }
