@@ -16,8 +16,8 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
       },
       manifest: {
-        name: 'OuDiaSecond Web ビューア',
-        short_name: 'OuDia Web',
+        name: 'OuDia Web（アルファ版）',
+        short_name: 'OuDia Web（アルファ版）',
         description: 'OuDia / OuDiaSecond の時刻表・ダイヤグラムをブラウザで閲覧',
         lang: 'ja',
         start_url: '/',
@@ -25,8 +25,10 @@ export default defineConfig({
         background_color: '#ffffff',
         theme_color: '#1d5fb0',
         icons: [
-          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: '/favicon.svg',
+            type: 'image/svg+xml',
+          }
         ],
       },
     }),
