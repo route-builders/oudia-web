@@ -23,6 +23,7 @@ export type EditAction =
   | 'paste'
   | 'clear' // Del: 消去(選択列車を空列車化 or 削除)
   | 'clearJikoku' // Ctrl+Del: 時刻消去
+  | 'clearCell' // BackSpace: フォーカスセルのデータ削除(駅時刻 → 運行なし化)
   | 'tsuuka' // 通過
   | 'keiyunasi' // 経由なし
   | 'sihatsuEki' // 当駅始発
@@ -84,6 +85,11 @@ export function resolveEditAction(
   // Del / Ctrl+Del。
   if (key === 'delete' || key === 'del') {
     return e.ctrlKey || e.metaKey ? 'clearJikoku' : 'clear';
+  }
+
+  // BackSpace(修飾なし)= フォーカスセルのデータ削除。
+  if (key === 'backspace' && !e.ctrlKey && !e.metaKey && !alt && !e.shiftKey) {
+    return 'clearCell';
   }
 
   // 通過: Ctrl+'-' / テンキー'-' / Alt+'-'(通過-停車トグルは M4、ここでは通過)。

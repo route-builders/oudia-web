@@ -110,6 +110,31 @@ test('駅時刻(発)行へ移動して Enter すると駅時刻ダイアログ�
   await expect(dialog.locator('.dialog-title')).toContainText('駅時刻のプロパティ');
   // キー転送・初期フォーカスは発時刻欄(発行なので着欄ではない)。
   await expect(dialog.getByLabel('発時刻')).toBeFocused();
+  // OK ボタンは Primary Color(白背景 + 白文字の退行を防ぐ。CSS 詳細度回帰ガード)。
+  await expect(dialog.locator('.dialog-ok')).toHaveCSS('background-color', 'rgb(29, 95, 176)');
+  await expect(dialog.locator('.dialog-ok')).toHaveCSS('color', 'rgb(255, 255, 255)');
+});
+
+test('BackSpace で駅時刻セルが運行なし化され、再度開くと運行なしが選択されている', async ({
+  page,
+}) => {
+  await openTimetableDown(page);
+  const grid = page.locator('.grid-root');
+  // 発時刻行(駅 0)へ移動して BackSpace → 運行なし化。
+  for (let i = 0; i < 9; i++) await grid.press('ArrowDown');
+  await grid.press('Backspace');
+  // ダイアログは開かず、グリッドにフォーカスが残る。
+  await expect(page.locator('dialog.prop-dialog')).toBeHidden();
+  await expect(grid).toBeFocused();
+  // 同セルを Enter で開くと駅扱 = 運行なし・時刻欄は空。
+  await grid.press('Enter');
+  const dialog = page.locator('dialog.prop-dialog');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByLabel('運行なし')).toBeChecked();
+  await expect(dialog.getByLabel('発時刻')).toHaveValue('');
+  // Undo で戻す(後続テストへの影響なし。ページごとに再読込だが念のため)。
+  await dialog.getByRole('button', { name: 'キャンセル' }).click();
+  await grid.press('Control+z');
 });
 
 test('セルのダブルクリックで編集ダイアログが開く', async ({ page }) => {

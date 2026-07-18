@@ -319,12 +319,14 @@ body {
   background: #fff;
   cursor: pointer;
 }
-.prop-dialog .dialog-ok {
+/* .dialog-footer button(0,2,1)より詳細度を上げる(0,3,0)。
+   下の汎用ルールに背景色が負けて「白ボタン + 白文字」になる退行を防ぐ。 */
+.prop-dialog .dialog-footer .dialog-ok {
   background: #1d5fb0;
   color: #fff;
   border-color: #1d5fb0;
 }
-.prop-dialog .dialog-ok:disabled {
+.prop-dialog .dialog-footer .dialog-ok:disabled {
   opacity: 0.5;
   cursor: default;
 }

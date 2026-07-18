@@ -129,6 +129,36 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: EditAct
           return;
         }
 
+        case 'clearCell': {
+          // BackSpace: フォーカスセル(単一)のデータ削除。
+          if (focusTarget === null) return;
+          if (focusTarget.kind === 'ekiJikoku') {
+            // 駅時刻セルは「運行なし」扱いへ変更した上で時刻を削除(clearToNone)。
+            dispatch({
+              type: 'ekiJikoku/setKeiyunasi',
+              diaIndex,
+              houkou,
+              ressyaIndices: [focusTarget.ressyaIndex],
+              ekiOrder: focusTarget.ekiOrder,
+            });
+            return;
+          }
+          if (focusTarget.kind === 'ressyaProp') {
+            // テキスト系の列車プロパティ行は空文字化(種別・始終着駅名は対象外)。
+            const rt = focusTarget.rowType;
+            if (rt === 'ressyabangou' || rt === 'ressyamei' || rt === 'gousuu' || rt === 'bikou') {
+              dispatch({
+                type: 'ressya/setProp',
+                diaIndex,
+                houkou,
+                ressyaIndex: focusTarget.ressyaIndex,
+                prop: { key: rt, value: '' },
+              });
+            }
+          }
+          return;
+        }
+
         case 'tsuuka': {
           if (ekiOrder === null || targets.length === 0) return;
           dispatch({

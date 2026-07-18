@@ -251,4 +251,62 @@ describe('TimetableView(対話グリッド)', () => {
     expect(hatsu.value).toBe('7');
     expect(document.activeElement).toBe(hatsu);
   });
+
+  it('BackSpace で駅時刻セルが運行なし化され時刻が消える(Undo で復元)', () => {
+    renderView();
+    const root = document.querySelector('.grid-root')!;
+    const grid = grid0();
+    const list = useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0];
+
+    // 停車(時刻あり)の駅時刻セルを探す。
+    let hit: { row: number; col: number; ekiOrder: number; ressyaIndex: number } | null = null;
+    outer: for (let r = 0; r < grid.rows.length; r++) {
+      const row = grid.rows[r]!;
+      if ((row.type !== 'chaku' && row.type !== 'hatsu') || row.ekiOrder === null) continue;
+      for (let c = 0; c < grid.columns.length; c++) {
+        const col = grid.columns[c]!;
+        if (col.type !== 'ressya') continue;
+        const train = list[col.ressyaIndex];
+        if (train === undefined) continue;
+        const ej = getEkiJikoku(train, row.ekiOrder);
+        if (ej.ekiatsukai === 'teisya' && (ej.chakuJikoku !== null || ej.hatsuJikoku !== null)) {
+          hit = { row: r, col: c, ekiOrder: row.ekiOrder, ressyaIndex: col.ressyaIndex };
+          break outer;
+        }
+      }
+    }
+    expect(hit).not.toBeNull();
+
+    navigateTo(root, grid, hit!.row, hit!.col);
+    fireEvent.keyDown(root, { key: 'Backspace' });
+
+    // 運行なし化 + 時刻・番線削除。
+    const after = useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0][hit!.ressyaIndex]!;
+    const ej = getEkiJikoku(after, hit!.ekiOrder);
+    expect(ej.ekiatsukai).toBe('none');
+    expect(ej.chakuJikoku).toBeNull();
+    expect(ej.hatsuJikoku).toBeNull();
+    expect(ej.ressyaTrackIndex).toBeNull();
+
+    // Undo(Ctrl+Z)で元へ戻る(1 コマンド = 1 Undo 単位)。
+    fireEvent.keyDown(root, { key: 'z', ctrlKey: true });
+    const restored = getEkiJikoku(
+      useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0][hit!.ressyaIndex]!,
+      hit!.ekiOrder,
+    );
+    expect(restored.ekiatsukai).toBe('teisya');
+  });
+
+  it('BackSpace で列車番号セルが空文字化される(ダイアログは開かない)', () => {
+    renderView();
+    const root = document.querySelector('.grid-root')!;
+    // 初期フォーカス = 列車番号行 × 先頭列車。
+    expect(useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0][0]!.ressyabangou).not.toBe(
+      '',
+    );
+    fireEvent.keyDown(root, { key: 'Backspace' });
+    expect(useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0][0]!.ressyabangou).toBe('');
+    // キー転送ダイアログは開いていない(BackSpace は printable 扱いされない)。
+    expect(document.querySelector('dialog.prop-dialog')).toBeNull();
+  });
 });

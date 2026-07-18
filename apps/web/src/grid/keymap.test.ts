@@ -36,6 +36,13 @@ describe('resolveEditAction', () => {
     expect(resolveEditAction(ev({ key: 'Delete', ctrlKey: true }), TAB)).toBe('clearJikoku');
   });
 
+  it('BackSpace(修飾なし)= clearCell、修飾つきは対象外', () => {
+    expect(resolveEditAction(ev({ key: 'Backspace' }), TAB)).toBe('clearCell');
+    expect(resolveEditAction(ev({ key: 'Backspace', ctrlKey: true }), TAB)).toBeNull();
+    expect(resolveEditAction(ev({ key: 'Backspace', altKey: true }), TAB)).toBeNull();
+    expect(resolveEditAction(ev({ key: 'Backspace', shiftKey: true }), TAB)).toBeNull();
+  });
+
   it('当駅始発/止り/運休は Alt 系で常時有効', () => {
     expect(resolveEditAction(ev({ key: 'u', altKey: true }), TAB)).toBe('sihatsuEki');
     expect(resolveEditAction(ev({ key: 'i', altKey: true }), TAB)).toBe('syuuchakuEki');
