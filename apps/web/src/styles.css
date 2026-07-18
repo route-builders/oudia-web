@@ -331,6 +331,21 @@ body {
   cursor: default;
 }
 
+/* ---- 連続入力モードインジケータ(design §05 4.4。原典のステータスバー表示相当)---- */
+.renzoku-indicator {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  z-index: 10;
+  padding: 4px 10px;
+  background: #1d5fb0;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
 /* ---- 列車番号検索バー(design §05 7.1)---- */
 .train-search-bar {
   position: absolute;

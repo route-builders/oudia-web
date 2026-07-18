@@ -22,6 +22,7 @@ export type {
   EkiJikokuShiftJikokuCommand,
   EkiJikokuSetTrackCommand,
   EkiJikokuClearCommand,
+  EkiJikokuRenzokuInputCommand,
   EkiJikokuToggleTsuukaCommand,
   EkiJikokuToggleTsuukaTeisyaCommand,
   EkiJikokuSetKeiyunasiCommand,

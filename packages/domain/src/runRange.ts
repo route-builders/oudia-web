@@ -80,6 +80,33 @@ export function getValidSyuuchakuEki(ressya: Ressya): number {
 }
 
 /**
+ * (ekiOrder, item) の直前から着⇄発を交互に遡り、最初の非 null 時刻を返す
+ * (原典 findrevJikoku(decJikokuOrder(order))。CentDedRessya.cpp:638-670, 1008-1024)。
+ * 発 → 同駅の着 → 前駅の発 → … の順。駅扱・表示有無は見ない(時刻値の非 null のみ)。
+ * 連続入力モードの入場判定・時合成の基準(ダイアログの時補完基準 referJikokuFor とは別物)。
+ */
+export function findRevJikokuItem(
+  ressya: Ressya,
+  ekiOrder: number,
+  item: 'chaku' | 'hatsu',
+): EkiJikoku['hatsuJikoku'] {
+  let o = ekiOrder;
+  let it = item;
+  for (;;) {
+    if (it === 'hatsu') {
+      it = 'chaku'; // 発 → 同駅の着
+    } else {
+      o -= 1; // 着 → 前駅の発
+      it = 'hatsu';
+    }
+    if (o < 0) return null;
+    const ej = getEkiJikoku(ressya, o);
+    const v = it === 'chaku' ? ej.chakuJikoku : ej.hatsuJikoku;
+    if (v !== null) return v;
+  }
+}
+
+/**
  * iEkiOrder と次駅の間が運行ありか(原典 isRunBetweenNextEki。CentDedRessya.cpp:486-508)。
  *   両駅とも停車または通過なら true。
  */

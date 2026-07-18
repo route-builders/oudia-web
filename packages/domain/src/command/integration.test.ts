@@ -237,6 +237,30 @@ describe('M3 編集 → Undo でバイト一致(黄金 T1 discipline)', () => {
         delta: 1,
       },
     },
+    {
+      name: 'ekiJikoku/renzokuInput(運行なし駅の停車化 + 基準番線)',
+      cmd: {
+        type: 'ekiJikoku/renzokuInput',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndex: 0,
+        ekiOrder: 14,
+        item: 'hatsu',
+        minutes: 45,
+      },
+    },
+    {
+      name: 'ekiJikoku/clear(teisyaFirst)',
+      cmd: {
+        type: 'ekiJikoku/clear',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        ekiOrder: 4,
+        target: 'chaku',
+        teisyaFirst: true,
+      },
+    },
   ];
 
   for (const c of CASES) {

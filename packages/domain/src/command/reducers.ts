@@ -15,7 +15,7 @@
 
 import type { EkiJikoku, Jikoku, Ressya, Ressyahoukou, RosenFileData } from '@oudia/format';
 import { asSeconds } from '@oudia/format';
-import { getEkiJikoku } from '../runRange.js';
+import { getEkiJikoku, findRevJikokuItem } from '../runRange.js';
 import { ekiIndexOfEkiOrder } from '../ekiOrder.js';
 import type { EditCommand } from './types.js';
 import { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
@@ -47,10 +47,29 @@ function ressyaAt(draft: RosenFileData, diaIndex: number, houkou: Ressyahoukou, 
   return r;
 }
 
-/** 駅時刻スロットを取り出す(範囲外は例外)。 */
-function slotAt(ressya: Ressya, ekiOrder: number): EkiJikoku {
+/**
+ * 駅時刻スロットを取り出す。リーダーは末尾の運行なしスロットを切り詰めるため
+ * (runRange.ts getEkiJikoku 参照)、駅数の範囲内なら none スロットで埋めて確保する
+ * (原典はコンテナが常に駅数分あるため書込みが成立する。末尾 none の切り詰めは
+ * ライターが再度行うので byte 一致に影響しない)。駅数の範囲外は例外。
+ */
+function slotAt(draft: RosenFileData, ressya: Ressya, ekiOrder: number): EkiJikoku {
+  const ekiCount = draft.rosen.ekiCont.length;
+  if (!(ekiOrder >= 0 && ekiOrder < ekiCount)) {
+    throw new Error(`駅時刻 範囲外: ${String(ekiOrder)}`);
+  }
+  while (ressya.ekiJikokuCont.length <= ekiOrder) {
+    ressya.ekiJikokuCont.push({
+      ekiatsukai: 'none',
+      chakuJikoku: null,
+      hatsuJikoku: null,
+      ressyaTrackIndex: null,
+      beforeOperationCont: [],
+      afterOperationCont: [],
+    });
+  }
   const ej = ressya.ekiJikokuCont[ekiOrder];
-  if (ej === undefined) throw new Error(`駅時刻 範囲外: ${String(ekiOrder)}`);
+  if (ej === undefined) throw new Error(`駅時刻 範囲外: ${String(ekiOrder)}`); // 直前で確保済み
   return ej;
 }
 
@@ -255,7 +274,7 @@ export const commandReducers: {
         const ej = r.ekiJikokuCont[o];
         if (ej !== undefined) clearToNone(ej); // 前方全 None
       }
-      const ej = slotAt(r, cmd.ekiOrder);
+      const ej = slotAt(draft, r, cmd.ekiOrder);
       if (ej.hatsuJikoku !== null) ej.chakuJikoku = null; // 発ありのときだけ着消去
     }
   },
@@ -265,7 +284,7 @@ export const commandReducers: {
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
       if (r === undefined) continue;
-      const ej = slotAt(r, cmd.ekiOrder);
+      const ej = slotAt(draft, r, cmd.ekiOrder);
       if (ej.chakuJikoku !== null) ej.hatsuJikoku = null; // 着ありのときだけ発消去
       for (let o = cmd.ekiOrder + 1; o < r.ekiJikokuCont.length; o++) {
         const later = r.ekiJikokuCont[o];
@@ -276,7 +295,7 @@ export const commandReducers: {
 
   'ekiJikoku/setChaku': (draft, cmd) => {
     const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
-    const slot = slotAt(r, cmd.ekiOrder);
+    const slot = slotAt(draft, r, cmd.ekiOrder);
     const jikokuRev = findRevJikoku(r, cmd.ekiOrder - 1);
     const decoded = decodeJikokuWithHourCompletion(cmd.input, jikokuRev);
     if (decoded === 'invalid') return; // 不正入力は無視
@@ -287,7 +306,7 @@ export const commandReducers: {
 
   'ekiJikoku/setHatsu': (draft, cmd) => {
     const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
-    const slot = slotAt(r, cmd.ekiOrder);
+    const slot = slotAt(draft, r, cmd.ekiOrder);
     const jikokuRev = slot.chakuJikoku ?? findRevJikoku(r, cmd.ekiOrder - 1);
     const decoded = decodeJikokuWithHourCompletion(cmd.input, jikokuRev);
     if (decoded === 'invalid') return;
@@ -300,7 +319,7 @@ export const commandReducers: {
     // 原典 CPropEditUi_EkiJikoku::UiDataToTarget → modify/setCentDedEkiJikoku の直訳。
     // 補完基準: 着 = 前駅の時刻、発 = (新)着 ?? 前駅の時刻(getJikokuFromUI の解決順)。
     const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
-    const slot = slotAt(r, cmd.ekiOrder);
+    const slot = slotAt(draft, r, cmd.ekiOrder);
     const jikokuRev = findRevJikoku(r, cmd.ekiOrder - 1);
     const decChaku = decodeJikokuWithHourCompletion(cmd.chakuInput, jikokuRev);
     if (decChaku === 'invalid') return; // 検証はダイアログ側の責務。ここでは防御的 no-op
@@ -329,11 +348,13 @@ export const commandReducers: {
 
   'ekiJikoku/shiftJikoku': (draft, cmd) => {
     const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    // 原典 modifyRessyaJikoku: 基準 order が駅数の範囲外なら -1 で no-op(722-727)。
+    // 判定は駅数基準(リーダーの末尾 none 切り詰めでコンテナが短くても、範囲内なら
+    // Rev で手前の時刻をシフトできる。walk 側が欠落スロットをスキップする)。
+    if (cmd.ekiOrder < 0 || cmd.ekiOrder >= draft.rosen.ekiCont.length) return;
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
       if (r === undefined) continue;
-      // 原典 modifyRessyaJikoku: 基準 order が範囲外なら -1 で no-op(722-727)。
-      if (cmd.ekiOrder < 0 || cmd.ekiOrder >= r.ekiJikokuCont.length) continue;
       if (cmd.rev === true) shiftWalkRev(r, cmd.ekiOrder, cmd.item, cmd.deltaSeconds);
       else shiftWalkFwd(r, cmd.ekiOrder, cmd.item, cmd.deltaSeconds);
     }
@@ -341,7 +362,7 @@ export const commandReducers: {
 
   'ekiJikoku/setTrack': (draft, cmd) => {
     const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
-    slotAt(r, cmd.ekiOrder).ressyaTrackIndex = cmd.ressyaTrackIndex;
+    slotAt(draft, r, cmd.ekiOrder).ressyaTrackIndex = cmd.ressyaTrackIndex;
   },
 
   'ekiJikoku/clear': (draft, cmd) => {
@@ -349,11 +370,37 @@ export const commandReducers: {
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
       if (r === undefined) continue;
-      const ej = slotAt(r, cmd.ekiOrder);
+      const ej = slotAt(draft, r, cmd.ekiOrder);
+      // 連続入力モード版はいったん停車化(通過駅の片側消去で停車になる。1118-1130)。
+      if (cmd.teisyaFirst === true) ej.ekiatsukai = 'teisya';
       if (cmd.target === 'chaku') ej.chakuJikoku = null;
       else ej.hatsuJikoku = null;
       if (ej.chakuJikoku === null && ej.hatsuJikoku === null) clearToNone(ej); // 両 null → None
     }
+  },
+
+  'ekiJikoku/renzokuInput': (draft, cmd) => {
+    // 原典 CWjkState_Renzoku::OnChar(919-1028)の 2 桁確定処理。
+    const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
+    const slot = slotAt(draft, r, cmd.ekiOrder);
+    const rev = findRevJikokuItem(r, cmd.ekiOrder, cmd.item);
+    if (rev === null) return; // canEnter 相当のガード(防御的 no-op)
+    if (!(cmd.minutes >= 0 && cmd.minutes < 60)) return;
+    const hour = Math.floor((rev as number) / 3600);
+    let sec = mod86400(hour * 3600 + cmd.minutes * 60);
+    // 直前時刻より前になるなら +1 時間(同値は補正なし。24h 循環)。
+    if (subJikokuWrapped(asSeconds(sec), rev) < 0) sec = mod86400(sec + 3600);
+    const wasNone = slot.ekiatsukai === 'none';
+    if (cmd.item === 'chaku') slot.chakuJikoku = asSeconds(sec);
+    else slot.hatsuJikoku = asSeconds(sec);
+    if (wasNone) {
+      // setChakujikoku/setHatsujikoku の自動停車化 + 基準番線 [0](停車用 = 主本線)。
+      slot.ekiatsukai = 'teisya';
+      slot.ressyaTrackIndex = mainTrackOf(draft, cmd.houkou, cmd.ekiOrder);
+    } else {
+      slot.ekiatsukai = 'teisya'; // 通過駅に分を打つと停車化(番線は変更しない)
+    }
+    r.isNull = false;
   },
 
   'ekiJikoku/toggleTsuuka': (draft, cmd) => {
@@ -362,7 +409,7 @@ export const commandReducers: {
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
       if (r === undefined) continue;
-      const ej = slotAt(r, cmd.ekiOrder);
+      const ej = slotAt(draft, r, cmd.ekiOrder);
       const wasRun = ej.ekiatsukai === 'teisya' || ej.ekiatsukai === 'tsuuka';
       ej.ekiatsukai = 'tsuuka';
       ej.chakuJikoku = null; // 原典: 時刻も NULL に(破壊的通過)
@@ -380,7 +427,7 @@ export const commandReducers: {
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
       if (r === undefined) continue;
-      const ej = slotAt(r, cmd.ekiOrder);
+      const ej = slotAt(draft, r, cmd.ekiOrder);
       if (ej.ekiatsukai === 'tsuuka') {
         ej.ekiatsukai = 'teisya';
       } else if (ej.ekiatsukai === 'teisya') {
@@ -397,7 +444,7 @@ export const commandReducers: {
     const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
-      if (r !== undefined) clearToNone(slotAt(r, cmd.ekiOrder));
+      if (r !== undefined) clearToNone(slotAt(draft, r, cmd.ekiOrder));
     }
   },
 
@@ -409,7 +456,7 @@ export const commandReducers: {
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
       if (r === undefined) continue;
-      const ej = slotAt(r, cmd.ekiOrder);
+      const ej = slotAt(draft, r, cmd.ekiOrder);
       if (cmd.ekiatsukai === 'none') {
         clearToNone(ej); // 不変条件: none ⇒ track null
       } else {
@@ -477,6 +524,9 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'ekiJikoku/clear':
       commandReducers['ekiJikoku/clear'](draft, cmd);
+      return;
+    case 'ekiJikoku/renzokuInput':
+      commandReducers['ekiJikoku/renzokuInput'](draft, cmd);
       return;
     case 'ekiJikoku/toggleTsuuka':
       commandReducers['ekiJikoku/toggleTsuuka'](draft, cmd);

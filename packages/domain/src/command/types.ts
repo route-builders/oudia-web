@@ -214,6 +214,28 @@ export interface EkiJikokuClearCommand {
   ressyaIndices: number[];
   ekiOrder: number;
   target: 'chaku' | 'hatsu';
+  /**
+   * 連続入力モード版(CWjkState_Renzoku.cpp 1118-1138): 消去前に駅扱をいったん停車にする。
+   * 通過駅の片側消去で駅扱が停車へ変わる点が通常版と異なる。既定 false。
+   */
+  teisyaFirst?: boolean;
+}
+
+/**
+ * 連続入力モードの分 2 桁確定(原典 CWjkState_Renzoku::OnChar 919-1028)。
+ * 時 = findrevJikoku(直前の非 null 時刻)の「時」、分 = minutes、秒 = 0。直前より前に
+ * なるなら +1 時間(24h wrap)。運行なし駅は停車化 + 基準番線(主本線)適用、
+ * 停車/通過駅は明示停車化(番線不変)。書込先はフォーカス行(item)。
+ */
+export interface EkiJikokuRenzokuInputCommand {
+  type: 'ekiJikoku/renzokuInput';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndex: number;
+  ekiOrder: number;
+  item: 'chaku' | 'hatsu';
+  /** 入力された分(0-59)。 */
+  minutes: number;
 }
 
 /** 通過(原典 OnJikokuhyouTsuuka)。ekiatsukai=tsuuka + 両時刻 null(破壊的)。 */
@@ -278,6 +300,7 @@ export type EditCommand =
   | EkiJikokuShiftJikokuCommand
   | EkiJikokuSetTrackCommand
   | EkiJikokuClearCommand
+  | EkiJikokuRenzokuInputCommand
   | EkiJikokuToggleTsuukaCommand
   | EkiJikokuToggleTsuukaTeisyaCommand
   | EkiJikokuSetKeiyunasiCommand
