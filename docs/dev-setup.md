@@ -49,8 +49,7 @@ oudia-second-web/
 | `pnpm dev`                             | 開発サーバ起動(apps/web、Vite)                        |
 | `pnpm build`                           | 全パッケージのビルド                                  |
 | `pnpm typecheck`                       | TypeScript 型検査(全 workspace)                       |
-| `pnpm check:code`                      | ESLint + dependency-cruiser(依存方向チェック)         |
-| `pnpm format` / `pnpm format:check`    | Prettier 適用 / 検査                                  |
+| `pnpm check:code`                      | Biome + dependency-cruiser(依存方向チェック)          |
 | `pnpm test`                            | Vitest 全件(ユニット + 黄金テスト + プロパティテスト) |
 | `pnpm test --filter @oudia-web/format` | パッケージ単位のテスト                                |
 | `pnpm bench`                           | ベンチマーク(vitest bench)                            |
@@ -75,8 +74,7 @@ oudia-second-web/
 
 推奨拡張(`.vscode/extensions.json` で共有):
 
-- ESLint (`dbaeumer.vscode-eslint`)
-- Prettier (`esbenp.prettier-vscode`) — `formatOnSave` を有効に
+- Biome(`biomejs.biome`)
 - Vitest (`vitest.explorer`)
 
 `.editorconfig` を正とし、インデント 2 スペース・LF・末尾改行ありに統一する(ドキュメント含む)。

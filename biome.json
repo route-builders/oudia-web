@@ -234,13 +234,7 @@
       "linter": { "rules": { "style": { "noNonNullAssertion": "off" } } }
     },
     {
-      "includes": [
-        "*.config.ts",
-        "*.config.js",
-        "eslint.config.js",
-        "**/vite.config.ts",
-        "**/playwright.config.ts"
-      ],
+      "includes": ["*.config.ts", "*.config.js", "**/vite.config.ts", "**/playwright.config.ts"],
       "javascript": { "globals": [] },
       "linter": {
         "rules": {

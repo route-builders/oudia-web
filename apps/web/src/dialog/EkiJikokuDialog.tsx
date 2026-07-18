@@ -87,7 +87,6 @@ export function EkiJikokuDialog(props: {
     const n = el.value.length;
     el.setSelectionRange(n, n);
     // マウント時 1 回のみ。
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialField]);
 
   const commit = (): void => {
