@@ -7,8 +7,11 @@
  * キーマップアクション → EditCommand の配線(design §05 4.3)。選択・フォーカス・クリップボードを
  * 参照し、原典 §6 の選択仕様に従って ressya/replaceRange・swap・駅時刻コマンドへ正規化する。
  *
- * M3 範囲: undo/redo・cut/copy/paste・clear・tsuuka・keiyunasi・sihatsu/syuuchakuEki・
- * canceled・swap。連続入力・直通化/分断・駅時刻挿入削除・作業は M4/M5/M7。
+ * 編集コマンド後のフォーカス移動は原典どおり(CWjkState_Ressyahensyu.cpp):
+ * [通過][通過-停車][経由なし][当駅始発][当駅止り][運休] → moveNext(true)(次駅へ)、
+ * [時刻消去] → moveNext(false)(着 → 同駅の発へ)、±1分し次へ(駅時刻行のみ)→ moveNext(false)。
+ *
+ * 未配線: 連続入力(M4-2)・番線行の ±1 多態(M6)・作業行/路線外行(M7)。
  */
 
 import { useCallback } from 'react';
@@ -16,7 +19,7 @@ import type { RosenFileData } from '@oudia/format';
 import type { TimetableGridSpec } from '@oudia/derive';
 import { copyRessyaToClipboard, computePasteTrains } from '@oudia/domain';
 import { useDocStore } from '../store/docStore.js';
-import type { EditAction } from './keymap.js';
+import type { JikokuStepAction, ResolvedAction } from './keymap.js';
 import type { SelectionState } from './selection.js';
 import { getEffectiveRessyaIndices, focusRessyaIndex } from './selection.js';
 import { resolveCellTarget } from './cellSemantics.js';
@@ -27,20 +30,32 @@ export interface TimetableCommandCtx {
   diaIndex: number;
   houkou: 0 | 1;
   selection: SelectionState;
+  /** 編集後のフォーカス移動(原典 moveFocusCellToNext(bNextEkiOrder))。 */
+  moveNext: (nextEkiOrder: boolean) => void;
+  /** Ctrl+Shift+K のフォーカス移動(原典 moveFocusCellToPrev)。 */
+  movePrev: () => void;
 }
 
+/** 列車番号/号数行の delta(原典対照表: Move=±1 / NoMove=±10 / Any1=±2 / Any2=±100)。 */
+const BANGOU_DELTA: Record<JikokuStepAction['variant'], number> = {
+  move: 1,
+  noMove: 10,
+  any1: 2,
+  any2: 100,
+};
+
 /** アクションを実行する関数を返す。実行できなければ何もしない。 */
-export function useTimetableCommands(ctx: TimetableCommandCtx): (action: EditAction) => void {
+export function useTimetableCommands(ctx: TimetableCommandCtx): (action: ResolvedAction) => void {
   const dispatch = useDocStore((s) => s.dispatch);
   const undo = useDocStore((s) => s.undo);
   const redo = useDocStore((s) => s.redo);
   const clipboard = useDocStore((s) => s.clipboard);
   const setClipboard = useDocStore((s) => s.setClipboard);
 
-  const { data, grid, diaIndex, houkou, selection } = ctx;
+  const { data, grid, diaIndex, houkou, selection, moveNext, movePrev } = ctx;
 
   return useCallback(
-    (action: EditAction) => {
+    (action: ResolvedAction) => {
       const dia = data.rosen.diaCont[diaIndex];
       if (dia === undefined) return;
       const list = dia.ressyaCont[houkou];
@@ -51,6 +66,69 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: EditAct
         focusTarget?.kind === 'ekiJikoku' || focusTarget?.kind === 'track'
           ? focusTarget.ekiOrder
           : null;
+
+      // ---- 連続 1 分修正系(構造化アクション。フォーカス行種別で多態)----
+      if (typeof action === 'object') {
+        runJikokuStep(action);
+        return;
+      }
+
+      function runJikokuStep(step: JikokuStepAction): void {
+        if (focusTarget === null || targets.length === 0) return;
+        if (focusTarget.kind === 'ekiJikoku') {
+          // iType 0/10: 駅時刻シフト。move/noMove = 60 秒、any1/any2 = DispProp の任意秒。
+          const sec =
+            step.variant === 'any1'
+              ? data.dispProp.anySecondIncDec1
+              : step.variant === 'any2'
+                ? data.dispProp.anySecondIncDec2
+                : 60;
+          dispatch({
+            type: 'ekiJikoku/shiftJikoku',
+            diaIndex,
+            houkou,
+            ressyaIndices: targets,
+            ekiOrder: focusTarget.ekiOrder,
+            item: focusTarget.target,
+            deltaSeconds: step.sign * sec,
+            rev: step.rev,
+          });
+          // フォーカス移動は Move 系 + 駅時刻行のみ(原典 6277-6280)。編集が no-op でも移動する。
+          if (step.variant === 'move') moveNext(false);
+          return;
+        }
+        if (focusTarget.kind === 'track') {
+          // iType 1: 番線 prev/next は M6(番線行表示・編集)で結線する。
+          return;
+        }
+        if (focusTarget.kind === 'ressyaProp') {
+          const rt = focusTarget.rowType;
+          if (rt === 'ressyasyubetsu') {
+            // iType 8: 種別を前/次へ(端でラップ)。フォーカスは移動しない。
+            dispatch({
+              type: 'ressya/stepSyubetsu',
+              diaIndex,
+              houkou,
+              ressyaIndices: targets,
+              step: step.sign,
+            });
+            return;
+          }
+          if (rt === 'ressyabangou' || rt === 'gousuu') {
+            // iType 11/12: 列車番号/号数の末尾数字 ± delta。
+            dispatch({
+              type: 'ressya/modifyBangou',
+              diaIndex,
+              houkou,
+              ressyaIndices: targets,
+              target: rt,
+              delta: step.sign * BANGOU_DELTA[step.variant],
+            });
+            return;
+          }
+        }
+        // その他の行種別(列車名・備考・作業等)は原典どおり無効(iRv=-1)。
+      }
 
       switch (action) {
         case 'undo':
@@ -116,16 +194,17 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: EditAct
         }
 
         case 'clearJikoku': {
-          if (ekiOrder === null || targets.length === 0) return;
-          const target = focusTarget?.kind === 'ekiJikoku' ? focusTarget.target : 'chaku';
+          // 原典 OnJikokuhyouJikokuSakujo(4696-4800): 着/発の駅時刻セルのみ有効(番線行は不可)。
+          if (focusTarget?.kind !== 'ekiJikoku' || targets.length === 0) return;
           dispatch({
             type: 'ekiJikoku/clear',
             diaIndex,
             houkou,
             ressyaIndices: targets,
-            ekiOrder,
-            target,
+            ekiOrder: focusTarget.ekiOrder,
+            target: focusTarget.target,
           });
+          moveNext(false); // 着を消した直後に同駅の発を消せるように(4792)
           return;
         }
 
@@ -168,6 +247,21 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: EditAct
             ressyaIndices: targets,
             ekiOrder,
           });
+          moveNext(true); // 原典 4909
+          return;
+        }
+
+        case 'tsuukaTeisya': {
+          // 原典 OnJikokuhyouTsuukateisya(4919-5042): 駅時刻/番線行で有効・各列車独立トグル。
+          if (ekiOrder === null || targets.length === 0) return;
+          dispatch({
+            type: 'ekiJikoku/toggleTsuukaTeisya',
+            diaIndex,
+            houkou,
+            ressyaIndices: targets,
+            ekiOrder,
+          });
+          moveNext(true); // 原典 5031
           return;
         }
 
@@ -180,6 +274,7 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: EditAct
             ressyaIndices: targets,
             ekiOrder,
           });
+          moveNext(true); // 原典 5119
           return;
         }
 
@@ -192,6 +287,7 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: EditAct
             ressyaIndices: targets,
             ekiOrder,
           });
+          moveNext(true); // 原典 5195
           return;
         }
 
@@ -204,20 +300,20 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: EditAct
             ressyaIndices: targets,
             ekiOrder,
           });
+          moveNext(true); // 原典 5271
           return;
         }
 
         case 'toggleCanceled': {
+          // 原典 OnJikokuhyouCanceled(9942-9997): セル位置の制約なし・各列車独立反転。
           if (targets.length === 0) return;
-          // 全対象が運休なら解除、そうでなければ運休(原典トグルは代表値の反転)。
-          const allCanceled = targets.every((i) => list[i]?.isCanceled === true);
           dispatch({
-            type: 'ressya/setCanceled',
+            type: 'ressya/toggleCanceled',
             diaIndex,
             houkou,
             ressyaIndices: targets,
-            canceled: !allCanceled,
           });
+          moveNext(true); // 原典 9994
           return;
         }
 
@@ -231,11 +327,35 @@ export function useTimetableCommands(ctx: TimetableCommandCtx): (action: EditAct
           return;
         }
 
+        case 'focusNext':
+          moveNext(false); // 原典 OnJikokuhyouEkijikokuNext(6528-6572)
+          return;
+        case 'focusPrev':
+          movePrev();
+          return;
+
+        case 'renzoku':
+          // 連続入力モードの起動はビュー側で処理(M4-2)。ここでは no-op。
+          return;
+
         case 'search':
           // 検索バーの起動はビュー側で処理(ここでは no-op)。
           return;
       }
     },
-    [data, grid, diaIndex, houkou, selection, dispatch, undo, redo, clipboard, setClipboard],
+    [
+      data,
+      grid,
+      diaIndex,
+      houkou,
+      selection,
+      dispatch,
+      undo,
+      redo,
+      clipboard,
+      setClipboard,
+      moveNext,
+      movePrev,
+    ],
   );
 }

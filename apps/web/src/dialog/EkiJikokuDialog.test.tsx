@@ -2,11 +2,12 @@
 // Copyright (C) 2026 oudia-second-web contributors
 // @vitest-environment happy-dom
 
-import { describe, it, expect, vi, afterEach, beforeAll } from 'vitest';
+import { describe, it, expect, vi, afterEach, beforeAll, beforeEach } from 'vitest';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import type { EditCommand } from '@oudia/domain';
 import type { EkiJikoku } from '@oudia/format';
 import { asSeconds } from '@oudia/format';
+import { useSettingsStore, DEFAULT_JIKOKUHYOU_SETTINGS } from '../store/settingsStore.js';
 import { EkiJikokuDialog } from './EkiJikokuDialog.js';
 import type { EkiJikokuDialogTarget } from './EkiJikokuDialog.js';
 
@@ -24,6 +25,9 @@ beforeAll(() => {
 });
 
 afterEach(cleanup);
+beforeEach(() => {
+  useSettingsStore.setState({ jikokuhyou: DEFAULT_JIKOKUHYOU_SETTINGS });
+});
 
 const hms = (h: number, m: number, s = 0) => asSeconds(h * 3600 + m * 60 + s);
 
@@ -50,20 +54,39 @@ function makeTarget(over: Partial<EkiJikoku> = {}): EkiJikokuDialogTarget {
 }
 
 describe('EkiJikokuDialog', () => {
-  it('着時刻を変えて OK すると setChaku を dispatch', () => {
+  it('着時刻を変えて OK すると writeJikoku を dispatch(繰上げ繰下げは既定 ON)', () => {
     const dispatch = vi.fn<(c: EditCommand) => void>();
     render(<EkiJikokuDialog target={makeTarget()} dispatch={dispatch} onClose={vi.fn()} />);
     const input = screen.getByLabelText<HTMLInputElement>('着時刻');
     fireEvent.change(input, { target: { value: '610' } });
     fireEvent.click(screen.getByText('OK'));
     expect(dispatch).toHaveBeenCalledWith({
-      type: 'ekiJikoku/setChaku',
+      type: 'ekiJikoku/writeJikoku',
       diaIndex: 0,
       houkou: 0,
       ressyaIndex: 1,
       ekiOrder: 3,
-      input: '610',
+      chakuInput: '610',
+      hatsuInput: '609', // 無変更欄も現値で一括送信(原典は EkiJikoku 全体を書く)
+      modify: true, // 原典既定 ON(m_bModifyEkijikoku)
     });
+  });
+
+  it('[時刻の繰上げ・繰下げ]チェックを外すと modify=false で dispatch され、設定が保存される', () => {
+    const dispatch = vi.fn<(c: EditCommand) => void>();
+    render(<EkiJikokuDialog target={makeTarget()} dispatch={dispatch} onClose={vi.fn()} />);
+    const check = screen.getByLabelText<HTMLInputElement>('時刻の繰上げ・繰下げ');
+    expect(check.checked).toBe(true); // 原典既定 ON
+    fireEvent.click(check);
+    fireEvent.change(screen.getByLabelText<HTMLInputElement>('着時刻'), {
+      target: { value: '610' },
+    });
+    fireEvent.click(screen.getByText('OK'));
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'ekiJikoku/writeJikoku', modify: false }),
+    );
+    // ビュー設定として記憶される(原典 .ini 相当)。
+    expect(useSettingsStore.getState().jikokuhyou.modifyEkijikoku).toBe(false);
   });
 
   it('通過に切り替えて OK すると setEkiatsukai(tsuuka)のみ dispatch(時刻は保持され再送しない)', () => {
@@ -133,7 +156,7 @@ describe('EkiJikokuDialog', () => {
     // エラー表示・非クローズに加え、setEkiatsukai も送られていないこと(部分確定の禁止)。
     expect(dispatch).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
-    // 入力を修正して OK し直すと、駅扱 + 発時刻がそれぞれ 1 回ずつ dispatch される。
+    // 入力を修正して OK し直すと、駅扱 + 時刻がそれぞれ 1 回ずつ dispatch される。
     fireEvent.change(screen.getByLabelText<HTMLInputElement>('発時刻'), {
       target: { value: '620' },
     });
@@ -143,7 +166,7 @@ describe('EkiJikokuDialog', () => {
       expect.objectContaining({ type: 'ekiJikoku/setEkiatsukai', ekiatsukai: 'tsuuka' }),
     );
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/setHatsu', input: '620' }),
+      expect.objectContaining({ type: 'ekiJikoku/writeJikoku', hatsuInput: '620' }),
     );
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -193,14 +216,15 @@ describe('EkiJikokuDialog', () => {
     expect(hatsu.value).toBe('7');
     expect(screen.getByLabelText<HTMLInputElement>('着時刻').value).toBe('608');
     expect(document.activeElement).toBe(hatsu);
-    // 続けて入力して OK → setHatsu のみ(着は不変)。
+    // 続けて入力して OK → writeJikoku(着は現値のまま一括送信)。
     fireEvent.change(hatsu, { target: { value: '710' } });
     fireEvent.click(screen.getByText('OK'));
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/setHatsu', input: '710' }),
-    );
-    expect(dispatch).not.toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/setChaku' }),
+      expect.objectContaining({
+        type: 'ekiJikoku/writeJikoku',
+        hatsuInput: '710',
+        chakuInput: '608',
+      }),
     );
   });
 
@@ -227,7 +251,7 @@ describe('EkiJikokuDialog', () => {
       expect.objectContaining({ type: 'ekiJikoku/setEkiatsukai', ekiatsukai: 'teisya' }),
     );
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/setChaku', input: '605' }),
+      expect.objectContaining({ type: 'ekiJikoku/writeJikoku', chakuInput: '605' }),
     );
   });
 
@@ -288,7 +312,7 @@ describe('EkiJikokuDialog', () => {
       expect.objectContaining({ type: 'ekiJikoku/setEkiatsukai', ekiatsukai: 'teisya' }),
     );
     expect(dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'ekiJikoku/setChaku', input: '605' }),
+      expect.objectContaining({ type: 'ekiJikoku/writeJikoku', chakuInput: '605' }),
     );
   });
 

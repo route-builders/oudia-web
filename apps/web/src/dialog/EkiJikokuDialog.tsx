@@ -18,8 +18,9 @@
  * - キー転送(initialKeyString)はフォーカス行に応じて着欄 / 発欄へ入る(initialField)。
  *   原典は既存文字列を全選択しておき転送キーで置換する — 初期値を転送文字列にするのと等価。
  * - 開いたとき対象時刻欄へフォーカスし、カーソルは末尾(design §5.2)。
- * - コミット: 駅扱変更 → ekiJikoku/setEkiatsukai、時刻変更 → setChaku/setHatsu を dispatch
- *   (原典 UiDataToTarget と同じく変更のあったフィールドのみ書く)。
+ * - コミット: 駅扱変更 → ekiJikoku/setEkiatsukai、時刻変更 → ekiJikoku/writeJikoku を dispatch。
+ *   [時刻の繰上げ・繰下げ]チェック(原典 m_bModifyEkijikoku、既定 ON)が ON なら
+ *   writeJikoku の modify=true(原典 modifyCentDedEkiJikoku: 発差分を以後の駅へ伝播)。
  */
 
 import { useEffect, useRef, useState } from 'react';
@@ -27,6 +28,7 @@ import type { EkiJikoku, Ekiatsukai, Jikoku } from '@oudia/format';
 import { encodeJikoku } from '@oudia/format';
 import type { EditCommand } from '@oudia/domain';
 import { decodeJikokuWithHourCompletion } from '@oudia/domain';
+import { useSettingsStore } from '../store/settingsStore.js';
 import { Dialog } from './Dialog.js';
 
 export interface EkiJikokuDialogTarget {
@@ -71,6 +73,9 @@ export function EkiJikokuDialog(props: {
   // 時刻欄の活性。開いた時点では駅扱によらず有効(運行なしなら「有効・空」)。
   // 編集中にラジオを運行なしへ変えたときだけ無効化する(原典 AdjustUiData)。
   const [timesEnabled, setTimesEnabled] = useState(true);
+  // [時刻の繰上げ・繰下げ](原典 m_bModifyEkijikoku。ビュー設定として記憶、既定 ON)。
+  const modifyEkijikoku = useSettingsStore((s) => s.jikokuhyou.modifyEkijikoku);
+  const setJikokuhyouSetting = useSettingsStore((s) => s.setJikokuhyouSetting);
 
   // 対象時刻欄へフォーカスし、カーソルを末尾に置く(design §5.2 キー転送)。
   const chakuRef = useRef<HTMLInputElement>(null);
@@ -124,28 +129,19 @@ export function EkiJikokuDialog(props: {
       });
     }
 
-    // 2) 時刻(運行なし以外。通過は通過時刻)。変更のあったフィールドのみ書く(UiDataToTarget)。
-    if (writesJikoku) {
-      if (chakuChanged) {
-        dispatch({
-          type: 'ekiJikoku/setChaku',
-          diaIndex: target.diaIndex,
-          houkou: target.houkou,
-          ressyaIndex: target.ressyaIndex,
-          ekiOrder: target.ekiOrder,
-          input: chaku,
-        });
-      }
-      if (hatsuChanged) {
-        dispatch({
-          type: 'ekiJikoku/setHatsu',
-          diaIndex: target.diaIndex,
-          houkou: target.houkou,
-          ressyaIndex: target.ressyaIndex,
-          ekiOrder: target.ekiOrder,
-          input: hatsu,
-        });
-      }
+    // 2) 時刻(運行なし以外。通過は通過時刻)。着発を一括で書く(原典 UiDataToTarget は
+    //    EkiJikoku 全体を modify/setCentDedEkiJikoku へ渡す)。繰上げ繰下げは modify で伝播。
+    if (writesJikoku && (chakuChanged || hatsuChanged)) {
+      dispatch({
+        type: 'ekiJikoku/writeJikoku',
+        diaIndex: target.diaIndex,
+        houkou: target.houkou,
+        ressyaIndex: target.ressyaIndex,
+        ekiOrder: target.ekiOrder,
+        chakuInput: chaku,
+        hatsuInput: hatsu,
+        modify: modifyEkijikoku,
+      });
     }
     onClose();
   };
@@ -219,6 +215,17 @@ export function EkiJikokuDialog(props: {
             normalizeField(hatsu, setHatsu);
           }}
         />
+      </label>
+
+      <label className="dialog-field dialog-check">
+        <input
+          type="checkbox"
+          checked={modifyEkijikoku}
+          onChange={(e) => {
+            setJikokuhyouSetting('modifyEkijikoku', e.target.checked);
+          }}
+        />
+        時刻の繰上げ・繰下げ
       </label>
 
       {error !== null && <p className="dialog-error">{error}</p>}

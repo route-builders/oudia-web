@@ -70,13 +70,49 @@ export interface RessyaSetPropCommand {
     | { key: 'bikou'; value: string };
 }
 
-/** 運休設定(原典 OnJikokuhyouCanceled → setIsCanceled)。反転結果を呼出側で計算して渡す。 */
+/** 運休設定(setIsCanceled の直接指定形。UI の運休トグルは ressya/toggleCanceled を使う)。 */
 export interface RessyaSetCanceledCommand {
   type: 'ressya/setCanceled';
   diaIndex: number;
   houkou: Ressyahoukou;
   ressyaIndices: number[];
   canceled: boolean;
+}
+
+/**
+ * 運休トグル(原典 OnJikokuhyouCanceled、CWjkState_Ressyahensyu.cpp 9942-9997)。
+ * 各列車を独立に反転する(setIsCanceled(!isCanceled())。代表値方式ではない)。
+ */
+export interface RessyaToggleCanceledCommand {
+  type: 'ressya/toggleCanceled';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+}
+
+/**
+ * 種別を前/次へ(原典 ChangeRessyasyubetsuPrev/Next、CWjkState_Ressyahensyu.cpp 14585-14621)。
+ * 各列車の syubetsuIndex を step 分進め、端でラップする。
+ */
+export interface RessyaStepSyubetsuCommand {
+  type: 'ressya/stepSyubetsu';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  step: 1 | -1;
+}
+
+/**
+ * 列車番号/号数の末尾連続数字への加算(原典 modifyRessyaBangou/modifyGou、
+ * CentDedRessya.cpp 822-1010)。数字なしは no-op、負は 0 クランプ、列車番号は元桁数 0 詰め。
+ */
+export interface RessyaModifyBangouCommand {
+  type: 'ressya/modifyBangou';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  target: 'ressyabangou' | 'gousuu';
+  delta: number;
 }
 
 /** 当駅始発(原典 CentDedRessya::setSihatsuEki)。前方駅を全 None 化 + 発ありなら着消去。 */
@@ -100,7 +136,7 @@ export interface RessyaSetSyuuchakuEkiCommand {
 // ---- 駅時刻(ekiJikoku)----
 
 /**
- * 着時刻設定(グリッド入力/ダイアログ)。原典 setChakujikoku 経由(none→teisya 自動昇格)。
+ * 着時刻設定(グリッド入力/連続入力)。原典 setChakujikoku 経由(none→teisya 自動昇格)。
  * input は生文字列。レデューサが decode + 時補完。空文字 = クリア。
  */
 export interface EkiJikokuSetChakuCommand {
@@ -110,8 +146,6 @@ export interface EkiJikokuSetChakuCommand {
   ressyaIndex: number;
   ekiOrder: number;
   input: string;
-  /** 繰上げ繰下げ(発以後へ delta 伝播)。既定 false = 当該駅のみ。 */
-  modify?: boolean;
 }
 
 /** 発時刻設定。原典 setHatsujikoku 経由(none→teisya 自動昇格)。 */
@@ -122,7 +156,44 @@ export interface EkiJikokuSetHatsuCommand {
   ressyaIndex: number;
   ekiOrder: number;
   input: string;
-  modify?: boolean;
+}
+
+/**
+ * 着・発の一括書込(駅時刻ダイアログの確定経路)。
+ * modify=true は原典 CentDedRessya::modifyCentDedEkiJikoku(CentDedRessya.cpp 284-356)の
+ * 繰上げ・繰下げ: 発が前後とも非 null なら発差分を次駅の着以後へ、そうでなく着が前後とも
+ * 非 null なら着差分を当該駅の発以後へ伝播する(発優先。他は伝播なし)。
+ * modify=false は setCentDedEkiJikoku 相当(置換のみ)。
+ */
+export interface EkiJikokuWriteJikokuCommand {
+  type: 'ekiJikoku/writeJikoku';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndex: number;
+  ekiOrder: number;
+  /** 生入力(decode + 時補完はレデューサ)。空文字 = クリア。 */
+  chakuInput: string;
+  hatsuInput: string;
+  /** 繰上げ・繰下げ(ダイアログのチェック。原典既定 ON)。 */
+  modify: boolean;
+}
+
+/**
+ * 駅時刻の連続シフト(原典 CentDedRessya::modifyRessyaJikoku / modifyRessyaJikokuRev、
+ * CentDedRessya.cpp 717-821)。基準 (ekiOrder, item) 自身を含み、rev=false は末尾方向
+ * (着→発→次駅着…)、rev=true は起点方向(発→着→前駅発…)の全非 null 時刻へ
+ * deltaSeconds を加算する(24h wrap)。駅扱は見ない。null はスキップして走査続行。
+ */
+export interface EkiJikokuShiftJikokuCommand {
+  type: 'ekiJikoku/shiftJikoku';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  ekiOrder: number;
+  item: 'chaku' | 'hatsu';
+  deltaSeconds: number;
+  /** true = Rev 系(フォーカス以前へ伝播)。既定 false。 */
+  rev?: boolean;
 }
 
 /** 番線設定(原典 setRessyaTrackIndex)。null = 未設定。 */
@@ -148,6 +219,19 @@ export interface EkiJikokuClearCommand {
 /** 通過(原典 OnJikokuhyouTsuuka)。ekiatsukai=tsuuka + 両時刻 null(破壊的)。 */
 export interface EkiJikokuToggleTsuukaCommand {
   type: 'ekiJikoku/toggleTsuuka';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  ekiOrder: number;
+}
+
+/**
+ * 通過-停車トグル(原典 OnJikokuhyouTsuukateisya、CWjkState_Ressyahensyu.cpp 4919-5042)。
+ * 各列車が自身の駅扱で独立に 3 分岐: 通過→停車 / 停車→通過(いずれも時刻・番線維持)/
+ * 運行なし→通過(基準番線=主本線を設定)。代表値方式ではない。
+ */
+export interface EkiJikokuToggleTsuukaTeisyaCommand {
+  type: 'ekiJikoku/toggleTsuukaTeisya';
   diaIndex: number;
   houkou: Ressyahoukou;
   ressyaIndices: number[];
@@ -183,13 +267,19 @@ export type EditCommand =
   | RessyaSwapCommand
   | RessyaSetPropCommand
   | RessyaSetCanceledCommand
+  | RessyaToggleCanceledCommand
+  | RessyaStepSyubetsuCommand
+  | RessyaModifyBangouCommand
   | RessyaSetSihatsuEkiCommand
   | RessyaSetSyuuchakuEkiCommand
   | EkiJikokuSetChakuCommand
   | EkiJikokuSetHatsuCommand
+  | EkiJikokuWriteJikokuCommand
+  | EkiJikokuShiftJikokuCommand
   | EkiJikokuSetTrackCommand
   | EkiJikokuClearCommand
   | EkiJikokuToggleTsuukaCommand
+  | EkiJikokuToggleTsuukaTeisyaCommand
   | EkiJikokuSetKeiyunasiCommand
   | EkiJikokuSetEkiatsukaiCommand;
 

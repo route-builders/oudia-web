@@ -17,6 +17,7 @@ import { GridGeometry, drawGrid } from '@oudia/render';
 import type { GridTheme } from '@oudia/render';
 import { useCanvas2d } from '../hooks/useCanvas2d.js';
 import { useDocStore } from '../store/docStore.js';
+import { useSettingsStore } from '../store/settingsStore.js';
 import { useGridSelection } from '../grid/useGridSelection.js';
 import { hitTestCell, cellViewRect } from '../grid/hitTest.js';
 import { resolveCellTarget } from '../grid/cellSemantics.js';
@@ -94,12 +95,27 @@ export function TimetableView(props: {
 
   const keymapMode = useMemo(() => detectKeymapMode(), []);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // 編集コマンド後のフォーカス移動(原典 moveFocusCellToNext/Prev。moveRight はビュー設定)。
+  const focusMoveRight = useSettingsStore((s) => s.jikokuhyou.focusMoveRight);
+  const moveNext = useCallback(
+    (nextEkiOrder: boolean) => {
+      sel.moveNext(focusMoveRight, nextEkiOrder);
+    },
+    [sel, focusMoveRight],
+  );
+  const movePrev = useCallback(() => {
+    sel.movePrev(focusMoveRight);
+  }, [sel, focusMoveRight]);
+
   const runCommand = useTimetableCommands({
     data,
     grid: grid ?? emptyGrid,
     diaIndex,
     houkou,
     selection: sel.selection,
+    moveNext,
+    movePrev,
   });
 
   // ダイアログを開く(セル target → 具体的ダイアログ)。

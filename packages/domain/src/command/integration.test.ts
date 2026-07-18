@@ -148,6 +148,95 @@ describe('M3 編集 → Undo でバイト一致(黄金 T1 discipline)', () => {
         ekiatsukai: 'tsuuka',
       },
     },
+    // ---- M4 ----
+    {
+      name: 'ekiJikoku/shiftJikoku(-1分し次へ相当)',
+      cmd: {
+        type: 'ekiJikoku/shiftJikoku',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        ekiOrder: 4,
+        item: 'hatsu',
+        deltaSeconds: -60,
+      },
+    },
+    {
+      name: 'ekiJikoku/shiftJikoku(Rev)',
+      cmd: {
+        type: 'ekiJikoku/shiftJikoku',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        ekiOrder: 4,
+        item: 'hatsu',
+        deltaSeconds: 60,
+        rev: true,
+      },
+    },
+    {
+      name: 'ekiJikoku/writeJikoku(繰上げ繰下げ ON)',
+      cmd: {
+        type: 'ekiJikoku/writeJikoku',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndex: 0,
+        ekiOrder: 4,
+        chakuInput: '012',
+        hatsuInput: '015',
+        modify: true,
+      },
+    },
+    {
+      name: 'ekiJikoku/toggleTsuukaTeisya',
+      cmd: {
+        type: 'ekiJikoku/toggleTsuukaTeisya',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        ekiOrder: 4,
+      },
+    },
+    {
+      name: 'ekiJikoku/toggleTsuuka(運行なし→通過の基準番線)',
+      cmd: {
+        type: 'ekiJikoku/toggleTsuuka',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        ekiOrder: 14,
+      },
+    },
+    {
+      name: 'ressya/toggleCanceled',
+      cmd: {
+        type: 'ressya/toggleCanceled',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0, 1],
+      },
+    },
+    {
+      name: 'ressya/stepSyubetsu',
+      cmd: {
+        type: 'ressya/stepSyubetsu',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        step: 1,
+      },
+    },
+    {
+      name: 'ressya/modifyBangou',
+      cmd: {
+        type: 'ressya/modifyBangou',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        target: 'ressyabangou',
+        delta: 1,
+      },
+    },
   ];
 
   for (const c of CASES) {

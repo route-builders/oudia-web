@@ -13,11 +13,13 @@
  * - ekiatsukai==='none' の駅は ressyaTrackIndex=null(reader/writer と一致)。
  */
 
-import type { EkiJikoku, Ressya, Ressyahoukou, RosenFileData } from '@oudia/format';
+import type { EkiJikoku, Jikoku, Ressya, Ressyahoukou, RosenFileData } from '@oudia/format';
 import { asSeconds } from '@oudia/format';
 import { getEkiJikoku } from '../runRange.js';
+import { ekiIndexOfEkiOrder } from '../ekiOrder.js';
 import type { EditCommand } from './types.js';
 import { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
+import { addToTrailingNumber } from './clipboard.js';
 
 /** 改行を LF に正規化する(原典 strLfOf。CRLF/CR → LF)。 */
 export function normalizeToLf(s: string): string {
@@ -80,18 +82,49 @@ function findRevJikoku(ressya: Ressya, fromOrder: number): EkiJikoku['hatsuJikok
   return null;
 }
 
-/** startOrder 以降の全非 null 着/発に delta 秒を加算(24h wrap)。原典 modifyRessyaJikoku 相当。 */
-function shiftJikokuFrom(ressya: Ressya, startOrder: number, delta: number): void {
+/** 非 null の時刻に delta 秒加算(24h wrap)。null はそのまま。 */
+function addWrapped(j: Jikoku, delta: number): Jikoku {
+  return j === null ? null : asSeconds(mod86400((j as number) + delta));
+}
+
+/**
+ * 原典 modifyRessyaJikoku(CentDedRessya.cpp 717-767): 基準 (order, item) 自身を含み、
+ * 着→発→次駅着…の順で末尾まで、非 null 時刻へ delta 秒加算(null はスキップして続行)。
+ * 駅扱は見ない。前後作業の時刻シフトは M7(enableOperation=0 では常に空)。
+ */
+function shiftWalkFwd(ressya: Ressya, order: number, item: 'chaku' | 'hatsu', delta: number): void {
   if (delta === 0) return;
   const cont = ressya.ekiJikokuCont;
-  for (let o = startOrder; o < cont.length; o++) {
+  for (let o = order; o < cont.length; o++) {
     const ej = cont[o];
     if (ej === undefined) continue;
-    if (ej.chakuJikoku !== null)
-      ej.chakuJikoku = asSeconds(mod86400((ej.chakuJikoku as number) + delta));
-    if (ej.hatsuJikoku !== null)
-      ej.hatsuJikoku = asSeconds(mod86400((ej.hatsuJikoku as number) + delta));
+    if (o > order || item === 'chaku') ej.chakuJikoku = addWrapped(ej.chakuJikoku, delta);
+    ej.hatsuJikoku = addWrapped(ej.hatsuJikoku, delta);
   }
+}
+
+/** 原典 modifyRessyaJikokuRev(CentDedRessya.cpp 769-821): 基準自身を含み駅 0 の着まで逆走査。 */
+function shiftWalkRev(ressya: Ressya, order: number, item: 'chaku' | 'hatsu', delta: number): void {
+  if (delta === 0) return;
+  const cont = ressya.ekiJikokuCont;
+  for (let o = order; o >= 0; o--) {
+    const ej = cont[o];
+    if (ej === undefined) continue;
+    if (o < order || item === 'hatsu') ej.hatsuJikoku = addWrapped(ej.hatsuJikoku, delta);
+    ej.chakuJikoku = addWrapped(ej.chakuJikoku, delta);
+  }
+}
+
+/**
+ * 基準番線(原典 StandardRessyaTrackIndexSearch、CentDedRosen.cpp 2447-2497)。
+ * 基準運転時分ダイヤ(M7)未対応の現段階では常に初期値 = 当該駅・当該方向の主本線
+ * (getMainTrack: 下り=downMain / 上り=upMain)。停車用 [0]・通過用 [1] とも同値。
+ */
+function mainTrackOf(draft: RosenFileData, houkou: Ressyahoukou, ekiOrder: number): number {
+  const ekiCont = draft.rosen.ekiCont;
+  const eki = ekiCont[ekiIndexOfEkiOrder(ekiOrder, ekiCont.length, houkou)];
+  if (eki === undefined) return 0;
+  return houkou === 0 ? eki.downMain : eki.upMain;
 }
 
 /**
@@ -179,6 +212,40 @@ export const commandReducers: {
     }
   },
 
+  'ressya/toggleCanceled': (draft, cmd) => {
+    // 原典 OnJikokuhyouCanceled(9981): 各列車独立に反転。代表値方式ではない。
+    const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    for (const i of cmd.ressyaIndices) {
+      const r = list[i];
+      if (r !== undefined) r.isCanceled = !r.isCanceled;
+    }
+  },
+
+  'ressya/stepSyubetsu': (draft, cmd) => {
+    const n = draft.rosen.ressyasyubetsuCont.length;
+    if (n === 0) return;
+    const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    for (const i of cmd.ressyaIndices) {
+      const r = list[i];
+      if (r === undefined) continue;
+      r.syubetsuIndex = (((r.syubetsuIndex + cmd.step) % n) + n) % n; // 端でラップ
+    }
+  },
+
+  'ressya/modifyBangou': (draft, cmd) => {
+    // 原典 modifyRessyaBangou(%0*d 0 詰め)/ modifyGou(0 詰めなし)。
+    const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    for (const i of cmd.ressyaIndices) {
+      const r = list[i];
+      if (r === undefined) continue;
+      if (cmd.target === 'ressyabangou') {
+        r.ressyabangou = addToTrailingNumber(r.ressyabangou, cmd.delta, true);
+      } else {
+        r.gousuu = addToTrailingNumber(r.gousuu, cmd.delta, false);
+      }
+    }
+  },
+
   'ressya/setSihatsuEki': (draft, cmd) => {
     const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
     for (const i of cmd.ressyaIndices) {
@@ -213,15 +280,8 @@ export const commandReducers: {
     const jikokuRev = findRevJikoku(r, cmd.ekiOrder - 1);
     const decoded = decodeJikokuWithHourCompletion(cmd.input, jikokuRev);
     if (decoded === 'invalid') return; // 不正入力は無視
-    const old = slot.chakuJikoku;
     slot.chakuJikoku = decoded;
     autoTeisya(slot);
-    if (cmd.modify === true && old !== null && decoded !== null) {
-      const delta = subJikokuWrapped(decoded, old);
-      if (slot.hatsuJikoku !== null)
-        slot.hatsuJikoku = asSeconds(mod86400((slot.hatsuJikoku as number) + delta));
-      shiftJikokuFrom(r, cmd.ekiOrder + 1, delta);
-    }
     r.isNull = false;
   },
 
@@ -231,14 +291,52 @@ export const commandReducers: {
     const jikokuRev = slot.chakuJikoku ?? findRevJikoku(r, cmd.ekiOrder - 1);
     const decoded = decodeJikokuWithHourCompletion(cmd.input, jikokuRev);
     if (decoded === 'invalid') return;
-    const old = slot.hatsuJikoku;
     slot.hatsuJikoku = decoded;
     autoTeisya(slot);
-    if (cmd.modify === true && old !== null && decoded !== null) {
-      const delta = subJikokuWrapped(decoded, old);
-      shiftJikokuFrom(r, cmd.ekiOrder + 1, delta);
-    }
     r.isNull = false;
+  },
+
+  'ekiJikoku/writeJikoku': (draft, cmd) => {
+    // 原典 CPropEditUi_EkiJikoku::UiDataToTarget → modify/setCentDedEkiJikoku の直訳。
+    // 補完基準: 着 = 前駅の時刻、発 = (新)着 ?? 前駅の時刻(getJikokuFromUI の解決順)。
+    const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
+    const slot = slotAt(r, cmd.ekiOrder);
+    const jikokuRev = findRevJikoku(r, cmd.ekiOrder - 1);
+    const decChaku = decodeJikokuWithHourCompletion(cmd.chakuInput, jikokuRev);
+    if (decChaku === 'invalid') return; // 検証はダイアログ側の責務。ここでは防御的 no-op
+    const decHatsu = decodeJikokuWithHourCompletion(cmd.hatsuInput, decChaku ?? jikokuRev);
+    if (decHatsu === 'invalid') return;
+
+    const oldChaku = slot.chakuJikoku;
+    const oldHatsu = slot.hatsuJikoku;
+    slot.chakuJikoku = decChaku;
+    slot.hatsuJikoku = decHatsu;
+    autoTeisya(slot);
+    r.isNull = false;
+
+    if (!cmd.modify) return; // setCentDedEkiJikoku 相当(置換のみ)
+
+    // modifyCentDedEkiJikoku(CentDedRessya.cpp 284-356): 発優先で 1 回だけ伝播。
+    if (oldHatsu !== null && decHatsu !== null) {
+      const delta = subJikokuWrapped(decHatsu, oldHatsu);
+      shiftWalkFwd(r, cmd.ekiOrder + 1, 'chaku', delta); // 次駅の着以後
+    } else if (oldChaku !== null && decChaku !== null) {
+      const delta = subJikokuWrapped(decChaku, oldChaku);
+      shiftWalkFwd(r, cmd.ekiOrder, 'hatsu', delta); // 当該駅の発以後(発が非 null なら発も動く)
+    }
+    // 前後作業の時刻シフト(318-332)は M7(enableOperation=0 では常に空)。
+  },
+
+  'ekiJikoku/shiftJikoku': (draft, cmd) => {
+    const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    for (const i of cmd.ressyaIndices) {
+      const r = list[i];
+      if (r === undefined) continue;
+      // 原典 modifyRessyaJikoku: 基準 order が範囲外なら -1 で no-op(722-727)。
+      if (cmd.ekiOrder < 0 || cmd.ekiOrder >= r.ekiJikokuCont.length) continue;
+      if (cmd.rev === true) shiftWalkRev(r, cmd.ekiOrder, cmd.item, cmd.deltaSeconds);
+      else shiftWalkFwd(r, cmd.ekiOrder, cmd.item, cmd.deltaSeconds);
+    }
   },
 
   'ekiJikoku/setTrack': (draft, cmd) => {
@@ -259,15 +357,39 @@ export const commandReducers: {
   },
 
   'ekiJikoku/toggleTsuuka': (draft, cmd) => {
+    // 原典 OnJikokuhyouTsuuka(CWjkState_Ressyahensyu.cpp 4802-4916)。
     const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
     for (const i of cmd.ressyaIndices) {
       const r = list[i];
       if (r === undefined) continue;
       const ej = slotAt(r, cmd.ekiOrder);
+      const wasRun = ej.ekiatsukai === 'teisya' || ej.ekiatsukai === 'tsuuka';
       ej.ekiatsukai = 'tsuuka';
       ej.chakuJikoku = null; // 原典: 時刻も NULL に(破壊的通過)
       ej.hatsuJikoku = null;
-      // none→tsuuka の基準番線適用(StandardRessyaTrackIndexSearch)は M7。
+      // 運行なし(経由なし)からの変更時のみ基準番線 [1](通過用)を設定。
+      // 基準運転時分ダイヤ未対応(M7)の現段階では常に主本線。停車/通過からは番線維持。
+      if (!wasRun) ej.ressyaTrackIndex = mainTrackOf(draft, cmd.houkou, cmd.ekiOrder);
+    }
+  },
+
+  'ekiJikoku/toggleTsuukaTeisya': (draft, cmd) => {
+    // 原典 OnJikokuhyouTsuukateisya(CWjkState_Ressyahensyu.cpp 4954-5021)。
+    // 各列車が自身の駅扱で独立トグル。停車⇔通過では駅時刻・番線とも一切変更しない。
+    const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    for (const i of cmd.ressyaIndices) {
+      const r = list[i];
+      if (r === undefined) continue;
+      const ej = slotAt(r, cmd.ekiOrder);
+      if (ej.ekiatsukai === 'tsuuka') {
+        ej.ekiatsukai = 'teisya';
+      } else if (ej.ekiatsukai === 'teisya') {
+        ej.ekiatsukai = 'tsuuka';
+      } else {
+        // 運行なし→通過 + 基準番線 [1](通過用。M7 まで主本線)。時刻は元々 null。
+        ej.ekiatsukai = 'tsuuka';
+        ej.ressyaTrackIndex = mainTrackOf(draft, cmd.houkou, cmd.ekiOrder);
+      }
     }
   },
 
@@ -323,6 +445,15 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
     case 'ressya/setCanceled':
       commandReducers['ressya/setCanceled'](draft, cmd);
       return;
+    case 'ressya/toggleCanceled':
+      commandReducers['ressya/toggleCanceled'](draft, cmd);
+      return;
+    case 'ressya/stepSyubetsu':
+      commandReducers['ressya/stepSyubetsu'](draft, cmd);
+      return;
+    case 'ressya/modifyBangou':
+      commandReducers['ressya/modifyBangou'](draft, cmd);
+      return;
     case 'ressya/setSihatsuEki':
       commandReducers['ressya/setSihatsuEki'](draft, cmd);
       return;
@@ -335,6 +466,12 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
     case 'ekiJikoku/setHatsu':
       commandReducers['ekiJikoku/setHatsu'](draft, cmd);
       return;
+    case 'ekiJikoku/writeJikoku':
+      commandReducers['ekiJikoku/writeJikoku'](draft, cmd);
+      return;
+    case 'ekiJikoku/shiftJikoku':
+      commandReducers['ekiJikoku/shiftJikoku'](draft, cmd);
+      return;
     case 'ekiJikoku/setTrack':
       commandReducers['ekiJikoku/setTrack'](draft, cmd);
       return;
@@ -343,6 +480,9 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'ekiJikoku/toggleTsuuka':
       commandReducers['ekiJikoku/toggleTsuuka'](draft, cmd);
+      return;
+    case 'ekiJikoku/toggleTsuukaTeisya':
+      commandReducers['ekiJikoku/toggleTsuukaTeisya'](draft, cmd);
       return;
     case 'ekiJikoku/setKeiyunasi':
       commandReducers['ekiJikoku/setKeiyunasi'](draft, cmd);
