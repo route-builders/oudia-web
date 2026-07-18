@@ -5,11 +5,11 @@
 // 連続入力モード(Alt+T)のビュー統合検証: 入場条件・分 2 桁入力・自動前進・BackSpace 2 段階・
 // Esc/終着自動終了・モード中の許可コマンド・列変更での自動退場(原典 CWjkState_Renzoku)。
 
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
 import { useDocStore } from '../store/docStore.js';

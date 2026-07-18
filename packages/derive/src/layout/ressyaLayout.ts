@@ -155,10 +155,12 @@ function complementLongStop01(cont: DgrEkiJikoku[], ressya: Ressya, syuuchaku: n
   for (let before = 0; before < cont.length; before++) {
     const b = cont[before];
     if (b === undefined) continue;
-    if (!(
-      (b.chakuX !== null || b.hatsuX !== null) &&
-      (b.ekiatsukai === 'teisya' || b.ekiatsukai === 'tsuuka')
-    )) {
+    if (
+      !(
+        (b.chakuX !== null || b.hatsuX !== null) &&
+        (b.ekiatsukai === 'teisya' || b.ekiatsukai === 'tsuuka')
+      )
+    ) {
       continue;
     }
     let after = -1;
@@ -191,10 +193,12 @@ function complementLongStop02(cont: DgrEkiJikoku[], ressya: Ressya, sihatsu: num
   for (let after = cont.length - 1; after >= 0; after--) {
     const a = cont[after];
     if (a === undefined) continue;
-    if (!(
-      (a.chakuX !== null || a.hatsuX !== null) &&
-      (a.ekiatsukai === 'teisya' || a.ekiatsukai === 'tsuuka')
-    )) {
+    if (
+      !(
+        (a.chakuX !== null || a.hatsuX !== null) &&
+        (a.ekiatsukai === 'teisya' || a.ekiatsukai === 'tsuuka')
+      )
+    ) {
       continue;
     }
     let before = -1;

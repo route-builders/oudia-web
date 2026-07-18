@@ -10,7 +10,7 @@ import type {
   Ressyasyubetsu,
   RosenFileData,
 } from '@oudia-web/format';
-import { RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI, asSeconds } from '@oudia-web/format';
+import { asSeconds, RESSYAHOUKOU_KUDARI, RESSYAHOUKOU_NOBORI } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { loadFixture } from './testFixture.js';
 import { buildTimetableCsv, defaultTimetableCsvOptions } from './timetableCsv.js';

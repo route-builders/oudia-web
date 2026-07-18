@@ -42,11 +42,8 @@ jobs:
       - name: 型チェック
         run: pnpm typecheck
 
-      - name: Lint(ESLint + 依存方向)
-        run: pnpm lint
-
-      - name: フォーマット検査
-        run: pnpm format:check
+      - name: lint,format
+        run: pnpm check:code
 
       # 黄金テストを含む全テスト。バイト一致ゲートはここで強制される。
       - name: テスト(バイト一致黄金テスト含む)

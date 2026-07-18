@@ -29,7 +29,7 @@ import type {
   Ressya,
   Ressyahoukou,
 } from '@oudia-web/format';
-import { RESSYAHOUKOU_KUDARI, encodeJikokuCsv } from '@oudia-web/format';
+import { encodeJikokuCsv, RESSYAHOUKOU_KUDARI } from '@oudia-web/format';
 import { getTrackRyakusyou, isHatsuChakuHyouji } from '../csv/ekiDisplay.js';
 import type { CellSpec, CellStyle, MarkKind } from './types.js';
 import { plainStyle } from './types.js';

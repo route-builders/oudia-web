@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 up-tri
 
-import type { RosenFileData } from '@oudia-web/format';
-import {
-  parseNodeTree,
-  readRosenFile,
-  RESSYAHOUKOU_KUDARI,
-  RESSYAHOUKOU_NOBORI,
-} from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RosenFileData } from '@oudia-web/format';
+import {
+  parseNodeTree,
+  RESSYAHOUKOU_KUDARI,
+  RESSYAHOUKOU_NOBORI,
+  readRosenFile,
+} from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { buildTimetableGrid, defaultTimetableGridOptions } from './buildTimetableGrid.js';
 import { buildJikokuhyouRowSpec } from './colSpec.js';

@@ -19,7 +19,8 @@ import { computeRessyaRessyasen, computeShouldRessyajouhouDraw } from './ressyaL
 import type { DiagramLayout, RessyaLayout } from './types.js';
 
 export type ComputeDiagramLayoutResult =
-  { readonly ok: true; readonly layout: DiagramLayout } | { readonly ok: false; readonly code: -1 };
+  | { readonly ok: true; readonly layout: DiagramLayout }
+  | { readonly ok: false; readonly code: -1 };
 
 /**
  * 指定ダイヤのダイヤグラムレイアウトを計算する。

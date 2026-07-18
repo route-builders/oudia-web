@@ -101,7 +101,8 @@ export interface BuildTimetableCsvParams {
 }
 
 export type BuildTimetableCsvResult =
-  { readonly ok: true; readonly csv: string } | { readonly ok: false; readonly code: -1 | -2 | -3 };
+  | { readonly ok: true; readonly csv: string }
+  | { readonly ok: false; readonly code: -1 | -2 | -3 };
 
 /** 種別略称(親種別置換つき。原典 CconvJikokuhyouCsv.cpp:834-842,895-897)。 */
 function ryakusyouWithParent(data: RosenFileData, ressya: Ressya, displayParent: boolean): string {

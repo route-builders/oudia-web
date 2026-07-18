@@ -73,7 +73,7 @@ export function deriveEkiJikokuhyou(
     if (ressya.isNull) continue;
     if (ressya.isCanceled) continue;
     const syubetsu = data.rosen.ressyasyubetsuCont[ressya.syubetsuIndex];
-    if (syubetsu !== undefined && syubetsu.hidden && !data.rosen.disableHiddenSyubetsu) continue;
+    if (syubetsu?.hidden && !data.rosen.disableHiddenSyubetsu) continue;
     const ej = ressya.ekiJikokuCont[ekiOrder];
     if (ej === undefined) continue;
     if (ej.ekiatsukai !== 'teisya') continue;

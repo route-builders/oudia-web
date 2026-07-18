@@ -1,0 +1,8 @@
+pnpm check:code
+
+# biome check --write may reformat staged files; re-stage the fixed versions so
+# the commit reflects them instead of the originally staged content.
+files=$(git diff --name-only --cached --diff-filter=ACMR)
+if [ -n "$files" ]; then
+  printf '%s\n' "$files" | tr '\n' '\0' | xargs -0 git add
+fi

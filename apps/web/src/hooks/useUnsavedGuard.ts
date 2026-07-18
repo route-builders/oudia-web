@@ -39,7 +39,6 @@ export function useUnsavedGuard(): void {
         e.preventDefault();
         // returnValue は仕様上 deprecated だが、旧 Chrome/一部ブラウザはこれがないと
         // ダイアログを出さないため互換目的で設定する(値自体は表示されない)。
-        // eslint-disable-next-line @typescript-eslint/no-deprecated
         e.returnValue = '';
       }
     };

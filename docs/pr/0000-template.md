@@ -58,7 +58,7 @@
 
 ## チェックリスト
 
-- [ ] `pnpm typecheck` / `pnpm lint` / `pnpm format:check` / `pnpm test` がすべて green
+- [ ] `pnpm typecheck` / `pnpm check:code` / `pnpm format:check` / `pnpm test` がすべて green
 - [ ] **黄金テスト(バイト一致)が green**
 - [ ] 新規ファイルに SPDX ヘッダがある
 - [ ] 新規依存は GPLv3 互換ライセンスであることを確認した

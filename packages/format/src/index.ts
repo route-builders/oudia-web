@@ -16,62 +16,55 @@ import type { OudEncoding } from './text/decodeOudText.js';
 import { decodeOudText } from './text/decodeOudText.js';
 import { encodeOudTextUtf8 } from './text/encodeOudText.js';
 
-export { decodeOudText } from './text/decodeOudText.js';
+export type { CsvCell, CsvDocument, CsvEncodeOptions, CsvRow } from './csv/document.js';
+// ---- CSV 直列化・時刻整形(時刻表 CSV / 駅時刻表 CSV の低レベル基盤)----
+export { encodeCsvCell, encodeCsvDocument } from './csv/document.js';
+export type { JikokuConvOptions } from './csv/jikokuConv.js';
+export { encodeJikokuCsv } from './csv/jikokuConv.js';
+export type { ErrorDetail, GrammarErrorReason, ReadWarning } from './errors.js';
+export { ErrorCode } from './errors.js';
+// ---- ファイル同型モデル(型宣言。domain が re-export)----
+export * from './model/index.js';
+export { escapePropertyValue, unescapePropertyValue } from './node/escape.js';
+export type { ParseTreeResult } from './node/parse.js';
+export { parsePropertiesText } from './node/parse.js';
+export { serializePropertiesText } from './node/serialize.js';
+export type { PtDirectory, PtNode, PtProperty } from './node/types.js';
+export { isDirectory, isProperty } from './node/types.js';
+export type { FileTypeGroup, ReadRosenFileResult } from './reader/index.js';
+// ---- 現行世代リーダー(ノードツリー → RosenFileData)----
+export {
+  fileTypeGroup,
+  ReadContext,
+  ReadError,
+  ReaderErrorCode,
+  readRosenFile,
+} from './reader/index.js';
 export type {
   DecodeTextErr,
   DecodeTextOk,
   DecodeTextResult,
   OudEncoding,
 } from './text/decodeOudText.js';
+export { decodeOudText } from './text/decodeOudText.js';
 export { encodeOudTextUtf8 } from './text/encodeOudText.js';
-
-export { escapePropertyValue, unescapePropertyValue } from './node/escape.js';
-export { parsePropertiesText } from './node/parse.js';
-export type { ParseTreeResult } from './node/parse.js';
-export { serializePropertiesText } from './node/serialize.js';
-export { isDirectory, isProperty } from './node/types.js';
-export type { PtDirectory, PtNode, PtProperty } from './node/types.js';
-
-export { ErrorCode } from './errors.js';
-export type { ErrorDetail, GrammarErrorReason, ReadWarning } from './errors.js';
-
-// ---- ファイル同型モデル(型宣言。domain が re-export)----
-export * from './model/index.js';
-
 // ---- 値ミニフォーマットのスキャナ ----
 export { colorrefToRgb, decodeColor, encodeColor, rgbToColorref } from './value/color.js';
-export { decodeEkiJikoku, encodeEkiJikoku, splitEkiJikokuList } from './value/ekiJikoku.js';
 export type { DecodedEkiJikoku } from './value/ekiJikoku.js';
+export { decodeEkiJikoku, encodeEkiJikoku, splitEkiJikokuList } from './value/ekiJikoku.js';
 export { decodeFont, encodeFont, makeFontProp } from './value/font.js';
-export { decodeJikoku, encodeJikoku, isJikokuDecodeError } from './value/jikoku.js';
 export type { JikokuDecodeError } from './value/jikoku.js';
+export { decodeJikoku, encodeJikoku, isJikokuDecodeError } from './value/jikoku.js';
 export { decodeBool, decodeInt, encodeBool, encodeInt } from './value/number.js';
+export type { OperationEntry, OperationKeyStore } from './value/operation.js';
 export {
   decodeAfterOperationCont,
   decodeBeforeOperationCont,
   encodeAfterOperationCont,
   encodeBeforeOperationCont,
 } from './value/operation.js';
-export type { OperationEntry, OperationKeyStore } from './value/operation.js';
-
-// ---- 現行世代リーダー(ノードツリー → RosenFileData)----
-export {
-  fileTypeGroup,
-  ReadContext,
-  ReaderErrorCode,
-  ReadError,
-  readRosenFile,
-} from './reader/index.js';
-export type { FileTypeGroup, ReadRosenFileResult } from './reader/index.js';
-
 // ---- 現行世代ライター(RosenFileData → ノードツリー → bytes)----
 export { WriteError, writeOud2, writeRosenFile } from './writer/index.js';
-
-// ---- CSV 直列化・時刻整形(時刻表 CSV / 駅時刻表 CSV の低レベル基盤)----
-export { encodeCsvCell, encodeCsvDocument } from './csv/document.js';
-export type { CsvCell, CsvDocument, CsvEncodeOptions, CsvRow } from './csv/document.js';
-export { encodeJikokuCsv } from './csv/jikokuConv.js';
-export type { JikokuConvOptions } from './csv/jikokuConv.js';
 
 /** bytes → ノードツリー(decode + parse)。デコード情報も返す。 */
 export type ParseNodeTreeResult =

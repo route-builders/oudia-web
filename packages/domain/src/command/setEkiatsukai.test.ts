@@ -3,11 +3,11 @@
 
 // ekiJikoku/setEkiatsukai(駅扱の直接設定。駅時刻ダイアログの駅扱ラジオ)のレデューサ検証。
 
-import type { RosenFileData } from '@oudia-web/format';
-import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { getEkiJikoku } from '../runRange.js';
 import { createDocumentState, executeCommand, redo, undo } from './engine.js';

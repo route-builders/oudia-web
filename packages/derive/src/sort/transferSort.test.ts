@@ -3,11 +3,11 @@
 
 // 乗継ソート(CDedRessyaSoater_Transfer)+ 推定時刻(createEstimateRessya)の検証。
 
-import type { EkiJikoku, Ressya } from '@oudia-web/format';
-import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { EkiJikoku, Ressya } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { buildDiaLayoutFrame } from '../layout/ekiLayout.js';
 import type { EstimateSlot } from '../layout/ressyaLayout.js';

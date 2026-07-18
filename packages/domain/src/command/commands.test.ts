@@ -3,11 +3,11 @@
 
 // M3 編集コマンドのレデューサ + patch Undo/Redo 対称性(実 fixture sample2 で検証)。
 
-import type { RosenFileData } from '@oudia-web/format';
-import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { createNullRessya } from '../ressya.js';
 import { getEkiJikoku, getSihatsuEki, getSyuuchakuEki } from '../runRange.js';

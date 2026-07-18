@@ -14,7 +14,12 @@ export type Ekiatsukai = 'none' | 'teisya' | 'tsuuka';
 
 /** 駅時刻形式(原典 EEkijikokukeisiki)。ファイルは識別子文字列そのもの。 */
 export type Ekijikokukeisiki =
-  'hatsu' | 'hatsuchaku' | 'kudariChaku' | 'noboriChaku' | 'kudariHatsuchaku' | 'noboriHatsuchaku';
+  | 'hatsu'
+  | 'hatsuchaku'
+  | 'kudariChaku'
+  | 'noboriChaku'
+  | 'kudariHatsuchaku'
+  | 'noboriHatsuchaku';
 
 /** 駅規模(原典 EEkikibo)。syuyou は主要駅(ダイヤグラム横罫線が太線)。 */
 export type Ekikibo = 'ippan' | 'syuyou';

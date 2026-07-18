@@ -6,11 +6,11 @@
 // 通過-停車トグル、運休の独立反転、編集後のフォーカス移動(原典 moveFocusCellToNext)。
 // happy-dom はタブ表示相当だが、傍受可能な Ctrl 系は常時有効(design §4.1)。
 
-import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
-import { cleanup, fireEvent, render } from '@testing-library/react';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
+import { cleanup, fireEvent, render } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { parseBytes } from '../file/openFile.js';
 import { useDocStore } from '../store/docStore.js';

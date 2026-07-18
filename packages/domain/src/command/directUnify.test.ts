@@ -4,11 +4,11 @@
 // 直通化・分断・時刻のみ貼り付け・一本化(原典 CentDedRessya::direct/undirect/pasteEkiJikoku +
 // CRessyaContUnifier + CentDedRessyaCont::findTrainToDirect)の検証。
 
-import type { RosenFileData } from '@oudia-web/format';
-import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RosenFileData } from '@oudia-web/format';
+import { parseNodeTree, readRosenFile, writeOud2 } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { findTrainToDirect } from '../ressya.js';
 import { createDocumentState, executeCommand, undo } from './engine.js';

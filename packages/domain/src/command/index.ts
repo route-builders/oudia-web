@@ -3,29 +3,28 @@
 
 /** 編集コマンド基盤の公開 API(architecture §4.3–§4.4)。 */
 
+export type { PasteIdouryou, RessyaClipboard } from './clipboard.js';
 export {
-  NO_PASTE_IDOURYOU,
   addToTrailingNumber,
   computePasteTrains,
   copyRessyaToClipboard,
+  NO_PASTE_IDOURYOU,
 } from './clipboard.js';
-export type { PasteIdouryou, RessyaClipboard } from './clipboard.js';
+export type { DocumentState } from './engine.js';
 export {
-  DEFAULT_UNDO_DEPTH,
-  INT_MAX,
   canRedo,
   canUndo,
   createDocumentState,
+  DEFAULT_UNDO_DEPTH,
   executeCommand,
+  INT_MAX,
   isDirty,
   markSaved,
   redo,
   undo,
 } from './engine.js';
-export type { DocumentState } from './engine.js';
 export { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
 export { applyCommand, commandReducers, normalizeToLf } from './reducers.js';
-export { isNullModifyOperation2 } from './types.js';
 export type {
   CommentSetCommand,
   EditCommand,
@@ -59,3 +58,4 @@ export type {
   RessyaUndirectCommand,
   RessyaUnifyCommand,
 } from './types.js';
+export { isNullModifyOperation2 } from './types.js';

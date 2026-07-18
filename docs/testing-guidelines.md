@@ -81,12 +81,11 @@
 PR マージには以下すべての green を要求する(GitHub Actions):
 
 1. `pnpm typecheck`
-2. `pnpm lint`(ESLint + dependency-cruiser)
-3. `pnpm format:check`
-4. `pnpm test`(ユニット + 黄金テスト + プロパティテスト)
-5. ライセンスチェック(GPLv3 非互換依存の混入防止)
-6. ベンチマーク記録(前回比 +30% で警告、+100% で fail。design/04 §10)
-7. E2E(`pnpm e2e`。骨格整備済み。UI に影響する PR のみ必須。当面 Chromium・タブモード)
+2. `pnpm check:code`(Biome + dependency-cruiser)
+3. `pnpm test`(ユニット + 黄金テスト + プロパティテスト)
+4. ライセンスチェック(GPLv3 非互換依存の混入防止)
+5. ベンチマーク記録(前回比 +30% で警告、+100% で fail。design/04 §10)
+6. E2E(`pnpm e2e`。骨格整備済み。UI に影響する PR のみ必須。当面 Chromium・タブモード)
 
 ## 6. テストを書かなくてよいもの
 

@@ -17,7 +17,7 @@ Node.js 22 LTS + pnpm 9 系(Corepack)。
 ```bash
 corepack enable pnpm
 pnpm install
-pnpm typecheck && pnpm lint && pnpm test   # コミット前の最低ライン
+pnpm typecheck && pnpm check:code && pnpm test   # コミット前の最低ライン
 ```
 
 主なコマンドは [docs/dev-setup.md §4](docs/dev-setup.md) を参照。

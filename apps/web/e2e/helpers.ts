@@ -3,11 +3,11 @@
 
 /** E2E 共通ヘルパ: 実 fixture(.oud2)をドロップして読み込む + ビューを開く。 */
 
-import type { Page } from '@playwright/test';
-import { expect } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { Page } from '@playwright/test';
+import { expect } from '@playwright/test';
 
 const here = dirname(fileURLToPath(import.meta.url));
 // apps/web/e2e → リポジトリの packages/format/fixtures。

@@ -44,17 +44,17 @@ OuDiaSecond Web 再実装プロジェクトのドキュメント一覧。
 
 ## 開発プロセス(規約・テンプレート)
 
-| ドキュメント                                   | 内容                                                                                                            |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| [dev-setup.md](dev-setup.md)                   | 開発環境セットアップ。必要ツール、リポジトリ構成、日常コマンド、`origin/`(CP932)の扱い                          |
-| [coding-standards.md](coding-standards.md)     | コーディング規約。TypeScript strict 設定、ESLint/Prettier、層の責務と依存方向、命名(glossary 準拠)、SPDX ヘッダ |
-| [testing-guidelines.md](testing-guidelines.md) | テスト規約。黄金テスト(バイト一致)の運用ルール、プロパティ/スナップショット/E2E の書き方、CI ゲート一覧         |
-| [error-handling.md](error-handling.md)         | エラー処理・ロギング規約。エラー分類と対応、Error Boundary 粒度、通知 UI の使い分け、データ保全の不変条件       |
-| [tasking.md](tasking.md)                       | タスク管理ガイド。タスクの種類・ライフサイクル、ブランチ/コミット/PR 規約、AI 協働のルール                      |
-| [definition-of-done.md](definition-of-done.md) | 完了の定義。全タスク共通の基準とタスクタイプ別の追加基準、品質ゲート                                            |
-| [tasks/](tasks/README.md)                      | タスクドキュメント一覧([テンプレート](tasks/0000-template.md))                                                  |
-| [decisions/](decisions/README.md)              | アーキテクチャ決定記録(ADR)一覧([テンプレート](decisions/adr-template.md))                                      |
-| [pr/0000-template.md](pr/0000-template.md)     | プルリクエストテンプレート                                                                                      |
+| ドキュメント                                   | 内容                                                                                                      |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| [dev-setup.md](dev-setup.md)                   | 開発環境セットアップ。必要ツール、リポジトリ構成、日常コマンド、`origin/`(CP932)の扱い                    |
+| [coding-standards.md](coding-standards.md)     | コーディング規約。TypeScript strict 設定、Biome、層の責務と依存方向、命名(glossary 準拠)、SPDX ヘッダ     |
+| [testing-guidelines.md](testing-guidelines.md) | テスト規約。黄金テスト(バイト一致)の運用ルール、プロパティ/スナップショット/E2E の書き方、CI ゲート一覧   |
+| [error-handling.md](error-handling.md)         | エラー処理・ロギング規約。エラー分類と対応、Error Boundary 粒度、通知 UI の使い分け、データ保全の不変条件 |
+| [tasking.md](tasking.md)                       | タスク管理ガイド。タスクの種類・ライフサイクル、ブランチ/コミット/PR 規約、AI 協働のルール                |
+| [definition-of-done.md](definition-of-done.md) | 完了の定義。全タスク共通の基準とタスクタイプ別の追加基準、品質ゲート                                      |
+| [tasks/](tasks/README.md)                      | タスクドキュメント一覧([テンプレート](tasks/0000-template.md))                                            |
+| [decisions/](decisions/README.md)              | アーキテクチャ決定記録(ADR)一覧([テンプレート](decisions/adr-template.md))                                |
+| [pr/0000-template.md](pr/0000-template.md)     | プルリクエストテンプレート                                                                                |
 
 ## その他
 
