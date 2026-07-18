@@ -11,7 +11,7 @@
  * ressya/replaceRange を先に発行してから本ダイアログを開く。
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Ressya, Ressyasyubetsu } from '@oudia/format';
 import type { EditCommand } from '@oudia/domain';
 import { Dialog } from './Dialog.js';
@@ -37,6 +37,17 @@ export function RessyaPropDialog(props: {
 
   const [ressyabangou, setRessyabangou] = useState<string>(initialKeyString ?? r.ressyabangou);
   const [syubetsuIndex, setSyubetsuIndex] = useState<number>(r.syubetsuIndex);
+
+  // 列車番号欄へフォーカスし、カーソルを末尾に置く(design §5.2 キー転送)。
+  const bangouRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const el = bangouRef.current;
+    if (el === null) return;
+    el.focus();
+    const n = el.value.length;
+    el.setSelectionRange(n, n);
+    // マウント時 1 回のみ。
+  }, []);
   const [ressyamei, setRessyamei] = useState<string>(r.ressyamei);
   const [gousuu, setGousuu] = useState<string>(r.gousuu);
   const [bikou, setBikou] = useState<string>(r.bikou);
@@ -89,8 +100,8 @@ export function RessyaPropDialog(props: {
       <label className="dialog-field">
         列車番号
         <input
+          ref={bangouRef}
           type="text"
-          autoFocus
           value={ressyabangou}
           onChange={(e) => {
             setRessyabangou(e.target.value);

@@ -16,7 +16,7 @@
  */
 
 import type { Patch } from 'immer';
-import type { Ressya, Ressyahoukou } from '@oudia/format';
+import type { Ekiatsukai, Ressya, Ressyahoukou } from '@oudia/format';
 
 /** 路線コメントを設定する(原典 CRfEditCmd_Comment。改行は LF 正規化)。 */
 export interface CommentSetCommand {
@@ -163,6 +163,19 @@ export interface EkiJikokuSetKeiyunasiCommand {
   ekiOrder: number;
 }
 
+/**
+ * 駅扱の直接設定(原典 CentDedEkiJikoku::setEkiatsukai。駅時刻ダイアログの駅扱ラジオ)。
+ * none = 全消去(経由なし化)/ tsuuka = 通過化(時刻クリア)/ teisya = 停車化(時刻保持)。
+ */
+export interface EkiJikokuSetEkiatsukaiCommand {
+  type: 'ekiJikoku/setEkiatsukai';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndices: number[];
+  ekiOrder: number;
+  ekiatsukai: Ekiatsukai;
+}
+
 /** 編集コマンド(判別可能ユニオン)。 */
 export type EditCommand =
   | CommentSetCommand
@@ -177,7 +190,8 @@ export type EditCommand =
   | EkiJikokuSetTrackCommand
   | EkiJikokuClearCommand
   | EkiJikokuToggleTsuukaCommand
-  | EkiJikokuSetKeiyunasiCommand;
+  | EkiJikokuSetKeiyunasiCommand
+  | EkiJikokuSetEkiatsukaiCommand;
 
 /** コマンド型の文字列(ビュー差分更新のヒント。原典 pHint 相当)。 */
 export type EditCommandType = EditCommand['type'];

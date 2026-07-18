@@ -9,12 +9,20 @@
  * 時刻欄は blur/OK 時に decode + 2 桁時補完(getJikokuFromUI 忠実、domain の
  * decodeJikokuWithHourCompletion)。始発駅では補完しない。番線は v0.6〜(本 M3 では非表示)。
  *
- * コミットは 1 ダイアログ = 1 コマンド ではなく、変更のあった項目それぞれを dispatch する
- * (駅扱変更 → toggleTsuuka/setKeiyunasi、時刻 → setChaku/setHatsu)。各 dispatch は
- * executeCommand の 1 単位。M4 の連動(繰上げ繰下げ)は modify フラグで将来対応。
+ * 挙動(原典 CPropEditUI_Ekijikoku 準拠):
+ * - 時刻欄は開いた時点では駅扱によらず有効(運行なしなら「有効・空」。UiDataFromTarget)。
+ *   無効になるのは編集中にラジオを「運行なし」へ変更したときのみ(AdjustUiData)。
+ * - 運行なしのまま時刻欄が変更されたら駅扱を「停車」へ自動昇格する(blur / OK 時。
+ *   AdjustUiData。キー転送で開いた場合は開いた時点で昇格させる = 同じ確定結果の簡略化)。
+ * - 停車⇔通過の切替では時刻を保持する(消去は None 化のときだけ。CentDedEkiJikoku::setEkiatsukai)。
+ * - キー転送(initialKeyString)はフォーカス行に応じて着欄 / 発欄へ入る(initialField)。
+ *   原典は既存文字列を全選択しておき転送キーで置換する — 初期値を転送文字列にするのと等価。
+ * - 開いたとき対象時刻欄へフォーカスし、カーソルは末尾(design §5.2)。
+ * - コミット: 駅扱変更 → ekiJikoku/setEkiatsukai、時刻変更 → setChaku/setHatsu を dispatch
+ *   (原典 UiDataToTarget と同じく変更のあったフィールドのみ書く)。
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { EkiJikoku, Ekiatsukai, Jikoku } from '@oudia/format';
 import { encodeJikoku } from '@oudia/format';
 import type { EditCommand } from '@oudia/domain';
@@ -37,52 +45,88 @@ export interface EkiJikokuDialogTarget {
 
 export function EkiJikokuDialog(props: {
   target: EkiJikokuDialogTarget;
-  /** 初期文字列(キー転送。着時刻欄へ入る)。 */
+  /** 初期文字列(キー転送。initialField の欄へ入る)。 */
   initialKeyString?: string;
+  /** キー転送・初期フォーカスの宛先(フォーカス行が着行なら 'chaku'、発行なら 'hatsu')。既定 'chaku'。 */
+  initialField?: 'chaku' | 'hatsu';
   dispatch: (cmd: EditCommand) => void;
   onClose: () => void;
 }): React.ReactElement {
-  const { target, initialKeyString, dispatch, onClose } = props;
+  const { target, initialKeyString, initialField = 'chaku', dispatch, onClose } = props;
   const ej = target.ekiJikoku;
+  const hasKeyString = initialKeyString !== undefined && initialKeyString !== '';
 
-  const [ekiatsukai, setEkiatsukai] = useState<Ekiatsukai>(ej.ekiatsukai);
-  const [chaku, setChaku] = useState<string>(initialKeyString ?? encodeJikoku(ej.chakuJikoku));
-  const [hatsu, setHatsu] = useState<string>(encodeJikoku(ej.hatsuJikoku));
+  // 運行なしセルへのキー転送は「停車」へ自動昇格して受け付ける(原典は blur/OK 時に昇格。
+  // キー転送 = 時刻欄の変更が確定しているため開いた時点で昇格させても確定結果は同じ)。
+  const [ekiatsukai, setEkiatsukai] = useState<Ekiatsukai>(
+    hasKeyString && ej.ekiatsukai === 'none' ? 'teisya' : ej.ekiatsukai,
+  );
+  const [chaku, setChaku] = useState<string>(
+    initialField === 'chaku' && hasKeyString ? initialKeyString : encodeJikoku(ej.chakuJikoku),
+  );
+  const [hatsu, setHatsu] = useState<string>(
+    initialField === 'hatsu' && hasKeyString ? initialKeyString : encodeJikoku(ej.hatsuJikoku),
+  );
   const [error, setError] = useState<string | null>(null);
+  // 時刻欄の活性。開いた時点では駅扱によらず有効(運行なしなら「有効・空」)。
+  // 編集中にラジオを運行なしへ変えたときだけ無効化する(原典 AdjustUiData)。
+  const [timesEnabled, setTimesEnabled] = useState(true);
+
+  // 対象時刻欄へフォーカスし、カーソルを末尾に置く(design §5.2 キー転送)。
+  const chakuRef = useRef<HTMLInputElement>(null);
+  const hatsuRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const el = initialField === 'hatsu' ? hatsuRef.current : chakuRef.current;
+    if (el === null || el.disabled) return;
+    el.focus();
+    const n = el.value.length;
+    el.setSelectionRange(n, n);
+    // マウント時 1 回のみ。
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const commit = (): void => {
-    // 1) 駅扱の変更(none/tsuuka)。teisya への昇格は時刻書込で自動化されるため、
-    //    ここでは通過・運行なしのみ明示コマンド化する。
-    if (ekiatsukai !== ej.ekiatsukai) {
-      if (ekiatsukai === 'tsuuka') {
-        dispatch({
-          type: 'ekiJikoku/toggleTsuuka',
-          diaIndex: target.diaIndex,
-          houkou: target.houkou,
-          ressyaIndices: [target.ressyaIndex],
-          ekiOrder: target.ekiOrder,
-        });
-      } else if (ekiatsukai === 'none') {
-        dispatch({
-          type: 'ekiJikoku/setKeiyunasi',
-          diaIndex: target.diaIndex,
-          houkou: target.houkou,
-          ressyaIndices: [target.ressyaIndex],
-          ekiOrder: target.ekiOrder,
-        });
-      }
+    const chakuChanged = chaku !== encodeJikoku(ej.chakuJikoku);
+    const hatsuChanged = hatsu !== encodeJikoku(ej.hatsuJikoku);
+
+    // 運行なしのまま時刻欄が変更されていたら停車へ自動昇格(原典 AdjustUiData の OK 時適用)。
+    let finalAtsukai = ekiatsukai;
+    if (
+      finalAtsukai === 'none' &&
+      timesEnabled &&
+      ((chakuChanged && chaku !== '') || (hatsuChanged && hatsu !== ''))
+    ) {
+      finalAtsukai = 'teisya';
     }
 
-    // 2) 時刻(停車のときのみ有効)。通過/運行なしなら時刻編集はスキップ。
-    if (ekiatsukai === 'teisya' || (ekiatsukai === ej.ekiatsukai && ekiatsukai !== 'tsuuka')) {
-      // 着/発の decode 検証(時補完込み)。invalid ならエラー表示して閉じない。
+    // 検証は必ず「全 dispatch より前」に行う(原典 CPropEditUi2::EndEdit は CheckUiData 成功後に
+    // のみ UiDataToTarget を呼ぶ)。エラー時に一部の変更だけが store へ確定するのを防ぐ。
+    const writesJikoku = finalAtsukai !== 'none' && timesEnabled;
+    if (writesJikoku) {
+      // 着/発の decode 検証(時補完込み)。invalid ならエラー表示して閉じない(何も dispatch しない)。
       const decChaku = decodeJikokuWithHourCompletion(chaku, target.referJikoku);
       const decHatsu = decodeJikokuWithHourCompletion(hatsu, target.referJikoku);
       if (decChaku === 'invalid' || decHatsu === 'invalid') {
         setError('時刻の書式が不正です(例: 915 / 1315 / 131545)。');
         return;
       }
-      if (chaku !== encodeJikoku(ej.chakuJikoku)) {
+    }
+
+    // 1) 駅扱の変更(停車/通過/運行なし)。None 化の全消去はレデューサが持つ。
+    if (finalAtsukai !== ej.ekiatsukai) {
+      dispatch({
+        type: 'ekiJikoku/setEkiatsukai',
+        diaIndex: target.diaIndex,
+        houkou: target.houkou,
+        ressyaIndices: [target.ressyaIndex],
+        ekiOrder: target.ekiOrder,
+        ekiatsukai: finalAtsukai,
+      });
+    }
+
+    // 2) 時刻(運行なし以外。通過は通過時刻)。変更のあったフィールドのみ書く(UiDataToTarget)。
+    if (writesJikoku) {
+      if (chakuChanged) {
         dispatch({
           type: 'ekiJikoku/setChaku',
           diaIndex: target.diaIndex,
@@ -92,7 +136,7 @@ export function EkiJikokuDialog(props: {
           input: chaku,
         });
       }
-      if (hatsu !== encodeJikoku(ej.hatsuJikoku)) {
+      if (hatsuChanged) {
         dispatch({
           type: 'ekiJikoku/setHatsu',
           diaIndex: target.diaIndex,
@@ -107,12 +151,15 @@ export function EkiJikokuDialog(props: {
   };
 
   // blur 時の正規化: decode 成功なら表示書式へ再整形(原典 blur 正規化)。
+  // 運行なしのまま非 null 時刻が入ったら停車へ自動昇格(原典 AdjustUiData の KILLFOCUS 適用)。
   const normalizeField = (raw: string, set: (v: string) => void): void => {
     const dec = decodeJikokuWithHourCompletion(raw, target.referJikoku);
-    if (dec !== 'invalid') set(encodeJikoku(dec));
+    if (dec === 'invalid') return;
+    set(encodeJikoku(dec));
+    if (ekiatsukai === 'none' && timesEnabled && dec !== null) setEkiatsukai('teisya');
   };
 
-  const timeDisabled = ekiatsukai !== 'teisya';
+  const timeDisabled = !timesEnabled;
 
   return (
     <Dialog
@@ -130,6 +177,9 @@ export function EkiJikokuDialog(props: {
               checked={ekiatsukai === v}
               onChange={() => {
                 setEkiatsukai(v);
+                // ラジオを運行なしへ変えたら時刻欄を無効化、停車/通過へ戻したら有効化
+                // (原典 AdjustUiData の Enable 制御)。
+                setTimesEnabled(v !== 'none');
               }}
             />
             {v === 'teisya' ? '停車' : v === 'tsuuka' ? '通過' : '運行なし'}
@@ -140,6 +190,7 @@ export function EkiJikokuDialog(props: {
       <label className="dialog-field">
         着時刻
         <input
+          ref={chakuRef}
           type="text"
           inputMode="numeric"
           value={chaku}
@@ -156,6 +207,7 @@ export function EkiJikokuDialog(props: {
       <label className="dialog-field">
         発時刻
         <input
+          ref={hatsuRef}
           type="text"
           inputMode="numeric"
           value={hatsu}

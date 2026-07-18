@@ -108,4 +108,60 @@ test('駅時刻(発)行へ移動して Enter すると駅時刻ダイアログ�
   const dialog = page.locator('dialog.prop-dialog');
   await expect(dialog).toBeVisible();
   await expect(dialog.locator('.dialog-title')).toContainText('駅時刻のプロパティ');
+  // キー転送・初期フォーカスは発時刻欄(発行なので着欄ではない)。
+  await expect(dialog.getByLabel('発時刻')).toBeFocused();
+});
+
+test('セルのダブルクリックで編集ダイアログが開く', async ({ page }) => {
+  await openTimetableDown(page);
+  // 列 2(先頭列車)× 行 0(列車番号行)。駅名 96px + 着発 64px = 160px が列車列の左端。
+  await page.locator('.grid-scroller').dblclick({ position: { x: 170, y: 10 } });
+  await expect(page.getByText('列車のプロパティ')).toBeVisible();
+});
+
+test('ダイアログを閉じるとフォーカスがグリッドへ戻り、矢印キーがスクロールを発火しない', async ({
+  page,
+}) => {
+  await openTimetableDown(page);
+  const grid = page.locator('.grid-root');
+
+  // Esc で閉じる。
+  await grid.press('Enter');
+  await expect(page.locator('dialog.prop-dialog')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('dialog.prop-dialog')).toBeHidden();
+  await expect(grid).toBeFocused();
+
+  // 矢印キーはセル移動として扱われ(preventDefault)、スクロールは発火しない。
+  await page.keyboard.press('ArrowDown');
+  await page.keyboard.press('ArrowDown');
+  const scrollTop = await page.locator('.grid-scroller').evaluate((el) => el.scrollTop);
+  expect(scrollTop).toBe(0);
+
+  // OK(Enter)で閉じた場合もフォーカスが戻る。
+  await grid.press('Enter');
+  await expect(page.locator('dialog.prop-dialog')).toBeVisible();
+  await page.keyboard.press('Enter'); // ダイアログ内 Enter = OK
+  await expect(page.locator('dialog.prop-dialog')).toBeHidden();
+  await expect(grid).toBeFocused();
+});
+
+test('駅時刻セルで数字キー入力を開始すると対象欄に入り、2 文字目以降も続けて入力できる', async ({
+  page,
+}) => {
+  await openTimetableDown(page);
+  const grid = page.locator('.grid-root');
+  // 発時刻行(駅 0)で数字キー → ダイアログの発時刻欄に '7' が入り続けて入力できる
+  // (運行なしセルの停車昇格フローは happy-dom 統合テストで検証)。
+  for (let i = 0; i < 9; i++) await grid.press('ArrowDown');
+  await grid.press('7');
+  const dialog = page.locator('dialog.prop-dialog');
+  await expect(dialog).toBeVisible();
+  const hatsu = dialog.getByLabel('発時刻');
+  await expect(hatsu).toBeFocused();
+  await expect(hatsu).toHaveValue('7');
+  // 続けてタイプ → '730' になる(2 文字目以降が入力できる)。
+  await page.keyboard.type('30');
+  await expect(hatsu).toHaveValue('730');
+  await dialog.getByRole('button', { name: 'キャンセル' }).click();
 });

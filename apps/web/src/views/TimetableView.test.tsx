@@ -11,6 +11,9 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
+import type { TimetableGridSpec } from '@oudia/derive';
+import { getEkiJikoku } from '@oudia/domain';
 import { TimetableView } from './TimetableView.js';
 import { useDocStore } from '../store/docStore.js';
 import { parseBytes } from '../file/openFile.js';
@@ -62,9 +65,15 @@ describe('TimetableView(対話グリッド)', () => {
     useDocStore.setState({ docState: null, data: null });
   });
 
+  /** 実アプリ同様に store を購読して data を渡すハーネス(編集で再レンダーされる)。 */
+  function Harness(): React.ReactElement {
+    const data = useDocStore((s) => s.data);
+    if (data === null) return <div />;
+    return <TimetableView data={data} diaIndex={0} houkou={0} />;
+  }
+
   function renderView(): void {
-    const data = useDocStore.getState().data!;
-    render(<TimetableView data={data} diaIndex={0} houkou={0} />);
+    render(<Harness />);
   }
 
   it('Enter で列車プロパティダイアログが開く(初期フォーカスは列車番号行)', () => {
@@ -86,7 +95,7 @@ describe('TimetableView(対話グリッド)', () => {
     renderView();
     const root = document.querySelector('.grid-root')!;
     fireEvent.keyDown(root, { key: 'Enter' });
-    const input = screen.getByLabelText('列車番号');
+    const input = screen.getByLabelText<HTMLInputElement>('列車番号');
     fireEvent.change(input, { target: { value: 'TEST9' } });
     fireEvent.click(screen.getByText('OK'));
     const r0 = useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0][0]!;
@@ -111,11 +120,135 @@ describe('TimetableView(対話グリッド)', () => {
     const before = useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0][0]!.ressyabangou;
     const root = document.querySelector('.grid-root')!;
     fireEvent.keyDown(root, { key: 'Enter' });
-    fireEvent.change(screen.getByLabelText('列車番号'), { target: { value: 'X' } });
+    fireEvent.change(screen.getByLabelText<HTMLInputElement>('列車番号'), {
+      target: { value: 'X' },
+    });
     fireEvent.click(screen.getByText('キャンセル'));
     expect(screen.queryByText('列車のプロパティ')).toBeNull();
     expect(useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0][0]!.ressyabangou).toBe(
       before,
     );
+  });
+
+  // ---- バグ修正の回帰(dblclick / フォーカス復帰 / 運行なし時刻入力 / 着発振り分け)----
+
+  /** 表示中グリッドを再構築して座標探索に使う。 */
+  function grid0(): TimetableGridSpec {
+    const data = useDocStore.getState().data!;
+    const built = buildTimetableGrid(data, 0, defaultTimetableGridOptions(data, 0));
+    if (!built.ok) throw new Error('grid');
+    return built.grid;
+  }
+
+  /** 初期フォーカス(列車番号行 × 先頭列車列)から (row, col) まで矢印キーで移動する。 */
+  function navigateTo(root: Element, grid: TimetableGridSpec, row: number, col: number): void {
+    const startRow = grid.rows.findIndex((r) => r.type === 'ressyabangou');
+    const startCol = grid.columns.findIndex((c) => c.type === 'ressya');
+    for (let i = 0; i < row - startRow; i++) fireEvent.keyDown(root, { key: 'ArrowDown' });
+    for (let i = 0; i < col - startCol; i++) fireEvent.keyDown(root, { key: 'ArrowRight' });
+  }
+
+  it('ダブルクリックで編集ダイアログが開く', () => {
+    renderView();
+    const scroller = document.querySelector('.grid-scroller')!;
+    // 列 2(先頭列車)× 行 0(列車番号)。EKIMEI_W 96 + COL_W 64 = 160 が列 2 の左端。
+    fireEvent.doubleClick(scroller, { clientX: 170, clientY: 10 });
+    expect(screen.getByText('列車のプロパティ')).toBeTruthy();
+  });
+
+  it('OK でダイアログを閉じるとフォーカスがグリッドへ戻る', () => {
+    renderView();
+    const root = document.querySelector('.grid-root')!;
+    fireEvent.keyDown(root, { key: 'Enter' });
+    fireEvent.click(screen.getByText('OK'));
+    expect(document.activeElement?.classList.contains('grid-root')).toBe(true);
+  });
+
+  it('キャンセルで閉じてもフォーカスがグリッドへ戻る', () => {
+    renderView();
+    const root = document.querySelector('.grid-root')!;
+    fireEvent.keyDown(root, { key: 'Enter' });
+    fireEvent.click(screen.getByText('キャンセル'));
+    expect(document.activeElement?.classList.contains('grid-root')).toBe(true);
+  });
+
+  it('編集後もフォーカスセルは維持される(選択が初期化されない)', () => {
+    renderView();
+    const root = document.querySelector('.grid-root')!;
+    // 隣の列車(列 3)へ移動して番号を編集 → 再度 Enter で同じ列車が開く。
+    fireEvent.keyDown(root, { key: 'ArrowRight' });
+    fireEvent.keyDown(root, { key: 'Enter' });
+    fireEvent.change(screen.getByLabelText<HTMLInputElement>('列車番号'), {
+      target: { value: 'KEEP1' },
+    });
+    fireEvent.click(screen.getByText('OK'));
+    fireEvent.keyDown(root, { key: 'Enter' });
+    expect(screen.getByLabelText<HTMLInputElement>('列車番号').value).toBe('KEEP1');
+  });
+
+  it('運行なしセルへ数字キー → 停車へ昇格して続けて入力でき、OK で停車 + 時刻になる', () => {
+    renderView();
+    const root = document.querySelector('.grid-root')!;
+    const grid = grid0();
+    const list = useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0];
+
+    // 運行なしの駅時刻セル(着/発行 × 列車列)を探す。
+    let hit: { row: number; col: number; ekiOrder: number; ressyaIndex: number } | null = null;
+    outer: for (let r = 0; r < grid.rows.length; r++) {
+      const row = grid.rows[r]!;
+      if ((row.type !== 'chaku' && row.type !== 'hatsu') || row.ekiOrder === null) continue;
+      for (let c = 0; c < grid.columns.length; c++) {
+        const col = grid.columns[c]!;
+        if (col.type !== 'ressya') continue;
+        const train = list[col.ressyaIndex];
+        if (train === undefined) continue;
+        if (getEkiJikoku(train, row.ekiOrder).ekiatsukai === 'none') {
+          hit = { row: r, col: c, ekiOrder: row.ekiOrder, ressyaIndex: col.ressyaIndex };
+          break outer;
+        }
+      }
+    }
+    expect(hit).not.toBeNull(); // sample2 には運行なしセルがあるはず
+
+    navigateTo(root, grid, hit!.row, hit!.col);
+    fireEvent.keyDown(root, { key: '6' });
+
+    // ダイアログ: 停車へ昇格・時刻欄が有効・'6' 入力済みで続きが打てる。
+    expect(screen.getByLabelText<HTMLInputElement>('停車').checked).toBe(true);
+    const rowType = grid.rows[hit!.row]!.type;
+    const field = screen.getByLabelText<HTMLInputElement>(
+      rowType === 'hatsu' ? '発時刻' : '着時刻',
+    );
+    expect(field.disabled).toBe(false);
+    expect(field.value).toBe('6');
+    fireEvent.change(field, { target: { value: '605' } });
+    fireEvent.click(screen.getByText('OK'));
+
+    // 停車 + 6:05 になっている。
+    const after = useDocStore.getState().data!.rosen.diaCont[0]!.ressyaCont[0][hit!.ressyaIndex]!;
+    const ej = getEkiJikoku(after, hit!.ekiOrder);
+    expect(ej.ekiatsukai).toBe('teisya');
+    const jikoku = rowType === 'hatsu' ? ej.hatsuJikoku : ej.chakuJikoku;
+    expect(jikoku).toBe(6 * 3600 + 5 * 60);
+  });
+
+  it('発時刻行で数字キー → 発時刻欄に入力される(着時刻欄ではない)', () => {
+    renderView();
+    const root = document.querySelector('.grid-root')!;
+    const grid = grid0();
+    const hatsuRow = grid.rows.findIndex((r) => r.type === 'hatsu');
+    expect(hatsuRow).toBeGreaterThan(-1);
+
+    navigateTo(
+      root,
+      grid,
+      hatsuRow,
+      grid.columns.findIndex((c) => c.type === 'ressya'),
+    );
+    fireEvent.keyDown(root, { key: '7' });
+
+    const hatsu = screen.getByLabelText<HTMLInputElement>('発時刻');
+    expect(hatsu.value).toBe('7');
+    expect(document.activeElement).toBe(hatsu);
   });
 });

@@ -18,6 +18,7 @@ import {
   getEffectiveRessyaIndices,
   focusRessyaIndex,
   hasMultiSelection,
+  clampSelection,
 } from './selection.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -107,5 +108,49 @@ describe('選択モデル', () => {
     let sel = setFocus({ row: 0, col: ekimeiCol });
     sel = extendBox(sel, { row: 0, col: chakuhatsuCol });
     expect(getSelectedRessyaIndices(sel, grid)).toEqual([]);
+  });
+});
+
+describe('clampSelection(編集によるグリッド再構築後の選択維持)', () => {
+  const grid = loadGrid();
+
+  it('範囲外の focus/anchor をクランプし、範囲外の randomCols を除去する', () => {
+    const lastRow = grid.rows.length - 1;
+    const lastCol = grid.columns.length - 1;
+    const over = {
+      focus: { row: lastRow + 5, col: lastCol + 5 },
+      anchor: { row: 0, col: lastCol + 3 },
+      randomCols: new Set([2, lastCol + 9]),
+    };
+    const clamped = clampSelection(over, grid);
+    expect(clamped.focus).toEqual({ row: lastRow, col: lastCol });
+    expect(clamped.anchor).toEqual({ row: 0, col: lastCol });
+    expect([...clamped.randomCols]).toEqual([2]); // 範囲外は除去・範囲内は保持
+  });
+
+  it('範囲内で変化がなければ同一参照を返す(再レンダ抑止)', () => {
+    const sel = extendBox(setFocus({ row: 1, col: 2 }), { row: 3, col: 4 });
+    expect(clampSelection(sel, grid)).toBe(sel);
+  });
+
+  it('空グリッドでは初期選択に戻る', () => {
+    const empty: TimetableGridSpec = {
+      houkou: 0,
+      columns: [],
+      rows: [],
+      cells: [],
+      ekijikokuRowRange: { begin: 0, end: 0 },
+    };
+    const sel = setFocus({ row: 5, col: 5 });
+    const clamped = clampSelection(sel, empty);
+    expect(clamped.focus).toEqual({ row: 0, col: 0 });
+  });
+
+  it('列車削除でグリッドが縮んだときフォーカス列が末尾へクランプされる', () => {
+    // 列数を 4 に切り詰めた縮小グリッド(clampSelection は rows/columns の長さのみ参照)。
+    const shrunk: TimetableGridSpec = { ...grid, columns: grid.columns.slice(0, 4) };
+    const sel = setFocus({ row: 2, col: grid.columns.length - 1 });
+    const clamped = clampSelection(sel, shrunk);
+    expect(clamped.focus).toEqual({ row: 2, col: 3 });
   });
 });

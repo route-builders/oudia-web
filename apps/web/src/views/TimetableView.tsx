@@ -10,7 +10,7 @@
  * ダイアログ)を重ねる。状態変更は store.dispatch(EditCommand)経由(architecture §4.3)。
  */
 
-import { useMemo, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import type { RosenFileData } from '@oudia/format';
 import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia/derive';
 import { GridGeometry, drawGrid } from '@oudia/render';
@@ -46,7 +46,13 @@ const FIXED_COLS = 2;
 
 /** 開いているダイアログの状態(initial は常に指定・キー転送でなければ undefined)。 */
 type ActiveDialog =
-  | { kind: 'ekiJikoku'; target: EkiJikokuDialogTarget; initial: string | undefined }
+  | {
+      kind: 'ekiJikoku';
+      target: EkiJikokuDialogTarget;
+      initial: string | undefined;
+      /** キー転送・初期フォーカスの宛先(フォーカス行が着行/発行のどちらか)。 */
+      field: 'chaku' | 'hatsu';
+    }
   | { kind: 'ressyaProp'; target: RessyaPropDialogTarget; initial: string | undefined };
 
 export function TimetableView(props: {
@@ -79,7 +85,8 @@ export function TimetableView(props: {
     () => ({ houkou, columns: [], rows: [], cells: [], ekijikokuRowRange: { begin: 0, end: 0 } }),
     [houkou],
   );
-  const sel = useGridSelection(grid ?? emptyGrid);
+  // ダイヤ/方向の切替では選択を初期化、編集によるグリッド再構築では位置を保つ(クランプのみ)。
+  const sel = useGridSelection(grid ?? emptyGrid, `${String(diaIndex)}:${String(houkou)}`);
   const view = useMemo(
     () => ({ scrollX: scroll.x, scrollY: scroll.y, fixedCols: FIXED_COLS, fixedRows: FIXED_ROWS }),
     [scroll.x, scroll.y],
@@ -114,6 +121,7 @@ export function TimetableView(props: {
         setDialog({
           kind: 'ekiJikoku',
           initial,
+          field: target.target, // フォーカス行(着/発)に応じてキー転送先を振り分ける
           target: {
             diaIndex,
             houkou,
@@ -145,17 +153,46 @@ export function TimetableView(props: {
     [grid, data, diaIndex, houkou],
   );
 
+  // マウスイベント → セル位置(ビューポート座標のヒットテスト)。
+  const hitFromEvent = useCallback(
+    (e: React.MouseEvent): { row: number; col: number } | null => {
+      if (geom === null) return null;
+      const rect = e.currentTarget.getBoundingClientRect();
+      return hitTestCell(geom, view, e.clientX - rect.left, e.clientY - rect.top);
+    },
+    [geom, view],
+  );
+
   const onCanvasClick = useCallback(
     (e: React.MouseEvent): void => {
-      if (geom === null || grid === null) return;
-      const rect = e.currentTarget.getBoundingClientRect();
-      const hit = hitTestCell(geom, view, e.clientX - rect.left, e.clientY - rect.top);
+      if (grid === null) return;
+      const hit = hitFromEvent(e);
       if (hit === null) return;
       sel.clickCell(hit, { shift: e.shiftKey, ctrl: e.ctrlKey || e.metaKey });
       rootRef.current?.focus();
     },
-    [geom, grid, view, sel],
+    [grid, hitFromEvent, sel],
   );
+
+  // ダブルクリック = Enter と同じダイアログを開く(design §05 3.1 §262)。
+  const onCanvasDoubleClick = useCallback(
+    (e: React.MouseEvent): void => {
+      if (grid === null) return;
+      const hit = hitFromEvent(e);
+      if (hit === null) return;
+      sel.clickCell(hit, { shift: false, ctrl: false });
+      openDialogForCell(hit.row, hit.col);
+    },
+    [grid, hitFromEvent, sel, openDialogForCell],
+  );
+
+  // ダイアログが閉じたらフォーカスをグリッドへ戻す(モーダル表示中の focus() は
+  // ブラウザに無視されるため、アンマウント後の effect で行う)。
+  const wasDialogOpen = useRef(false);
+  useEffect(() => {
+    if (dialog === null && wasDialogOpen.current) rootRef.current?.focus();
+    wasDialogOpen.current = dialog !== null;
+  }, [dialog]);
 
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent): void => {
@@ -279,6 +316,7 @@ export function TimetableView(props: {
           setScroll({ x: el.scrollLeft, y: el.scrollTop });
         }}
         onClick={onCanvasClick}
+        onDoubleClick={onCanvasDoubleClick}
       >
         <div className="grid-spacer" style={{ width: geom.totalWidth, height: geom.totalHeight }} />
       </div>
@@ -287,10 +325,10 @@ export function TimetableView(props: {
         <EkiJikokuDialog
           target={dialog.target}
           {...(dialog.initial !== undefined ? { initialKeyString: dialog.initial } : {})}
+          initialField={dialog.field}
           dispatch={dispatch}
           onClose={() => {
             setDialog(null);
-            rootRef.current?.focus();
           }}
         />
       )}
@@ -301,7 +339,6 @@ export function TimetableView(props: {
           dispatch={dispatch}
           onClose={() => {
             setDialog(null);
-            rootRef.current?.focus();
           }}
         />
       )}

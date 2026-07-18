@@ -19,6 +19,7 @@ export type {
   EkiJikokuClearCommand,
   EkiJikokuToggleTsuukaCommand,
   EkiJikokuSetKeiyunasiCommand,
+  EkiJikokuSetEkiatsukaiCommand,
   HistoryEntry,
 } from './types.js';
 export { commandReducers, applyCommand, normalizeToLf } from './reducers.js';

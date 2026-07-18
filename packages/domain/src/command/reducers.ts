@@ -278,6 +278,23 @@ export const commandReducers: {
       if (r !== undefined) clearToNone(slotAt(r, cmd.ekiOrder));
     }
   },
+
+  'ekiJikoku/setEkiatsukai': (draft, cmd) => {
+    // 原典 CentDedEkiJikoku::setEkiatsukai(CentDedEkiJikoku.cpp 182-194)の忠実移植:
+    // None のときのみ全消去(時刻・番線・前後作業)。停車⇔通過の切替は時刻を保持する
+    // (時刻消去つきの通過はグリッドコマンド ekiJikoku/toggleTsuuka の責務)。
+    const list = ressyaListOf(draft, cmd.diaIndex, cmd.houkou);
+    for (const i of cmd.ressyaIndices) {
+      const r = list[i];
+      if (r === undefined) continue;
+      const ej = slotAt(r, cmd.ekiOrder);
+      if (cmd.ekiatsukai === 'none') {
+        clearToNone(ej); // 不変条件: none ⇒ track null
+      } else {
+        ej.ekiatsukai = cmd.ekiatsukai; // teisya / tsuuka は時刻保持
+      }
+    }
+  },
 };
 
 /** 到達不能分岐(判別可能ユニオンの網羅性検査)。 */
@@ -329,6 +346,9 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'ekiJikoku/setKeiyunasi':
       commandReducers['ekiJikoku/setKeiyunasi'](draft, cmd);
+      return;
+    case 'ekiJikoku/setEkiatsukai':
+      commandReducers['ekiJikoku/setEkiatsukai'](draft, cmd);
       return;
     default:
       assertNever(cmd);

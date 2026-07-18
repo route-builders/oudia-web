@@ -156,3 +156,28 @@ export function focusRessyaIndex(state: SelectionState, grid: TimetableGridSpec)
 export function hasMultiSelection(state: SelectionState, grid: TimetableGridSpec): boolean {
   return getSelectedRessyaIndices(state, grid).length > 1;
 }
+
+/**
+ * 選択をグリッド範囲内へクランプする(編集によるグリッド再構築後もフォーカス位置を保つ)。
+ * 範囲内で変化がなければ同一参照を返す(React の再レンダ抑止)。
+ */
+export function clampSelection(state: SelectionState, grid: TimetableGridSpec): SelectionState {
+  if (grid.rows.length === 0 || grid.columns.length === 0) return initialSelection(grid);
+  const clamp = (p: CellPos): CellPos => ({
+    row: Math.max(0, Math.min(p.row, grid.rows.length - 1)),
+    col: Math.max(0, Math.min(p.col, grid.columns.length - 1)),
+  });
+  const focus = clamp(state.focus);
+  const anchor = state.anchor === null ? null : clamp(state.anchor);
+  const randomCols = [...state.randomCols].filter((c) => c < grid.columns.length);
+
+  const focusSame = focus.row === state.focus.row && focus.col === state.focus.col;
+  const anchorSame =
+    (anchor === null && state.anchor === null) ||
+    (anchor !== null &&
+      state.anchor !== null &&
+      anchor.row === state.anchor.row &&
+      anchor.col === state.anchor.col);
+  if (focusSame && anchorSame && randomCols.length === state.randomCols.size) return state;
+  return { focus, anchor, randomCols: new Set(randomCols) };
+}

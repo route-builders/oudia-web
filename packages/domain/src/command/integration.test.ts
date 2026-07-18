@@ -137,6 +137,17 @@ describe('M3 編集 → Undo でバイト一致(黄金 T1 discipline)', () => {
         target: 'chaku',
       },
     },
+    {
+      name: 'ekiJikoku/setEkiatsukai(通過)',
+      cmd: {
+        type: 'ekiJikoku/setEkiatsukai',
+        diaIndex: 0,
+        houkou: 0,
+        ressyaIndices: [0],
+        ekiOrder: 2,
+        ekiatsukai: 'tsuuka',
+      },
+    },
   ];
 
   for (const c of CASES) {

@@ -19,22 +19,29 @@ export function Dialog(props: {
 }): React.ReactElement {
   const { title, onOk, onCancel, children, okEnabled = true } = props;
   const ref = useRef<HTMLDialogElement>(null);
+  // onCancel の identity 変化で効果が再実行されないよう ref 経由で参照する。
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
 
   useEffect(() => {
     const dlg = ref.current;
     if (dlg === null) return;
-    // 既に開いていなければモーダルで開く。
+    // マウント時に 1 回だけモーダルで開く。
     if (!dlg.open) dlg.showModal();
     // Esc(dialog の cancel イベント)= キャンセル。
     const onNativeCancel = (e: Event): void => {
       e.preventDefault();
-      onCancel();
+      onCancelRef.current();
     };
     dlg.addEventListener('cancel', onNativeCancel);
     return () => {
       dlg.removeEventListener('cancel', onNativeCancel);
+      // アンマウント前に必ず native close する。モーダルが開いたまま DOM から消すと
+      // ブラウザの「showModal 前のフォーカスへ戻す」復元が働かず、フォーカスが body へ
+      // 落ちて矢印キーがスクロールを発火してしまう。
+      if (dlg.open) dlg.close();
     };
-  }, [onCancel]);
+  }, []);
 
   return (
     <dialog
