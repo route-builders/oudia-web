@@ -40,6 +40,7 @@ import { RessyaPropDialog } from '../dialog/RessyaPropDialog.js';
 import type { RessyaPropDialogTarget } from '../dialog/RessyaPropDialog.js';
 import { ModifyEkijikokuDialog, DEFAULT_MODIFY_OP2 } from '../dialog/ModifyEkijikokuDialog.js';
 import { getEffectiveRessyaIndices } from '../grid/selection.js';
+import { ViewToggleMenu } from '../grid/ViewToggleMenu.js';
 
 const THEME: GridTheme = {
   cellFont: { pointTextHeight: 9, facename: '', bold: false, italic: false },
@@ -80,10 +81,22 @@ export function TimetableView(props: {
   const rootRef = useRef<HTMLDivElement>(null);
   const [dialog, setDialog] = useState<ActiveDialog | null>(null);
 
-  const built = useMemo(
-    () => buildTimetableGrid(data, diaIndex, defaultTimetableGridOptions(data, houkou)),
-    [data, diaIndex, houkou],
-  );
+  // 表示トグル(原典 [表示] メニュー。localStorage 永続の設定ストア)。
+  const displayToggles = useSettingsStore((s) => s.jikokuhyou);
+  const built = useMemo(() => {
+    const base = defaultTimetableGridOptions(data, houkou);
+    return buildTimetableGrid(data, diaIndex, {
+      ...base,
+      displayTsuukaEkiJikoku: displayToggles.displayTsuukaEkiJikoku,
+      displayAllEkiJikoku: displayToggles.displayAllEkiJikoku,
+      displayParentSyubetsu: displayToggles.displayParentSyubetsu,
+      conv: {
+        ...base.conv,
+        noColon: !displayToggles.displayColonEkiJikoku,
+        outputSecond: displayToggles.displaySecondEkiJikoku,
+      },
+    });
+  }, [data, diaIndex, houkou, displayToggles]);
   const grid = built.ok ? built.grid : null;
 
   const geom = useMemo(() => {
@@ -572,6 +585,7 @@ export function TimetableView(props: {
         >
           最小所要時間列車に移動
         </button>
+        <ViewToggleMenu />
       </div>
       {renzoku !== null && (
         <div className="renzoku-indicator" role="status" aria-live="polite">

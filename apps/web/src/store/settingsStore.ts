@@ -23,6 +23,16 @@ export interface JikokuhyouSettings {
   readonly ekijikokuSort: 'ekiatsukai' | 'transfer';
   /** 並べ替えの末尾要素基準(原典 m_bCompareBottom。既定 false)。 */
   readonly compareBottom: boolean;
+  /** [通過駅の駅時刻を表示](m_bDisplayTsuukaEkiJikoku。原典既定 true。OFF は「レ」)。 */
+  readonly displayTsuukaEkiJikoku: boolean;
+  /** [全時刻を表示](m_bDisplayAllEkiJikoku。全駅に着発の両行を生成)。 */
+  readonly displayAllEkiJikoku: boolean;
+  /** [秒単位の時刻を表示](m_bDisplaySecondEkiJikoku)。 */
+  readonly displaySecondEkiJikoku: boolean;
+  /** [コロン付きの時刻表記をする](m_bDisplayColonEkiJikoku)。 */
+  readonly displayColonEkiJikoku: boolean;
+  /** [親種別を有効にする](m_bDisplayParentSyubetsu。子種別を親種別の略称で表示)。 */
+  readonly displayParentSyubetsu: boolean;
 }
 
 export const DEFAULT_JIKOKUHYOU_SETTINGS: JikokuhyouSettings = {
@@ -30,6 +40,11 @@ export const DEFAULT_JIKOKUHYOU_SETTINGS: JikokuhyouSettings = {
   focusMoveRight: false,
   ekijikokuSort: 'ekiatsukai',
   compareBottom: false,
+  displayTsuukaEkiJikoku: true,
+  displayAllEkiJikoku: false,
+  displaySecondEkiJikoku: false,
+  displayColonEkiJikoku: false,
+  displayParentSyubetsu: false,
 };
 
 const STORAGE_KEY = 'oudia-second-web:jikokuhyouSettings:v1';

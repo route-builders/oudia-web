@@ -43,6 +43,8 @@ export interface JikokuhyouRowSpec {
 export interface JikokuhyouRowOptions {
   /** DispProp.displayRessyamei(既定 true)。 */
   readonly displayRessyamei: boolean;
+  /** [全時刻を表示](m_bDisplayAllEkiJikoku): 全駅に着・発の両行を生成。既定 false。 */
+  readonly displayAllEkiJikoku?: boolean;
 }
 
 /** 通常時刻表の行スペックを構築する。 */
@@ -70,7 +72,7 @@ export function buildJikokuhyouRowSpec(
   push('operationShuchaku');
   push('operationShuchaku', true);
 
-  for (const c of buildColSpec(ekiCont, houkou)) {
+  for (const c of buildColSpec(ekiCont, houkou, opts.displayAllEkiJikoku ?? false)) {
     rows.push({ type: c.type, ekiOrder: c.ekiOrder, isContinuation: false });
   }
 

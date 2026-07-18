@@ -361,6 +361,38 @@ body {
 .grid-toolbar button:hover {
   background: #eef4fb;
 }
+.toolbar-menu {
+  position: relative;
+}
+.toolbar-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 240px;
+  padding: 8px;
+  background: #fff;
+  border: 1px solid #999;
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.18);
+  font-size: 12px;
+}
+.toolbar-dropdown label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.toolbar-dropdown hr {
+  width: 100%;
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 2px 0;
+}
 
 /* ---- 連続入力モードインジケータ(design §05 4.4。原典のステータスバー表示相当)---- */
 .renzoku-indicator {

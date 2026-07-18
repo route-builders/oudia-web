@@ -26,20 +26,27 @@ export interface CsvColumnSpec {
 
 /**
  * 駅時刻列スペックを構築する。ekiCont は路線基準(駅Index 順)。houkou で駅Order へ写像する。
+ *
+ * @param displayAllJikoku [全時刻を表示](原典 bDisplayAllJikoku): 駅時刻形式に関わらず
+ *        全駅に着・発の両行を生成する(CdYColSpecCont.cpp 346-351, 511-516)。既定 false。
  */
-export function buildColSpec(ekiCont: readonly Eki[], houkou: Ressyahoukou): CsvColumnSpec[] {
+export function buildColSpec(
+  ekiCont: readonly Eki[],
+  houkou: Ressyahoukou,
+  displayAllJikoku = false,
+): CsvColumnSpec[] {
   const ekiCount = ekiCont.length;
   const specs: CsvColumnSpec[] = [];
   for (let ekiOrder = 0; ekiOrder < ekiCount; ekiOrder++) {
     const eki = ekiCont[ekiIndexOfEkiOrder(ekiOrder, ekiCount, houkou)];
     if (eki === undefined) continue;
-    if (getChakujikokuHyouji(eki.ekijikokukeisiki, houkou)) {
+    if (getChakujikokuHyouji(eki.ekijikokukeisiki, houkou) || displayAllJikoku) {
       specs.push({ ekiOrder, type: 'chaku' });
     }
     if (getTrackDisplay(eki, houkou)) {
       specs.push({ ekiOrder, type: 'track' });
     }
-    if (getHatsujikokuHyouji(eki.ekijikokukeisiki, houkou)) {
+    if (getHatsujikokuHyouji(eki.ekijikokukeisiki, houkou) || displayAllJikoku) {
       specs.push({ ekiOrder, type: 'hatsu' });
     }
   }
