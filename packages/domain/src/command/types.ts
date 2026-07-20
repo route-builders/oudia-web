@@ -15,7 +15,18 @@
  * 変更カウンタを稼働させる。列車・駅・種別・ダイヤ編集は M3 以降で型を追加する。
  */
 
-import type { Ekiatsukai, Ressya, Ressyahoukou } from '@oudia-web/format';
+import type {
+  Dia,
+  DispProp,
+  Eki,
+  Ekiatsukai,
+  Ekijikokukeisiki,
+  Ekikibo,
+  Jikoku,
+  Ressya,
+  Ressyahoukou,
+  Ressyasyubetsu,
+} from '@oudia-web/format';
 import type { Patch } from 'immer';
 
 /** 路線コメントを設定する(原典 CRfEditCmd_Comment。改行は LF 正規化)。 */
@@ -402,6 +413,163 @@ export interface EkiJikokuSetEkiatsukaiCommand {
   ekiatsukai: Ekiatsukai;
 }
 
+// ---- 駅(eki)構造編集(M5)----
+
+/**
+ * 駅配列の範囲 [index, index+count) を eki で置換する(原典 CRfEditCmd_Eki::execute、
+ * CRfEditCmd_Eki.cpp:167 の replace-region 直訳)。挿入 = count 0 / 削除 = eki [] /
+ * 置換 = 両方 > 0 / 末尾追加 = index = ekiCont.length。レデューサが以下を 1 Undo 単位で行う:
+ * (1) ekiCont erase→set→insert、(2) 全ダイヤ全方向全列車の ekiJikokuCont 増減(挿入時
+ * Tsuuka-neighbor 規則・上り +1 Order)、(3) brunch/loop index 再マップ(挿入 >= かつ
+ * +1<size で ++、削除 厳密 > で --、削除駅を指す参照は null)、(4) crossingCheckRule の
+ * Origin/Terminal TrackContent index 再マップ、(5) ekijikokukeisiki 端点正規化(挿入のみ)、
+ * (6) deriveBrunchLoopMap の整合(参照整合のみ・派生マップはストア外)、(7) adjustOperation。
+ * 挿入する駅は draft 外由来のため deep copy される(id は呼出側で採番済みを前提)。
+ */
+export interface EkiReplaceRangeCommand {
+  type: 'eki/replaceRange';
+  index: number;
+  count: number;
+  /** 投入する完成済み駅(id 採番済み。レデューサが deep copy する)。 */
+  eki: Eki[];
+}
+
+/**
+ * 単一駅のプロパティ設定(駅名・略称・駅時刻形式・駅規模・次駅距離ほか)。
+ * 駅時刻形式変更時は adjustByEkijikokukeisiki を全列車へ適用する(原典 CRfEditCmd_Eki の
+ * 置換経路 + adjustByEkijikokukeisiki)。番線編集は M6 の別コマンド。
+ */
+export interface EkiSetPropCommand {
+  type: 'eki/setProp';
+  ekiIndex: number;
+  prop:
+    | { key: 'ekimei'; value: string }
+    | { key: 'ekimeiJikokuRyaku'; value: string }
+    | { key: 'ekimeiDiaRyaku'; value: string }
+    | { key: 'ekijikokukeisiki'; value: Ekijikokukeisiki }
+    | { key: 'ekikibo'; value: Ekikibo }
+    | { key: 'nextEkiDistance'; value: number };
+}
+
+/**
+ * 分岐駅設定(原典 adjustBrunchLoopByBrunchEdit を含む単一駅編集)。
+ * core=null で解除。設定時、環状設定(loopOriginEkiIndex)は相互排他のため null 化する。
+ * レデューサは設定後 deriveBrunchLoopMap 相当の整合のみ保つ(派生マップはストア外)。
+ */
+export interface EkiSetBrunchCommand {
+  type: 'eki/setBrunch';
+  ekiIndex: number;
+  brunchCoreEkiIndex: number | null;
+  brunchOpposite: boolean;
+}
+
+/**
+ * 環状線設定(原典 adjustBrunchLoopByLoopEdit を含む単一駅編集)。
+ * origin=null で解除。設定時、分岐設定(brunchCoreEkiIndex)は相互排他のため null 化する。
+ */
+export interface EkiSetLoopCommand {
+  type: 'eki/setLoop';
+  ekiIndex: number;
+  loopOriginEkiIndex: number | null;
+  loopOpposite: boolean;
+}
+
+// ---- 列車種別(syubetsu)構造編集(M5)----
+
+/**
+ * 種別配列の範囲 [index, index+count) を syubetsu で置換する(原典
+ * CRfEditCmd_Ressyasyubetsu + CentDedRessyasyubetsuCont::insert/erase)。レデューサが:
+ * (1) ressyasyubetsuCont の erase→set→insert、(2) 全ダイヤ全列車の syubetsuIndex 再マップ
+ * (削除された種別を指す列車は 0=既定種別へ)、(3) parentSyubetsuIndex 再マップ(削除・自己・
+ * 範囲外を指すものは null)。0 個になる削除は事前検証で拒否(I3)。
+ */
+export interface SyubetsuReplaceRangeCommand {
+  type: 'syubetsu/replaceRange';
+  index: number;
+  count: number;
+  syubetsu: Ressyasyubetsu[];
+}
+
+/**
+ * 種別の入替(原典 CentDedRosen::swapRessyasyubetsu、CentDedRosen.cpp:2047)。
+ * A ブロック [indexA, indexA+sizeA) と単一 B を入替え、全列車の syubetsuIndex と
+ * parentSyubetsuIndex を同 permutation で再マップする。[上へ]=swap(i,1,i-1) / [下へ]=swap(i,1,i+1)。
+ */
+export interface SyubetsuSwapCommand {
+  type: 'syubetsu/swap';
+  indexA: number;
+  sizeA: number;
+  indexB: number;
+}
+
+/** 単一種別のプロパティ設定(名称/略称/色/フォント/線/停車駅明示/親種別/隠し)。 */
+export interface SyubetsuSetPropCommand {
+  type: 'syubetsu/setProp';
+  syubetsuIndex: number;
+  /** 差し替える種別値(name 空は事前検証で拒否。レデューサが deep copy)。 */
+  value: Ressyasyubetsu;
+}
+
+// ---- ダイヤ(dia)構造編集(M5)----
+
+/**
+ * ダイヤ配列の範囲 [index, index+count) を dia で置換する(原典 CRfEditCmd_Dia。
+ * new/copy/delete/reorder すべてこの 1 コマンドに落とす)。名前一意は事前検証(I2)。
+ * kijunDiaIndex を旧→新対応で調整(削除時 0 へ・swap 時は端点入替)。挿入 dia は deep copy。
+ * bIsSwap=true は純入替(sizeA==src.size)で kijunDiaIndex の端点入替規則を使う。
+ */
+export interface DiaReplaceRangeCommand {
+  type: 'dia/replaceRange';
+  index: number;
+  count: number;
+  dia: Dia[];
+  /** 純入替(上下移動)フラグ。kijunDiaIndex 調整規則が変わる。 */
+  isSwap?: boolean;
+}
+
+/** ダイヤの背景色・パターン等のプロパティ設定(名前変更は一意性検証あり)。 */
+export interface DiaSetPropCommand {
+  type: 'dia/setProp';
+  diaIndex: number;
+  prop:
+    | { key: 'name'; value: string }
+    | { key: 'mainBackColorIndex'; value: number }
+    | { key: 'subBackColorIndex'; value: number }
+    | { key: 'backPatternIndex'; value: number };
+}
+
+// ---- 路線ファイル(rosen / dispProp)プロパティ(M5)----
+
+/**
+ * 路線プロパティの一括設定(路線プロパティダイアログ 4 タブの [路線]/[時刻表]/[ダイヤグラム]
+ * 由来。原典 CDlgRosenFileProp)。指定フィールドのみ上書き(未指定は現状維持)。1 Undo 単位。
+ */
+export interface RosenSetPropCommand {
+  type: 'rosen/setProp';
+  patch: Partial<{
+    rosenmei: string;
+    kudariDiaAlias: string;
+    noboriDiaAlias: string;
+    kitenJikoku: Jikoku;
+    diagramDgrYZahyouKyoriDefault: number;
+    enableOperation: 0 | 1 | 2;
+    operationNumberReverse: boolean;
+    operationCrossKitenJikoku: boolean;
+    kijunDiaIndex: number;
+    disableHiddenSyubetsu: boolean;
+  }>;
+}
+
+/**
+ * 表示プロパティの一括設定(路線プロパティダイアログ [フォント・色]/[時刻表] タブの
+ * DispProp 由来)。差し替える DispProp 全体を渡す(ダイアログが編集済みを構築)。
+ */
+export interface DispPropSetCommand {
+  type: 'dispProp/set';
+  /** 差し替える DispProp(レデューサが deep copy)。 */
+  value: DispProp;
+}
+
 /** 編集コマンド(判別可能ユニオン)。 */
 export type EditCommand =
   | CommentSetCommand
@@ -430,7 +598,19 @@ export type EditCommand =
   | EkiJikokuToggleTsuukaCommand
   | EkiJikokuToggleTsuukaTeisyaCommand
   | EkiJikokuSetKeiyunasiCommand
-  | EkiJikokuSetEkiatsukaiCommand;
+  | EkiJikokuSetEkiatsukaiCommand
+  // ---- M5 構造編集 ----
+  | EkiReplaceRangeCommand
+  | EkiSetPropCommand
+  | EkiSetBrunchCommand
+  | EkiSetLoopCommand
+  | SyubetsuReplaceRangeCommand
+  | SyubetsuSwapCommand
+  | SyubetsuSetPropCommand
+  | DiaReplaceRangeCommand
+  | DiaSetPropCommand
+  | RosenSetPropCommand
+  | DispPropSetCommand;
 
 /** コマンド型の文字列(ビュー差分更新のヒント。原典 pHint 相当)。 */
 export type EditCommandType = EditCommand['type'];

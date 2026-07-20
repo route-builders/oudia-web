@@ -10,12 +10,26 @@
 
 // ---- ファイル同型モデルの型(実体は @oudia-web/format/model)----
 export type * from '@oudia-web/format';
+// ---- 分岐・環状の派生マップ(導出値。ストア外)----
+export type { BrunchLoopMap, BrunchLoopPosition } from './brunchLoop.js';
+export { deriveBrunchLoopMap } from './brunchLoop.js';
 // ---- 編集コマンド基盤(executeCommand / patch Undo/Redo / 変更カウンタ)----
 export * from './command/index.js';
 // ---- 時刻演算・index 変換(domain 実装)----
 export * from './ekiOrder.js';
+// ---- 新規エンティティのファクトリ(createDefault* / createNewRosen)----
+export {
+  createDefaultDia,
+  createDefaultDispProp,
+  createDefaultEki,
+  createDefaultEkiTrack2,
+  createDefaultRessyasyubetsu,
+  createDefaultRosen,
+  createNewRosen,
+  makeNoneEkiJikoku,
+  NEW_FILE_TYPE,
+} from './factory.js';
 export * from './jikoku.js';
-
 // ---- 列車エンティティ構築・直通化相手探索 ----
 export { createNullRessya, findTrainToDirect } from './ressya.js';
 // ---- 列車の運行範囲導出(getSihatsuEki 系。derive から移設)----

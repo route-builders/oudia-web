@@ -10,6 +10,7 @@
 
 import type { Ressya, Ressyahoukou } from '@oudia-web/format';
 import { subJikokuWrapped } from './command/jikokuCompletion.js';
+import { makeNoneEkiJikoku } from './factory.js';
 import { getEkiJikoku, getRunFirstEkiOrder, getRunLastEkiOrder } from './runRange.js';
 
 /**
@@ -31,14 +32,7 @@ export function createNullRessya(ekiCount: number, houkou: Ressyahoukou): Ressya
     gousuu: '',
     bikou: '',
     isCanceled: false,
-    ekiJikokuCont: Array.from({ length: ekiCount }, () => ({
-      ekiatsukai: 'none' as const,
-      chakuJikoku: null,
-      hatsuJikoku: null,
-      ressyaTrackIndex: null,
-      beforeOperationCont: [],
-      afterOperationCont: [],
-    })),
+    ekiJikokuCont: Array.from({ length: ekiCount }, () => makeNoneEkiJikoku()),
   };
 }
 

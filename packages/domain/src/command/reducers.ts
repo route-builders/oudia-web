@@ -24,6 +24,7 @@ import type {
 } from '@oudia-web/format';
 import { asSeconds } from '@oudia-web/format';
 import { ekiIndexOfEkiOrder } from '../ekiOrder.js';
+import { makeNoneEkiJikoku } from '../factory.js';
 import {
   findRevJikokuItem,
   getEkiJikoku,
@@ -34,7 +35,16 @@ import {
   isRunBetweenNextEki,
 } from '../runRange.js';
 import { addToTrailingNumber } from './clipboard.js';
+import { cascadeEkiErase, cascadeEkiInsert } from './ekiCascade.js';
 import { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
+import { adjustByEkijikokukeisiki } from './keisikiAdjust.js';
+import {
+  remapDiaErase,
+  remapKijunDiaOnSwap,
+  remapSyubetsuErase,
+  remapSyubetsuInsert,
+  remapSyubetsuSwap,
+} from './structuralRemap.js';
 import type { EditCommand } from './types.js';
 
 /** 改行を LF に正規化する(原典 strLfOf。CRLF/CR → LF)。 */
@@ -75,14 +85,7 @@ function slotAt(draft: RosenFileData, ressya: Ressya, ekiOrder: number): EkiJiko
     throw new Error(`駅時刻 範囲外: ${String(ekiOrder)}`);
   }
   while (ressya.ekiJikokuCont.length <= ekiOrder) {
-    ressya.ekiJikokuCont.push({
-      ekiatsukai: 'none',
-      chakuJikoku: null,
-      hatsuJikoku: null,
-      ressyaTrackIndex: null,
-      beforeOperationCont: [],
-      afterOperationCont: [],
-    });
+    ressya.ekiJikokuCont.push(makeNoneEkiJikoku());
   }
   const ej = ressya.ekiJikokuCont[ekiOrder];
   if (ej === undefined) throw new Error(`駅時刻 範囲外: ${String(ekiOrder)}`); // 直前で確保済み
@@ -827,6 +830,232 @@ export const commandReducers: {
       r.isNull = false; // 原典 setCentDedEkiJikoku(256-258)
     }
   },
+
+  // ==== M5 構造編集 ====
+
+  'eki/replaceRange': (draft, cmd) => {
+    // 原典 CRfEditCmd_Eki::execute(replace-region)を単一 index の erase→set→insert に分解し、
+    // 各操作でカスケード(ekiJikokuCont 増減・index 参照シフト)を回す。派生マップはストア外
+    // なので参照整合だけを保てばよい(data-model §8.3(a)(e))。
+    const cont = draft.rosen.ekiCont;
+    if (cmd.count < 0 || cmd.index < 0 || cmd.index > cont.length - cmd.count) {
+      throw new Error(
+        `eki/replaceRange 範囲外: index=${String(cmd.index)} count=${String(cmd.count)} len=${String(cont.length)}`,
+      );
+    }
+    const src = cmd.eki.map((e) => structuredClone(e));
+    // (1) shrink: 余剰分を末尾側から 1 件ずつ削除(高 index から。原典 erase 相当)。
+    const shrink = cmd.count - src.length;
+    if (shrink > 0) {
+      for (let k = 0; k < shrink; k++) {
+        const eraseIndex = cmd.index + cmd.count - 1 - k;
+        const oldCount = cont.length;
+        cont.splice(eraseIndex, 1);
+        cascadeEkiErase(draft, eraseIndex, oldCount);
+      }
+    }
+    // (2) set: 重なり分を置換(count 不変・カスケードなし。駅時刻形式が変わる可能性のみ後処理)。
+    const overlap = Math.min(cmd.count, src.length);
+    for (let k = 0; k < overlap; k++) {
+      const s = src[k];
+      if (s !== undefined) cont[cmd.index + k] = s;
+    }
+    // (3) grow: 増加分を挿入(低 index から。各挿入でカスケード)。
+    const grow = src.length - cmd.count;
+    if (grow > 0) {
+      for (let k = 0; k < grow; k++) {
+        const insertIndex = cmd.index + overlap + k;
+        const s = src[overlap + k];
+        if (s === undefined) continue;
+        cont.splice(insertIndex, 0, s);
+        cascadeEkiInsert(draft, insertIndex);
+      }
+    }
+    // (4) 置換された駅は駅時刻形式が変わりうるので全列車を詰め替える(原典 adjustByEkijikokukeisiki)。
+    for (let k = 0; k < overlap; k++) adjustByEkijikokukeisiki(draft, cmd.index + k);
+  },
+
+  'eki/setProp': (draft, cmd) => {
+    const eki = draft.rosen.ekiCont[cmd.ekiIndex];
+    if (eki === undefined) throw new Error(`eki/setProp 範囲外: ${String(cmd.ekiIndex)}`);
+    switch (cmd.prop.key) {
+      case 'ekimei':
+        eki.ekimei = cmd.prop.value;
+        break;
+      case 'ekimeiJikokuRyaku':
+        eki.ekimeiJikokuRyaku = cmd.prop.value;
+        break;
+      case 'ekimeiDiaRyaku':
+        eki.ekimeiDiaRyaku = cmd.prop.value;
+        break;
+      case 'ekijikokukeisiki':
+        eki.ekijikokukeisiki = cmd.prop.value;
+        adjustByEkijikokukeisiki(draft, cmd.ekiIndex); // 形式変更 → 全列車の時刻を詰め替え
+        break;
+      case 'ekikibo':
+        eki.ekikibo = cmd.prop.value;
+        break;
+      case 'nextEkiDistance':
+        eki.nextEkiDistance = cmd.prop.value;
+        break;
+    }
+  },
+
+  'eki/setBrunch': (draft, cmd) => {
+    const eki = draft.rosen.ekiCont[cmd.ekiIndex];
+    if (eki === undefined) throw new Error(`eki/setBrunch 範囲外: ${String(cmd.ekiIndex)}`);
+    eki.brunchCoreEkiIndex = cmd.brunchCoreEkiIndex;
+    eki.brunchOpposite = cmd.brunchOpposite;
+    // 相互排他(原典 UI: brunch と loop は同時設定不可)。設定時は環状を解除する。
+    if (cmd.brunchCoreEkiIndex !== null) {
+      eki.loopOriginEkiIndex = null;
+      eki.loopOpposite = false;
+    }
+  },
+
+  'eki/setLoop': (draft, cmd) => {
+    const eki = draft.rosen.ekiCont[cmd.ekiIndex];
+    if (eki === undefined) throw new Error(`eki/setLoop 範囲外: ${String(cmd.ekiIndex)}`);
+    eki.loopOriginEkiIndex = cmd.loopOriginEkiIndex;
+    eki.loopOpposite = cmd.loopOpposite;
+    if (cmd.loopOriginEkiIndex !== null) {
+      eki.brunchCoreEkiIndex = null;
+      eki.brunchOpposite = false;
+    }
+  },
+
+  'syubetsu/replaceRange': (draft, cmd) => {
+    const cont = draft.rosen.ressyasyubetsuCont;
+    if (cmd.count < 0 || cmd.index < 0 || cmd.index > cont.length - cmd.count) {
+      throw new Error(
+        `syubetsu/replaceRange 範囲外: index=${String(cmd.index)} count=${String(cmd.count)} len=${String(cont.length)}`,
+      );
+    }
+    // I3: 0 個になる削除は拒否(原典 -11 相当の事前検証)。
+    if (cont.length - cmd.count + cmd.syubetsu.length < 1) {
+      throw new Error('syubetsu/replaceRange: 種別が 0 個になる削除は不可');
+    }
+    const src = cmd.syubetsu.map((s) => structuredClone(s));
+    const shrink = cmd.count - src.length;
+    if (shrink > 0) {
+      // 削除分を index+src.length からまとめて。remap は 1 回で表現(高 index から等価)。
+      const eraseAt = cmd.index + src.length;
+      cont.splice(eraseAt, shrink);
+      remapSyubetsuErase(draft, eraseAt, shrink);
+    }
+    const overlap = Math.min(cmd.count, src.length);
+    for (let k = 0; k < overlap; k++) {
+      const s = src[k];
+      if (s !== undefined) cont[cmd.index + k] = s;
+    }
+    const grow = src.length - cmd.count;
+    if (grow > 0) {
+      for (let k = 0; k < grow; k++) {
+        const insertIndex = cmd.index + overlap + k;
+        const s = src[overlap + k];
+        if (s === undefined) continue;
+        cont.splice(insertIndex, 0, s);
+        remapSyubetsuInsert(draft, insertIndex);
+      }
+    }
+  },
+
+  'syubetsu/swap': (draft, cmd) => {
+    const cont = draft.rosen.ressyasyubetsuCont;
+    const { indexA, sizeA, indexB } = cmd;
+    if (sizeA <= 0 || indexA < 0 || indexA > cont.length - sizeA) {
+      throw new Error(`syubetsu/swap A 範囲外: A=${String(indexA)} size=${String(sizeA)}`);
+    }
+    if (indexB < 0 || indexB >= cont.length) {
+      throw new Error(`syubetsu/swap B 範囲外: B=${String(indexB)}`);
+    }
+    if (indexA <= indexB && indexB < indexA + sizeA) {
+      throw new Error('syubetsu/swap: B が A ブロック内');
+    }
+    remapSyubetsuSwap(draft, indexA, sizeA, indexB); // 配列並べ替え + 参照付替えを一括
+  },
+
+  'syubetsu/setProp': (draft, cmd) => {
+    const cont = draft.rosen.ressyasyubetsuCont;
+    if (cmd.syubetsuIndex < 0 || cmd.syubetsuIndex >= cont.length) {
+      throw new Error(`syubetsu/setProp 範囲外: ${String(cmd.syubetsuIndex)}`);
+    }
+    if (cmd.value.syubetsumei === '') throw new Error('syubetsu/setProp: 種別名は空にできません');
+    cont[cmd.syubetsuIndex] = structuredClone(cmd.value);
+  },
+
+  'dia/replaceRange': (draft, cmd) => {
+    const cont = draft.rosen.diaCont;
+    if (cmd.count < 0 || cmd.index < 0 || cmd.index > cont.length - cmd.count) {
+      throw new Error(
+        `dia/replaceRange 範囲外: index=${String(cmd.index)} count=${String(cmd.count)} len=${String(cont.length)}`,
+      );
+    }
+    // I2: 名前一意・非空を事前検証(削除される範囲を除いた既存 + 挿入分)。
+    const surviving = cont.filter((_, i) => i < cmd.index || i >= cmd.index + cmd.count);
+    const names = new Set(surviving.map((d) => d.name));
+    for (const d of cmd.dia) {
+      if (d.name === '') throw new Error('dia/replaceRange: ダイヤ名は空にできません');
+      if (names.has(d.name)) throw new Error(`dia/replaceRange: ダイヤ名重複 "${d.name}"`);
+      names.add(d.name);
+    }
+    const src = cmd.dia.map((d) => structuredClone(d));
+    // kijunDiaIndex 調整(原典 CRfEditCmd_Dia::execute)。
+    if (cmd.isSwap === true && cmd.count === src.length) {
+      remapKijunDiaOnSwap(draft, cmd.index, cmd.count);
+    } else if (cmd.count > src.length) {
+      remapDiaErase(draft, cmd.index + src.length, cmd.count - src.length);
+    }
+    cont.splice(cmd.index, cmd.count, ...src);
+  },
+
+  'dia/setProp': (draft, cmd) => {
+    const dia = draft.rosen.diaCont[cmd.diaIndex];
+    if (dia === undefined) throw new Error(`dia/setProp 範囲外: ${String(cmd.diaIndex)}`);
+    switch (cmd.prop.key) {
+      case 'name': {
+        if (cmd.prop.value === '') throw new Error('dia/setProp: ダイヤ名は空にできません');
+        const dup = draft.rosen.diaCont.some(
+          (d, i) => i !== cmd.diaIndex && d.name === cmd.prop.value,
+        );
+        if (dup) throw new Error(`dia/setProp: ダイヤ名重複 "${cmd.prop.value}"`);
+        dia.name = cmd.prop.value;
+        break;
+      }
+      case 'mainBackColorIndex':
+        dia.mainBackColorIndex = cmd.prop.value;
+        break;
+      case 'subBackColorIndex':
+        dia.subBackColorIndex = cmd.prop.value;
+        break;
+      case 'backPatternIndex':
+        dia.backPatternIndex = cmd.prop.value;
+        break;
+    }
+  },
+
+  'rosen/setProp': (draft, cmd) => {
+    const r = draft.rosen;
+    const p = cmd.patch;
+    if (p.rosenmei !== undefined) r.rosenmei = p.rosenmei;
+    if (p.kudariDiaAlias !== undefined) r.kudariDiaAlias = p.kudariDiaAlias;
+    if (p.noboriDiaAlias !== undefined) r.noboriDiaAlias = p.noboriDiaAlias;
+    if (p.kitenJikoku !== undefined) r.kitenJikoku = p.kitenJikoku;
+    if (p.diagramDgrYZahyouKyoriDefault !== undefined) {
+      r.diagramDgrYZahyouKyoriDefault = p.diagramDgrYZahyouKyoriDefault;
+    }
+    if (p.enableOperation !== undefined) r.enableOperation = p.enableOperation;
+    if (p.operationNumberReverse !== undefined) r.operationNumberReverse = p.operationNumberReverse;
+    if (p.operationCrossKitenJikoku !== undefined) {
+      r.operationCrossKitenJikoku = p.operationCrossKitenJikoku;
+    }
+    if (p.kijunDiaIndex !== undefined) r.kijunDiaIndex = p.kijunDiaIndex;
+    if (p.disableHiddenSyubetsu !== undefined) r.disableHiddenSyubetsu = p.disableHiddenSyubetsu;
+  },
+
+  'dispProp/set': (draft, cmd) => {
+    draft.dispProp = structuredClone(cmd.value);
+  },
 };
 
 /** 到達不能分岐(判別可能ユニオンの網羅性検査)。 */
@@ -920,6 +1149,39 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'ekiJikoku/setEkiatsukai':
       commandReducers['ekiJikoku/setEkiatsukai'](draft, cmd);
+      return;
+    case 'eki/replaceRange':
+      commandReducers['eki/replaceRange'](draft, cmd);
+      return;
+    case 'eki/setProp':
+      commandReducers['eki/setProp'](draft, cmd);
+      return;
+    case 'eki/setBrunch':
+      commandReducers['eki/setBrunch'](draft, cmd);
+      return;
+    case 'eki/setLoop':
+      commandReducers['eki/setLoop'](draft, cmd);
+      return;
+    case 'syubetsu/replaceRange':
+      commandReducers['syubetsu/replaceRange'](draft, cmd);
+      return;
+    case 'syubetsu/swap':
+      commandReducers['syubetsu/swap'](draft, cmd);
+      return;
+    case 'syubetsu/setProp':
+      commandReducers['syubetsu/setProp'](draft, cmd);
+      return;
+    case 'dia/replaceRange':
+      commandReducers['dia/replaceRange'](draft, cmd);
+      return;
+    case 'dia/setProp':
+      commandReducers['dia/setProp'](draft, cmd);
+      return;
+    case 'rosen/setProp':
+      commandReducers['rosen/setProp'](draft, cmd);
+      return;
+    case 'dispProp/set':
+      commandReducers['dispProp/set'](draft, cmd);
       return;
     default:
       assertNever(cmd);

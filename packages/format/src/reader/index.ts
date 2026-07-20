@@ -120,5 +120,6 @@ export function readRosenFile(root: PtDirectory): ReadRosenFileResult {
 
 export { ReadContext, ReadError } from './context.js';
 export { readDispProp, readRosen } from './current.js';
+export { COLOR_BLACK, COLOR_WHITE, createDefaultDispProp } from './defaults.js';
 export type { FileTypeGroup } from './fileType.js';
 export { fileTypeGroup } from './fileType.js';
