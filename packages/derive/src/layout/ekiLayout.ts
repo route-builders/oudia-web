@@ -17,9 +17,9 @@
  */
 
 import { ekiOrderOfEkiIndex, getEkiJikoku, subJikoku } from '@oudia-web/domain';
-import type { Ressya, Rosen } from '@oudia-web/format';
+import type { Eki, Ressya, Rosen } from '@oudia-web/format';
 import { RESSYAHOUKOU_NOBORI } from '@oudia-web/format';
-import type { DiaLayoutFrame, EkiLayout } from './types.js';
+import type { DiaLayoutFrame, EkiLayout, TrackLane } from './types.js';
 
 /**
  * 駅間 iEkiOrder→iEkiOrder+1 の最小所要秒数(原典 findEkikanSaisyouSec。
@@ -89,13 +89,20 @@ export function buildDiaLayoutFrame(
   let y = originExtra;
   for (let ekiIndex = 0; ekiIndex < ekiCount; ekiIndex++) {
     const eki = ekiCont[ekiIndex];
+    // 在線表(M6): 主要駅かつ diagramTrackDisplay のとき、駅線の直後に番線レーン帯を置く。
+    // 帯の高さは (表示番線数 + 1) × 既定幅。列車線(斜線)は従来どおり駅線(dgrYTer=y)で
+    // 終端し、帯は次の駅間の内側に確保する(既存 L2/L3 の座標前提を壊さない加法設計)。
+    const lanes = eki !== undefined ? computeTrackLanes(eki, y, defaultSize) : undefined;
     ekiLayouts.push({
       ekiIndex,
       ekimei: eki?.ekimei ?? '',
       isSyuyou: eki?.ekikibo === 'syuyou',
       dgrYOrg: y,
       dgrYTer: y,
+      ...(lanes !== undefined ? { trackLanes: lanes.lanes } : {}),
     });
+    // 在線表帯ぶん Y を先に送る(駅線とレーンの間・レーンと次駅の間に既定幅の余白)。
+    if (lanes !== undefined) y += lanes.bandHeight;
     const gap = gapWidths[ekiIndex];
     if (gap !== undefined) y += gap;
   }
@@ -108,6 +115,33 @@ export function buildDiaLayoutFrame(
     dgrXSize: 86400,
     dgrYSize,
   };
+}
+
+/**
+ * 在線表の番線レーンを計算する(原典 CentDedDgrEki の getDgrYPosOfEkiTrack + m_iDiagramTrackIndex。
+ * M6・単独駅前提)。diagramTrackDisplay かつ主要駅のときのみレーンを返す。省略番線
+ * (diagramTrackOmit)はレーンを持たない(表示 index の詰め合わせ)。
+ *
+ * レーン Y = 駅線 Y(dgrYStation)+ (表示 index + 1) × 既定幅。
+ * 帯全体の高さ = (最大表示 index + 2) × 既定幅(原典 m_iEkiTrackDisplaySpace)。
+ * 表示番線が 0(全省略)なら在線表なし扱い。
+ */
+function computeTrackLanes(
+  eki: Eki,
+  dgrYStation: number,
+  defaultSize: number,
+): { lanes: TrackLane[]; bandHeight: number } | undefined {
+  if (!eki.diagramTrackDisplay || eki.ekikibo !== 'syuyou') return undefined;
+  const lanes: TrackLane[] = [];
+  let displayIndex = 0;
+  for (let i = 0; i < eki.ekiTrack2Cont.length; i++) {
+    if (eki.diagramTrackOmit[i] === true) continue; // 省略番線はレーンなし
+    lanes.push({ trackIndex: i, dgrY: dgrYStation + (displayIndex + 1) * defaultSize });
+    displayIndex += 1;
+  }
+  if (lanes.length === 0) return undefined; // 全省略 → 在線表なし
+  const bandHeight = (displayIndex + 1) * defaultSize; // (最大表示 index + 2) × 既定幅 相当
+  return { lanes, bandHeight };
 }
 
 /**
