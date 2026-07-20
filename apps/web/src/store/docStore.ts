@@ -19,6 +19,7 @@ import {
   canRedo as canRedoState,
   canUndo as canUndoState,
   createDocumentState,
+  createNewRosen,
   executeCommand,
   markSaved as markSavedState,
   redo as redoState,
@@ -27,7 +28,7 @@ import {
 import type { RosenFileData } from '@oudia-web/format';
 import { create } from 'zustand';
 import type { ViewDescriptor } from '../tabs/viewDescriptor.js';
-import { descriptorKey } from '../tabs/viewDescriptor.js';
+import { descriptorKey, isDescriptorValid } from '../tabs/viewDescriptor.js';
 
 export interface OpenTab {
   readonly key: string;
@@ -61,6 +62,8 @@ interface DocState {
 
   /** ファイルを読み込む(タブは初期化・履歴も初期化)。 */
   loadData: (data: RosenFileData, fileName: string, warningCount: number) => void;
+  /** 新規ファイルを作成する(空の路線 + 既定 DispProp)。 */
+  newFile: () => void;
   /** コマンドを実行する(単一チョークポイント)。未読込なら no-op。 */
   dispatch: (command: EditCommand) => void;
   /** 直近コマンドを取り消す。 */
@@ -110,11 +113,33 @@ export const useDocStore = create<DocState>((set) => ({
     });
   },
 
+  newFile: () => {
+    const docState = createDocumentState(createNewRosen());
+    set({
+      docState,
+      data: docState.rosenFileData,
+      fileName: '新規路線.oud2',
+      warningCount: 0,
+      tabs: [],
+      activeKey: null,
+      modifyOp2ByView: {},
+    });
+  },
+
   dispatch: (command) => {
     set((s) => {
       if (s.docState === null) return s;
       const next = executeCommand(s.docState, command);
-      return { docState: next, data: next.rosenFileData };
+      // 構造編集(駅/ダイヤ増減)後、無効になったタブ(範囲外の diaIndex/ekiOrder を指すもの)を
+      // 閉じる(design §4.5 のビュー記述子整合検証)。路線単位ビューは常に有効。
+      const diaCount = next.rosenFileData.rosen.diaCont?.length ?? 0;
+      const ekiCount = next.rosenFileData.rosen.ekiCont?.length ?? 0;
+      const tabs = s.tabs.filter((t) => isDescriptorValid(t.descriptor, diaCount, ekiCount));
+      let activeKey = s.activeKey;
+      if (tabs.length !== s.tabs.length && !tabs.some((t) => t.key === activeKey)) {
+        activeKey = tabs[tabs.length - 1]?.key ?? null;
+      }
+      return { docState: next, data: next.rosenFileData, tabs, activeKey };
     });
   },
 

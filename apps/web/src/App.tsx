@@ -4,7 +4,9 @@
 /** アプリシェル。ファイルを開く・路線ツリー・タブ・アクティブビュー描画。 */
 
 import type { RosenFileData } from '@oudia-web/format';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { DiaListDialog } from './dialog/DiaListDialog.js';
+import { RosenPropDialog } from './dialog/RosenPropDialog.js';
 import { openFileObject, pickAndOpen } from './file/openFile.js';
 import { useUnsavedGuard } from './hooks/useUnsavedGuard.js';
 import { RosenTree } from './shell/RosenTree.js';
@@ -13,6 +15,8 @@ import { useDocStore } from './store/docStore.js';
 import type { ViewDescriptor } from './tabs/viewDescriptor.js';
 import { DiagramView } from './views/DiagramView.js';
 import { EkiJikokuhyouView } from './views/EkiJikokuhyouView.js';
+import { EkiView } from './views/EkiView.js';
+import { SyubetsuView } from './views/SyubetsuView.js';
 import { TimetableView } from './views/TimetableView.js';
 
 export function App(): React.ReactElement {
@@ -22,11 +26,35 @@ export function App(): React.ReactElement {
   const tabs = useDocStore((s) => s.tabs);
   const activeKey = useDocStore((s) => s.activeKey);
   const loadData = useDocStore((s) => s.loadData);
+  const newFile = useDocStore((s) => s.newFile);
+  const undo = useDocStore((s) => s.undo);
+  const redo = useDocStore((s) => s.redo);
+  const dispatch = useDocStore((s) => s.dispatch);
   const swReload = useDocStore((s) => s.swReload);
   const [error, setError] = useState<string | null>(null);
+  const [rosenPropOpen, setRosenPropOpen] = useState(false);
+  const [diaListOpen, setDiaListOpen] = useState(false);
 
   // 未保存時の離脱保護(リロード/クローズで確認ダイアログ)+ タイトル * マーカー。
   useUnsavedGuard();
+
+  // Undo/Redo キーボード(Ctrl/Cmd+Z / Ctrl/Cmd+Y / Ctrl/Cmd+Shift+Z)。
+  // ダイアログやグリッド内はそれぞれ stopPropagation するため、ここは全体フォールバック。
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent): void => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if (key === 'y' || (key === 'z' && e.shiftKey)) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo, redo]);
 
   const openPicker = useCallback(() => {
     setError(null);
@@ -75,6 +103,31 @@ export function App(): React.ReactElement {
         <button className="open-btn" onClick={openPicker}>
           ファイルを開く
         </button>
+        <button
+          className="new-btn"
+          onClick={() => {
+            setError(null);
+            newFile();
+          }}
+        >
+          新規作成
+        </button>
+        {data !== null && (
+          <>
+            <button className="edit-btn" onClick={() => undo()} title="元に戻す (Ctrl+Z)">
+              元に戻す
+            </button>
+            <button className="edit-btn" onClick={() => redo()} title="やり直し (Ctrl+Y)">
+              やり直し
+            </button>
+            <button className="edit-btn" onClick={() => setRosenPropOpen(true)}>
+              路線のプロパティ
+            </button>
+            <button className="edit-btn" onClick={() => setDiaListOpen(true)}>
+              ダイヤ一覧
+            </button>
+          </>
+        )}
         {fileName !== null && (
           <span className="file-name">
             {fileName}
@@ -95,9 +148,35 @@ export function App(): React.ReactElement {
 
       {error !== null && <div className="app-error">{error}</div>}
 
+      {rosenPropOpen && data !== null && (
+        <RosenPropDialog
+          rosen={data.rosen}
+          dispProp={data.dispProp}
+          diaNames={data.rosen.diaCont.map((d) => d.name)}
+          dispatch={dispatch}
+          onClose={() => setRosenPropOpen(false)}
+        />
+      )}
+      {diaListOpen && data !== null && (
+        <DiaListDialog data={data} dispatch={dispatch} onClose={() => setDiaListOpen(false)} />
+      )}
+
       {data === null ? (
         <div className="app-empty">
           <p>OuDia / OuDiaSecond ファイル(.oud2 / .oud)を開くか、ここにドロップしてください。</p>
+          <p>
+            または{' '}
+            <button
+              className="new-btn"
+              onClick={() => {
+                setError(null);
+                newFile();
+              }}
+            >
+              新規作成
+            </button>{' '}
+            で空の路線を作成できます。
+          </p>
         </div>
       ) : (
         <div className="app-body">
@@ -149,5 +228,9 @@ function renderView(data: RosenFileData, d: ViewDescriptor): React.ReactElement 
           ekiOrder={d.ekiOrder}
         />
       );
+    case 'ekiView':
+      return <EkiView data={data} />;
+    case 'syubetsuView':
+      return <SyubetsuView data={data} />;
   }
 }
