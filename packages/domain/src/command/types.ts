@@ -16,6 +16,8 @@
  */
 
 import type {
+  AfterOperation,
+  BeforeOperation,
   Dia,
   DispProp,
   Eki,
@@ -530,6 +532,23 @@ export interface DiaReplaceRangeCommand {
 }
 
 /**
+ * 駅時刻スロットの前後作業を差し替える(作業設定ダイアログの確定経路。M7a/M7b)。
+ * 編集済みの beforeOperationCont / afterOperationCont を丸ごと差し替え、その後 列車全体の
+ * adjustOperation を通して先端/終端作業の不変条件を維持する(ダイアログ OK = 1 Undo 単位)。
+ */
+export interface EkiJikokuSetOperationsCommand {
+  type: 'ekiJikoku/setOperations';
+  diaIndex: number;
+  houkou: Ressyahoukou;
+  ressyaIndex: number;
+  ekiOrder: number;
+  /** 差し替える前作業列(レデューサが deep copy)。 */
+  beforeOperationCont: BeforeOperation[];
+  /** 差し替える後作業列。 */
+  afterOperationCont: AfterOperation[];
+}
+
+/**
  * 駅表示設定の一括サイクル(原典 CWndDcdGridEki OnEkiSettingNext/Prev。M6)。
  * カスタマイズ時刻表の駅ごと表示設定(下り/上り各項目)を選択駅すべてに順送り/逆送りする。
  */
@@ -653,7 +672,9 @@ export type EditCommand =
   | DispPropSetCommand
   // ---- M6 番線編集 / 表示設定サイクル ----
   | EkiTrack2ReplaceCommand
-  | EkiCycleDisplaySettingCommand;
+  | EkiCycleDisplaySettingCommand
+  // ---- M7 作業編集 ----
+  | EkiJikokuSetOperationsCommand;
 
 /** コマンド型の文字列(ビュー差分更新のヒント。原典 pHint 相当)。 */
 export type EditCommandType = EditCommand['type'];
