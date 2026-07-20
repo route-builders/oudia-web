@@ -29,6 +29,7 @@ import type {
   Ressyasyubetsu,
 } from '@oudia-web/format';
 import type { Patch } from 'immer';
+import type { EkiDisplaySetting } from './ekiDisplayCycle.js';
 
 /** 路線コメントを設定する(原典 CRfEditCmd_Comment。改行は LF 正規化)。 */
 export interface CommentSetCommand {
@@ -528,6 +529,19 @@ export interface DiaReplaceRangeCommand {
   isSwap?: boolean;
 }
 
+/**
+ * 駅表示設定の一括サイクル(原典 CWndDcdGridEki OnEkiSettingNext/Prev。M6)。
+ * カスタマイズ時刻表の駅ごと表示設定(下り/上り各項目)を選択駅すべてに順送り/逆送りする。
+ */
+export interface EkiCycleDisplaySettingCommand {
+  type: 'eki/cycleDisplaySetting';
+  ekiIndices: number[];
+  setting: EkiDisplaySetting;
+  houkou: Ressyahoukou;
+  /** true = 順送り、false = 逆送り。 */
+  forward: boolean;
+}
+
 // ---- 番線(ekiTrack2)編集(M6)----
 
 /**
@@ -637,8 +651,9 @@ export type EditCommand =
   | DiaSetPropCommand
   | RosenSetPropCommand
   | DispPropSetCommand
-  // ---- M6 番線編集 ----
-  | EkiTrack2ReplaceCommand;
+  // ---- M6 番線編集 / 表示設定サイクル ----
+  | EkiTrack2ReplaceCommand
+  | EkiCycleDisplaySettingCommand;
 
 /** コマンド型の文字列(ビュー差分更新のヒント。原典 pHint 相当)。 */
 export type EditCommandType = EditCommand['type'];

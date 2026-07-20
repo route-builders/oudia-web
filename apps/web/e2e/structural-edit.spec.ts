@@ -90,6 +90,18 @@ test('駅プロパティの番線編集で番線を追加できる(M6)', async (
   await expect(page.locator('.eki-view tbody tr').first()).toContainText('3');
 });
 
+test('駅ビューの表示設定モードで発着番線表示を一括サイクルできる(M6)', async ({ page }) => {
+  await page.getByRole('button', { name: '新規作成' }).first().click();
+  await page.getByRole('button', { name: '駅', exact: true }).click();
+  await page.getByRole('button', { name: '末尾に追加' }).click();
+  // 表示設定モードへ。
+  await page.getByRole('button', { name: '表示設定モード' }).click();
+  await expect(page.locator('.row-grid.setting-mode')).toBeVisible();
+  // 発着番線 列は初期 空。順送りボタンで ○ になる。
+  await page.getByRole('button', { name: '発着番線 順送り' }).click();
+  await expect(page.locator('.setting-mode tbody tr').first()).toContainText('○');
+});
+
 test('路線プロパティダイアログが 4 タブで開き、路線名を変えられる', async ({ page }) => {
   await page.getByRole('button', { name: '新規作成' }).first().click();
   await page.getByRole('button', { name: '路線のプロパティ' }).click();

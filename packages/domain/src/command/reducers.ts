@@ -36,6 +36,7 @@ import {
 } from '../runRange.js';
 import { addToTrailingNumber } from './clipboard.js';
 import { cascadeEkiErase, cascadeEkiInsert } from './ekiCascade.js';
+import { cycleEkiDisplaySetting } from './ekiDisplayCycle.js';
 import { decodeJikokuWithHourCompletion, subJikokuWrapped } from './jikokuCompletion.js';
 import { adjustByEkijikokukeisiki } from './keisikiAdjust.js';
 import {
@@ -1085,6 +1086,13 @@ export const commandReducers: {
     eki.upMain = cmd.upMain;
     eki.diagramTrackOmit = [...cmd.diagramTrackOmit];
   },
+
+  'eki/cycleDisplaySetting': (draft, cmd) => {
+    for (const i of cmd.ekiIndices) {
+      const eki = draft.rosen.ekiCont[i];
+      if (eki !== undefined) cycleEkiDisplaySetting(eki, cmd.setting, cmd.houkou, cmd.forward);
+    }
+  },
 };
 
 /** 到達不能分岐(判別可能ユニオンの網羅性検査)。 */
@@ -1214,6 +1222,9 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'ekiTrack2/replace':
       commandReducers['ekiTrack2/replace'](draft, cmd);
+      return;
+    case 'eki/cycleDisplaySetting':
+      commandReducers['eki/cycleDisplaySetting'](draft, cmd);
       return;
     default:
       assertNever(cmd);
