@@ -133,3 +133,15 @@ export function getRunLastEkiOrder(ressya: Ressya): number {
   }
   return -1;
 }
+
+/**
+ * fromOrder より後(fromOrder+1 以降)で最初に isRunBetweenNextEki が真になる駅Order。
+ * なければ -1(原典 CentDedRessya::getRunBetweenEkiForward。adjustOperation の運行なし区間
+ * 追跡で使う)。fromOrder 自身が走行区間の起点なら次の走行駅を返す。
+ */
+export function getRunBetweenEkiForward(ressya: Ressya, fromOrder: number): number {
+  for (let i = fromOrder + 1; i < ressya.ekiJikokuCont.length; i++) {
+    if (isRunBetweenNextEki(ressya, i)) return i;
+  }
+  return -1;
+}

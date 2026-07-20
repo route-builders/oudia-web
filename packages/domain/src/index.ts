@@ -13,6 +13,8 @@ export type * from '@oudia-web/format';
 // ---- 分岐・環状の派生マップ(導出値。ストア外)----
 export type { BrunchLoopMap, BrunchLoopPosition } from './brunchLoop.js';
 export { deriveBrunchLoopMap } from './brunchLoop.js';
+// ---- 作業整合 adjustOperation(M7a。駅編集後・作業編集後に呼ぶ)----
+export { adjustAllOperation, adjustRessyaOperation } from './command/adjustOperation.js';
 // ---- 駅表示設定の一括サイクル(M6 カスタマイズ時刻表)----
 export type { EkiDisplaySetting } from './command/ekiDisplayCycle.js';
 export { cycleEkiDisplaySetting } from './command/ekiDisplayCycle.js';

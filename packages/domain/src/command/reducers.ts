@@ -34,6 +34,7 @@ import {
   getValidSyuuchakuEki,
   isRunBetweenNextEki,
 } from '../runRange.js';
+import { adjustAllOperation } from './adjustOperation.js';
 import { addToTrailingNumber } from './clipboard.js';
 import { cascadeEkiErase, cascadeEkiInsert } from './ekiCascade.js';
 import { cycleEkiDisplaySetting } from './ekiDisplayCycle.js';
@@ -875,6 +876,10 @@ export const commandReducers: {
     }
     // (4) 置換された駅は駅時刻形式が変わりうるので全列車を詰め替える(原典 adjustByEkijikokukeisiki)。
     for (let k = 0; k < overlap; k++) adjustByEkijikokukeisiki(draft, cmd.index + k);
+    // (5) 作業整合(原典 CRfEditCmd_Eki::execute step12 adjustOperation。data-model §8.3(a)-7)。
+    // 駅増減で列車の走行範囲が変わるため全列車で先端/終端作業を再正規化する。
+    // enableOperation=0 では作業 cont が空なので実質 no-op(黄金テスト非影響)。
+    adjustAllOperation(draft.rosen);
   },
 
   'eki/setProp': (draft, cmd) => {
