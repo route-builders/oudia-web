@@ -211,9 +211,13 @@ M0 では恒久コードを書く前に、以後の全計画の前提となる 3
 >   OuDiaSecond Ver2.01 で削除済み(export のみ現存。分析 §08:81,162,276)と判明。原典に
 >   忠実移植する対象が存在しないため実装しない(現存する import は事業者 HTML 依存の
 >   デジタル時刻表取込のみで、これは §5 で対象外)。
-> - **組入れ/切り出し(embed/extract)**: この実装セッションでは**先送り**。自己完結で他機能を
->   ブロックしないため follow-up タスクとする(embed は中間駅分割 + 名前マージの高リスク処理、
->   extract は新ファイル生成の自己完結処理)。
+> - **組入れ/切り出し(embed/extract)**: **実装済み**(follow-up セッションで対応)。
+>   extract(`createSubRosen`)は bEnableOuter=false のコア(駅範囲切詰め + 分岐環状リンク除去 +
+>   運行なし列車削除)を移植。embed(`CentDedRosen::insert`)は境界決定・中間駅同名分割・駅全追加・
+>   種別/ダイヤ同名マージ・列車追加・comment 連結を移植。**未対応(実機検証待ち)**: extract の
+>   路線外発着変換(bEnableOuter=true)と embed 同名駅併合の OuterTerminal / 番線グループ伝播
+>   (`adjustBrunchLoopOuterTerminal`)は運用/番線グループ隣接のため簡略。合成データで単体検証済み、
+>   実機一致は実機入手時に検証する。
 
 **完了条件**:
 

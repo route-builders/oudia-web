@@ -22,6 +22,8 @@ export * from './command/index.js';
 export { checkTrackDeletable } from './command/trackCascade.js';
 // ---- 時刻演算・index 変換(domain 実装)----
 export * from './ekiOrder.js';
+// ---- 路線の組入れ(別路線の埋込。原典 CentDedRosen::insert)----
+export { canEmbedRosen, embedRosen } from './embedRosen.js';
 // ---- 新規エンティティのファクトリ(createDefault* / createNewRosen)----
 export {
   createDefaultDia,
@@ -41,3 +43,5 @@ export { createNullRessya, findTrainToDirect } from './ressya.js';
 export * from './runRange.js';
 // ---- 列車の並べ替え・最小所要時間検索(CDedRessyaSoater 系)----
 export * from './sort/ressyaSort.js';
+// ---- 路線の切り出し(部分路線生成。原典 createSubRosen)----
+export { canCreateSubRosen, createSubRosen } from './subRosen.js';
