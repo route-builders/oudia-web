@@ -66,6 +66,13 @@ export { MARK_GLYPH } from './grid/types.js';
 export type { ComputeDiagramLayoutResult } from './layout/computeDiagramLayout.js';
 // ---- ダイヤグラム(スジ図)レイアウト ----
 export { computeDiagramLayout } from './layout/computeDiagramLayout.js';
+// ---- 在線表(M6・単独駅)----
+export type {
+  RessyaOccupancy,
+  RessyaTrackLine,
+  Zaisen,
+} from './layout/deriveOccupancy.js';
+export { deriveOccupancy } from './layout/deriveOccupancy.js';
 export { buildDiaLayoutFrame, findEkikanSaisyouSec } from './layout/ekiLayout.js';
 export type { EstimateSlot } from './layout/ressyaLayout.js';
 export { computeEstimateJikoku } from './layout/ressyaLayout.js';
@@ -75,6 +82,7 @@ export type {
   EkiLayout,
   RessyaLayout,
   Ressyasen,
+  TrackLane,
 } from './layout/types.js';
 export type { TransferSortInput } from './sort/transferSort.js';
 export { transferSortOrder } from './sort/transferSort.js';

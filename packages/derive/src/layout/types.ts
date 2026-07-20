@@ -14,6 +14,14 @@
 
 import type { Ressyahoukou } from '@oudia-web/format';
 
+/** 在線表 1 番線ぶんの Y レーン(原典 getDgrYPosOfEkiTrack。M6)。 */
+export interface TrackLane {
+  /** 当駅 ekiTrack2Cont への物理番線 index。 */
+  readonly trackIndex: number;
+  /** その番線の横太線 Y 座標(Dgr 秒)。 */
+  readonly dgrY: number;
+}
+
 /** 駅 1 つの Y レイアウト(原典 CentDedDgrEki の Y 座標群。analysis §05 §2.2)。 */
 export interface EkiLayout {
   /** 駅Index(下り基準。0 = 下り起点)。 */
@@ -31,6 +39,12 @@ export interface EkiLayout {
    * 終点側 Y 座標(原典 getDgrYPosOfEkiTer)。列車線の**起点**(発)側で使う。
    */
   readonly dgrYTer: number;
+  /**
+   * 在線表を表示する駅の番線レーン(M6)。diagramTrackDisplay が true かつ主要駅のときのみ
+   * 非 undefined。省略番線(diagramTrackOmit)は含まない。順序は番線 index 昇順。
+   * 在線表なしの駅は undefined(既存の描画に影響を与えない)。
+   */
+  readonly trackLanes?: readonly TrackLane[];
 }
 
 /** ダイヤ全体の Y レイアウトと全体 Zone。 */

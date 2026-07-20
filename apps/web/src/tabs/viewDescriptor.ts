@@ -27,7 +27,22 @@ export interface EkiJikokuhyouDescriptor {
   readonly ekiOrder: number;
 }
 
-export type ViewDescriptor = DiagramDescriptor | TimetableDescriptor | EkiJikokuhyouDescriptor;
+/** 駅ビュー(路線全体・行=駅)。M5。路線に 1 つだけ開く。 */
+export interface EkiViewDescriptor {
+  readonly type: 'ekiView';
+}
+
+/** 列車種別ビュー(路線全体・行=種別)。M5。路線に 1 つだけ開く。 */
+export interface SyubetsuViewDescriptor {
+  readonly type: 'syubetsuView';
+}
+
+export type ViewDescriptor =
+  | DiagramDescriptor
+  | TimetableDescriptor
+  | EkiJikokuhyouDescriptor
+  | EkiViewDescriptor
+  | SyubetsuViewDescriptor;
 
 /** 記述子の一意キー(dedup 用)。 */
 export function descriptorKey(d: ViewDescriptor): string {
@@ -38,6 +53,10 @@ export function descriptorKey(d: ViewDescriptor): string {
       return `timetable:${String(d.diaIndex)}:${String(d.houkou)}`;
     case 'ekiJikokuhyou':
       return `eki:${String(d.diaIndex)}:${String(d.houkou)}:${String(d.ekiOrder)}`;
+    case 'ekiView':
+      return 'ekiView';
+    case 'syubetsuView':
+      return 'syubetsuView';
   }
 }
 
@@ -51,5 +70,26 @@ export function descriptorLabel(d: ViewDescriptor, diaName: string, ekimei?: str
       return `${diaName} ${dir}時刻表`;
     case 'ekiJikokuhyou':
       return `${diaName} ${ekimei ?? ''}駅 ${dir}時刻表`;
+    case 'ekiView':
+      return '駅';
+    case 'syubetsuView':
+      return '列車種別';
+  }
+}
+
+/**
+ * 記述子がまだ有効か(構造編集で駅数・ダイヤ数が変わった後のタブ整合検証)。
+ * 無効なタブ(削除・範囲外のダイヤ/駅を指すもの)はストア購読側が閉じる(design §4.5)。
+ */
+export function isDescriptorValid(d: ViewDescriptor, diaCount: number, ekiCount: number): boolean {
+  switch (d.type) {
+    case 'diagram':
+    case 'timetable':
+      return d.diaIndex >= 0 && d.diaIndex < diaCount;
+    case 'ekiJikokuhyou':
+      return d.diaIndex >= 0 && d.diaIndex < diaCount && d.ekiOrder >= 0 && d.ekiOrder < ekiCount;
+    case 'ekiView':
+    case 'syubetsuView':
+      return true; // 路線単位ビューは常に有効
   }
 }

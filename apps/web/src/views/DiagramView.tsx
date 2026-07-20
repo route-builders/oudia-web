@@ -6,10 +6,17 @@
  * M1 はドラッグパン + ホイール縦スクロールの最小構成(ズームは M3 で拡充)。
  */
 
-import { computeDiagramLayout } from '@oudia-web/derive';
+import { computeDiagramLayout, deriveOccupancy } from '@oudia-web/derive';
 import type { RosenFileData } from '@oudia-web/format';
 import type { DiagramTheme } from '@oudia-web/render';
-import { createViewTransform, DEFAULT_PX_PER_SEC, drawL1, drawL2, drawL3 } from '@oudia-web/render';
+import {
+  createViewTransform,
+  DEFAULT_PX_PER_SEC,
+  drawL1,
+  drawL2,
+  drawL3,
+  drawOccupancy,
+} from '@oudia-web/render';
 import { useMemo, useRef, useState } from 'react';
 import { useCanvas2d } from '../hooks/useCanvas2d.js';
 import { dominantPinchAxis, pinchToStep, touchDistance } from '../input/pinch.js';
@@ -42,6 +49,19 @@ export function DiagramView(props: { data: RosenFileData; diaIndex: number }): R
 
   const result = useMemo(() => computeDiagramLayout(data, diaIndex), [data, diaIndex]);
 
+  // 在線表(M6・単独駅)。在線表表示駅が無ければ空になり描画されない。
+  const occupancy = useMemo(() => {
+    if (!result.ok) return { kudari: [], nobori: [] };
+    const dia = data.rosen.diaCont[diaIndex];
+    if (dia === undefined) return { kudari: [], nobori: [] };
+    return deriveOccupancy(
+      data.rosen,
+      dia.ressyaCont[0],
+      dia.ressyaCont[1],
+      result.layout.frame.ekiLayouts,
+    );
+  }, [result, data, diaIndex]);
+
   const canvasRef = useCanvas2d(
     (ctx, size) => {
       if (!result.ok) return;
@@ -60,10 +80,12 @@ export function DiagramView(props: { data: RosenFileData; diaIndex: number }): R
         displayStopMark: false,
       };
       drawL1(ctx, result.layout, view, THEME);
+      // L1.5: 在線表(スジの下に敷く)。
+      drawOccupancy(ctx, result.layout, view, occupancy, syubetsuLabelColor, 'rgb(200,200,200)');
       drawL2(ctx, result.layout, view, syubetsuStyle);
       drawL3(ctx, result.layout, view, THEME, syubetsuLabelColor);
     },
-    [result, content, scale],
+    [result, occupancy, content, scale],
   );
 
   if (!result.ok) {

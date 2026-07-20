@@ -48,6 +48,8 @@ export {
   HIT_MARGIN_TOUCH,
   segmentHit,
 } from './diagram/hitTest.js';
+export type { OccupancyDrawInput } from './diagram/OccupancyRenderer.js';
+export { drawOccupancy } from './diagram/OccupancyRenderer.js';
 export type { VlinePitch, VlineStyle } from './diagram/vlineTable.js';
 export { DEFAULT_VLINE_MODE, enumVlines, VLINE_TABLE, vlineStyleAt } from './diagram/vlineTable.js';
 

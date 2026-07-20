@@ -34,6 +34,9 @@ export { isDirectory, isProperty } from './node/types.js';
 export type { FileTypeGroup, ReadRosenFileResult } from './reader/index.js';
 // ---- 現行世代リーダー(ノードツリー → RosenFileData)----
 export {
+  COLOR_BLACK,
+  COLOR_WHITE,
+  createDefaultDispProp,
   fileTypeGroup,
   ReadContext,
   ReadError,

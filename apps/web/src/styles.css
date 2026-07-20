@@ -493,3 +493,222 @@ body {
   cursor: pointer;
   font-size: 12px;
 }
+
+/* ==== M5 構造編集 UI ==== */
+
+.new-btn,
+.edit-btn {
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.rosen-level-list {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  border-bottom: 1px solid #ddd;
+}
+.rosen-level-list li {
+  margin: 0;
+}
+.rosen-level-list button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 4px 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+.rosen-level-list button:hover {
+  background: #eef;
+}
+
+/* 行単位グリッド(駅ビュー・種別ビュー) */
+.row-grid-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: auto;
+}
+.row-grid-toolbar {
+  display: flex;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid #ddd;
+  flex: 0 0 auto;
+}
+.row-grid-toolbar button {
+  padding: 3px 10px;
+  cursor: pointer;
+}
+.row-grid-toolbar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.row-grid {
+  border-collapse: collapse;
+  font-size: 13px;
+  width: 100%;
+}
+.row-grid th,
+.row-grid td {
+  border: 1px solid #ddd;
+  padding: 3px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+.row-grid thead th {
+  background: #f0f0f0;
+  position: sticky;
+  top: 0;
+}
+.row-grid tbody tr {
+  cursor: pointer;
+}
+.row-grid tbody tr:hover {
+  background: #f7f9ff;
+}
+.row-grid tbody tr.selected {
+  background: #dde8ff;
+}
+.row-grid .empty-row {
+  color: #888;
+  text-align: center;
+  font-style: italic;
+}
+.color-chip {
+  display: inline-block;
+  width: 18px;
+  height: 12px;
+  border: 1px solid #999;
+  vertical-align: middle;
+}
+.sen-sample {
+  vertical-align: middle;
+}
+
+/* ダイヤ一覧ダイアログ */
+.dia-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #ccc;
+}
+.dia-list li {
+  padding: 4px 10px;
+  cursor: pointer;
+}
+.dia-list li:hover {
+  background: #f7f9ff;
+}
+.dia-list li.selected {
+  background: #dde8ff;
+}
+.dia-list li.empty-row {
+  color: #888;
+  font-style: italic;
+  cursor: default;
+}
+.dia-list-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dia-list-buttons button {
+  padding: 3px 12px;
+  cursor: pointer;
+}
+.dia-list-buttons button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ダイアログ内タブ(路線プロパティ) */
+.dialog-tablist {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #ccc;
+}
+.dialog-tab {
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+}
+.dialog-tab-active {
+  border-color: #ccc;
+  background: #fff;
+  font-weight: bold;
+}
+
+/* 番線リスト編集(駅プロパティ内) */
+.track-editor-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.track-editor-toolbar button {
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.track-editor-toolbar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.track-editor-table {
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.track-editor-table th,
+.track-editor-table td {
+  border: 1px solid #ddd;
+  padding: 1px 3px;
+}
+.track-editor-table thead th {
+  background: #f0f0f0;
+}
+.track-editor-table tr.selected {
+  background: #dde8ff;
+}
+.track-editor-table input[type="text"] {
+  width: 6em;
+  font-size: 12px;
+}
+
+/* 駅ビュー 表示設定モード(M6) */
+.row-grid-toolbar button.active {
+  background: #dde8ff;
+  border: 1px solid #1d5fb0;
+  border-radius: 3px;
+}
+.row-grid.setting-mode th {
+  vertical-align: top;
+}
+.setting-col-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 11px;
+}
+.setting-cycle-buttons {
+  display: flex;
+  gap: 1px;
+}
+.setting-cycle-buttons button {
+  padding: 0 4px;
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+.setting-cycle-buttons button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}

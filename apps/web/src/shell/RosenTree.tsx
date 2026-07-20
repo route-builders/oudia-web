@@ -18,6 +18,26 @@ export function RosenTree(props: { data: RosenFileData }): React.ReactElement {
   return (
     <nav className="rosen-tree" aria-label="路線ツリー">
       <div className="rosen-name">{data.rosen.rosenmei || '(無名路線)'}</div>
+      <ul className="rosen-level-list">
+        <li>
+          <button
+            onClick={() => {
+              openView({ type: 'ekiView' });
+            }}
+          >
+            駅
+          </button>
+        </li>
+        <li>
+          <button
+            onClick={() => {
+              openView({ type: 'syubetsuView' });
+            }}
+          >
+            列車種別
+          </button>
+        </li>
+      </ul>
       {data.rosen.diaCont.map((dia, diaIndex) => (
         <div key={diaIndex} className="dia-node">
           <div className="dia-name">{dia.name}</div>

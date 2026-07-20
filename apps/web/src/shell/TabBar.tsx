@@ -9,7 +9,7 @@ import type { ViewDescriptor } from '../tabs/viewDescriptor.js';
 import { descriptorLabel } from '../tabs/viewDescriptor.js';
 
 function labelOf(data: RosenFileData, d: ViewDescriptor): string {
-  const diaName = data.rosen.diaCont[d.diaIndex]?.name ?? '';
+  const diaName = 'diaIndex' in d ? (data.rosen.diaCont[d.diaIndex]?.name ?? '') : '';
   const ekimei = d.type === 'ekiJikokuhyou' ? data.rosen.ekiCont[d.ekiOrder]?.ekimei : undefined;
   return descriptorLabel(d, diaName, ekimei);
 }
