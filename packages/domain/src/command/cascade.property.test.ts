@@ -291,6 +291,55 @@ function nextEkiId(data: RosenFileData): number {
   return id;
 }
 
+// ---- M6 番線編集の生成器(roadmap M6 完了条件 1: 番線再マップを常設テストへ追加)----
+
+const insertTrack: CmdGen = (data, seed) => {
+  const n = data.rosen.ekiCont.length;
+  if (n === 0) return null;
+  const ekiIndex = seed % n;
+  const eki = data.rosen.ekiCont[ekiIndex];
+  if (eki === undefined) return null;
+  const oldCount = eki.ekiTrack2Cont.length;
+  const num = oldCount + 1;
+  const tracks = [
+    ...eki.ekiTrack2Cont.map((t) => ({ ...t })),
+    { trackName: `${String(num)}番線`, trackRyakusyou: String(num), trackNoboriRyakusyou: '' },
+  ];
+  return {
+    type: 'ekiTrack2/replace',
+    ekiIndex,
+    tracks,
+    downMain: eki.downMain,
+    upMain: eki.upMain,
+    diagramTrackOmit: [...eki.diagramTrackOmit, false],
+    oldToNew: eki.ekiTrack2Cont.map((_, i) => i), // 恒等(末尾追加は map 外)
+  };
+};
+
+const deleteTrack: CmdGen = (data, seed) => {
+  const n = data.rosen.ekiCont.length;
+  if (n === 0) return null;
+  const ekiIndex = seed % n;
+  const eki = data.rosen.ekiCont[ekiIndex];
+  if (eki === undefined || eki.ekiTrack2Cont.length <= 1) return null;
+  // 末尾番線を削除対象に選ぶ(ガードで拒否されうる — その場合は呼出側で握りつぶす)。
+  const delIdx = eki.ekiTrack2Cont.length - 1;
+  const tracks = eki.ekiTrack2Cont.filter((_, i) => i !== delIdx).map((t) => ({ ...t }));
+  const oldToNew = eki.ekiTrack2Cont.map((_, i) => (i === delIdx ? -1 : i));
+  // 主本線が消える場合は clamp(ガード回避のため 0 へ寄せる。実際の UI もそうする)。
+  const downMain = eki.downMain === delIdx ? 0 : eki.downMain;
+  const upMain = eki.upMain === delIdx ? 0 : eki.upMain;
+  return {
+    type: 'ekiTrack2/replace',
+    ekiIndex,
+    tracks,
+    downMain,
+    upMain,
+    diagramTrackOmit: eki.diagramTrackOmit.filter((_, i) => i !== delIdx),
+    oldToNew,
+  };
+};
+
 const GENERATORS: CmdGen[] = [
   insertEki,
   eraseEki,
@@ -301,6 +350,8 @@ const GENERATORS: CmdGen[] = [
   swapSyubetsu,
   insertDia,
   eraseDia,
+  insertTrack,
+  deleteTrack,
 ];
 
 // ---- プロパティ ----

@@ -45,6 +45,7 @@ import {
   remapSyubetsuInsert,
   remapSyubetsuSwap,
 } from './structuralRemap.js';
+import { checkTrackDeletable, remapRessyaTrackIndex } from './trackCascade.js';
 import type { EditCommand } from './types.js';
 
 /** 改行を LF に正規化する(原典 strLfOf。CRLF/CR → LF)。 */
@@ -1056,6 +1057,34 @@ export const commandReducers: {
   'dispProp/set': (draft, cmd) => {
     draft.dispProp = structuredClone(cmd.value);
   },
+
+  // ==== M6 番線編集 ====
+
+  'ekiTrack2/replace': (draft, cmd) => {
+    const eki = draft.rosen.ekiCont[cmd.ekiIndex];
+    if (eki === undefined) throw new Error(`ekiTrack2/replace 範囲外: ${String(cmd.ekiIndex)}`);
+    // 削除される旧 index(oldToNew===-1)を集める。
+    const deleted: number[] = [];
+    for (let i = 0; i < cmd.oldToNew.length; i++) {
+      if (cmd.oldToNew[i] === -1) deleted.push(i);
+    }
+    // 削除ガード(最後/主本線/使用中は拒否)。原典は UI 層だが domain で検証してテスト可能にする。
+    if (deleted.length > 0) {
+      const err = checkTrackDeletable(draft, cmd.ekiIndex, deleted);
+      if (err !== null) throw new Error(err);
+    }
+    // 番線数と省略フラグ長の一致(I6)。
+    if (cmd.diagramTrackOmit.length !== cmd.tracks.length) {
+      throw new Error('ekiTrack2/replace: diagramTrackOmit の長さが番線数と一致しません');
+    }
+    // 先に ressya 側を再マップ(旧 index 参照が残っているうちに)。
+    remapRessyaTrackIndex(draft, cmd.ekiIndex, cmd.oldToNew);
+    // 駅本体を差し替え。
+    eki.ekiTrack2Cont = cmd.tracks.map((t) => structuredClone(t));
+    eki.downMain = cmd.downMain;
+    eki.upMain = cmd.upMain;
+    eki.diagramTrackOmit = [...cmd.diagramTrackOmit];
+  },
 };
 
 /** 到達不能分岐(判別可能ユニオンの網羅性検査)。 */
@@ -1182,6 +1211,9 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'dispProp/set':
       commandReducers['dispProp/set'](draft, cmd);
+      return;
+    case 'ekiTrack2/replace':
+      commandReducers['ekiTrack2/replace'](draft, cmd);
       return;
     default:
       assertNever(cmd);

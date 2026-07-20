@@ -22,6 +22,7 @@ import type {
   Ekiatsukai,
   Ekijikokukeisiki,
   Ekikibo,
+  EkiTrack2,
   Jikoku,
   Ressya,
   Ressyahoukou,
@@ -527,6 +528,31 @@ export interface DiaReplaceRangeCommand {
   isSwap?: boolean;
 }
 
+// ---- 番線(ekiTrack2)編集(M6)----
+
+/**
+ * 1 駅の番線リストを丸ごと差し替える(原典 CDlgEkiProp の番線編集 + iEkiTrack2Map)。M6。
+ * ダイアログが「編集後の番線リスト・主本線 index・省略フラグ・旧→新マップ」を構築して渡す。
+ * レデューサは: (1) 削除ガード検証(最後/主本線/使用中は拒否 → 例外)、(2) eki の
+ * ekiTrack2Cont/downMain/upMain/diagramTrackOmit を差し替え、(3) 全ダイヤ全列車の
+ * ressyaTrackIndex と shunt 番線を旧→新マップで再マップ(teisya/tsuuka のみ)。
+ *
+ * oldToNew: 長さ=旧番線数、値 = 新 index または -1(削除)。新規番線はマップに現れない
+ * (末尾に足された分は tracks に含まれるが oldToNew の対象外)。
+ */
+export interface EkiTrack2ReplaceCommand {
+  type: 'ekiTrack2/replace';
+  ekiIndex: number;
+  /** 編集後の番線リスト(name/ryaku 非空。レデューサが deep copy)。 */
+  tracks: EkiTrack2[];
+  downMain: number;
+  upMain: number;
+  /** 編集後の番線数と同数の省略フラグ。 */
+  diagramTrackOmit: boolean[];
+  /** 旧→新 index マップ(長さ=旧番線数、-1=削除)。ressya 再マップに使う。 */
+  oldToNew: number[];
+}
+
 /** ダイヤの背景色・パターン等のプロパティ設定(名前変更は一意性検証あり)。 */
 export interface DiaSetPropCommand {
   type: 'dia/setProp';
@@ -610,7 +636,9 @@ export type EditCommand =
   | DiaReplaceRangeCommand
   | DiaSetPropCommand
   | RosenSetPropCommand
-  | DispPropSetCommand;
+  | DispPropSetCommand
+  // ---- M6 番線編集 ----
+  | EkiTrack2ReplaceCommand;
 
 /** コマンド型の文字列(ビュー差分更新のヒント。原典 pHint 相当)。 */
 export type EditCommandType = EditCommand['type'];

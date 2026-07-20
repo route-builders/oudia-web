@@ -9,12 +9,20 @@
  * ダイヤグラム略称 / 駅時刻形式(select) / 駅規模(radio) / 次駅距離 / 分岐駅 / 環状線 を編集。
  * 変更のあったフィールドを eki/setProp・eki/setBrunch・eki/setLoop として dispatch する。
  * 分岐と環状は原典同様 相互排他(UI 上で一方を on にすると他方の操作を無効化する)。
- * 番線(ekiTrack2)編集は M6 のため本ダイアログの対象外。
+ * 番線(ekiTrack2)編集(M6)は TrackListEditor を埋め込み、ekiTrack2/replace で反映する。
  */
 
-import type { EditCommand, Eki, Ekijikokukeisiki, Ekikibo } from '@oudia-web/domain';
+import {
+  checkTrackDeletable,
+  type EditCommand,
+  type Eki,
+  type Ekijikokukeisiki,
+  type Ekikibo,
+} from '@oudia-web/domain';
 import { useEffect, useRef, useState } from 'react';
+import { useDocStore } from '../store/docStore.js';
 import { Dialog } from './Dialog.js';
+import { fromTrackRows, TrackListEditor, type TrackRow, toTrackRows } from './TrackListEditor.js';
 
 /** 駅時刻形式 select の選択肢(design §5.3.3 の表示ラベル)。 */
 const EKIJIKOKUKEISIKI_OPTIONS: ReadonlyArray<{ value: Ekijikokukeisiki; label: string }> = [
@@ -60,6 +68,14 @@ export function EkiPropDialog(props: {
   const [loopOrigin, setLoopOrigin] = useState<number | null>(eki.loopOriginEkiIndex);
   const [loopOpposite, setLoopOpposite] = useState<boolean>(eki.loopOpposite);
 
+  // ---- 番線(M6)----
+  const data = useDocStore((s) => s.data);
+  const [trackRows, setTrackRows] = useState<TrackRow[]>(() =>
+    toTrackRows(eki.ekiTrack2Cont, eki.downMain, eki.upMain, eki.diagramTrackOmit),
+  );
+  const oldTrackCount = eki.ekiTrack2Cont.length;
+  const [trackError, setTrackError] = useState<string | null>(null);
+
   // 駅名欄へフォーカスし、カーソルを末尾に置く(design §5.2 キー転送)。
   const ekimeiRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -83,10 +99,51 @@ export function EkiPropDialog(props: {
     nextEkiDistance.trim() !== '' && Number.isInteger(distanceValue) && distanceValue >= 0;
   const brunchValid = !brunchOn || brunchCore !== null;
   const loopValid = !loopOn || loopOrigin !== null;
-  const okEnabled = distanceValid && brunchValid && loopValid;
+  // 番線: 名称・略称は非空必須(ライターが空で例外を投げる)。
+  const tracksValid =
+    trackRows.length >= 1 &&
+    trackRows.every((r) => r.trackName.trim() !== '' && r.trackRyakusyou.trim() !== '');
+  const okEnabled = distanceValid && brunchValid && loopValid && tracksValid;
 
   const commit = (): void => {
     if (!okEnabled) return;
+
+    // 番線編集の反映(変更があれば)。削除ガードは事前検証してインラインエラーにする。
+    const derived = fromTrackRows(trackRows, oldTrackCount);
+    const tracksChanged =
+      derived.tracks.length !== eki.ekiTrack2Cont.length ||
+      derived.downMain !== eki.downMain ||
+      derived.upMain !== eki.upMain ||
+      derived.tracks.some((t, i) => {
+        const o = eki.ekiTrack2Cont[i];
+        return (
+          o === undefined ||
+          t.trackName !== o.trackName ||
+          t.trackRyakusyou !== o.trackRyakusyou ||
+          t.trackNoboriRyakusyou !== o.trackNoboriRyakusyou
+        );
+      }) ||
+      derived.diagramTrackOmit.some((v, i) => v !== (eki.diagramTrackOmit[i] ?? false)) ||
+      derived.oldToNew.some((v, i) => v !== i);
+    if (tracksChanged) {
+      const deleted = derived.oldToNew.map((v, i) => (v === -1 ? i : -1)).filter((i) => i >= 0);
+      if (deleted.length > 0 && data !== null) {
+        const err = checkTrackDeletable(data, ekiIndex, deleted);
+        if (err !== null) {
+          setTrackError(err);
+          return;
+        }
+      }
+      dispatch({
+        type: 'ekiTrack2/replace',
+        ekiIndex,
+        tracks: derived.tracks,
+        downMain: derived.downMain,
+        upMain: derived.upMain,
+        diagramTrackOmit: derived.diagramTrackOmit,
+        oldToNew: derived.oldToNew,
+      });
+    }
 
     // 変更のあったフィールドのみ dispatch(1 フィールド = 1 コマンド)。
     if (ekimei !== eki.ekimei) {
@@ -336,6 +393,18 @@ export function EkiPropDialog(props: {
           <p className="dialog-error">起点駅を選択してください。</p>
         )}
       </fieldset>
+
+      <TrackListEditor
+        rows={trackRows}
+        onChange={(rows) => {
+          setTrackError(null);
+          setTrackRows(rows);
+        }}
+      />
+      {!tracksValid && (
+        <p className="dialog-error">番線名・略称は空にできません(1 本以上必要です)。</p>
+      )}
+      {trackError !== null && <p className="dialog-error">{trackError}</p>}
     </Dialog>
   );
 }

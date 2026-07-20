@@ -74,6 +74,22 @@ test('ダイヤ一覧で新規ダイヤを作ると路線ツリーに出る', as
   await expect(page.getByRole('button', { name: 'ダイヤグラム' })).toBeVisible();
 });
 
+test('駅プロパティの番線編集で番線を追加できる(M6)', async ({ page }) => {
+  await page.getByRole('button', { name: '新規作成' }).first().click();
+  await page.getByRole('button', { name: '駅', exact: true }).click();
+  await page.getByRole('button', { name: '末尾に追加' }).click();
+  await page.locator('.eki-view tbody tr').first().dblclick();
+  await expect(page.getByText('駅のプロパティ')).toBeVisible();
+  // 既定 2 番線。番線編集の [追加] で 3 行に。
+  const trackRows = page.locator('.track-editor-table tbody tr');
+  await expect(trackRows).toHaveCount(2);
+  await page.locator('.track-editor-toolbar').getByRole('button', { name: '追加' }).click();
+  await expect(trackRows).toHaveCount(3);
+  // OK で反映 → 駅ビューの 番線数 列が 3 になる。
+  await page.locator('.prop-dialog .dialog-ok').click();
+  await expect(page.locator('.eki-view tbody tr').first()).toContainText('3');
+});
+
 test('路線プロパティダイアログが 4 タブで開き、路線名を変えられる', async ({ page }) => {
   await page.getByRole('button', { name: '新規作成' }).first().click();
   await page.getByRole('button', { name: '路線のプロパティ' }).click();

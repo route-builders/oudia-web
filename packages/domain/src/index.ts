@@ -15,6 +15,8 @@ export type { BrunchLoopMap, BrunchLoopPosition } from './brunchLoop.js';
 export { deriveBrunchLoopMap } from './brunchLoop.js';
 // ---- 編集コマンド基盤(executeCommand / patch Undo/Redo / 変更カウンタ)----
 export * from './command/index.js';
+// ---- 番線編集の削除ガード(UI の事前検証で使う)----
+export { checkTrackDeletable } from './command/trackCascade.js';
 // ---- 時刻演算・index 変換(domain 実装)----
 export * from './ekiOrder.js';
 // ---- 新規エンティティのファクトリ(createDefault* / createNewRosen)----

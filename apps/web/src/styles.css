@@ -647,3 +647,37 @@ body {
   background: #fff;
   font-weight: bold;
 }
+
+/* 番線リスト編集(駅プロパティ内) */
+.track-editor-toolbar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+.track-editor-toolbar button {
+  padding: 2px 8px;
+  cursor: pointer;
+}
+.track-editor-toolbar button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.track-editor-table {
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.track-editor-table th,
+.track-editor-table td {
+  border: 1px solid #ddd;
+  padding: 1px 3px;
+}
+.track-editor-table thead th {
+  background: #f0f0f0;
+}
+.track-editor-table tr.selected {
+  background: #dde8ff;
+}
+.track-editor-table input[type="text"] {
+  width: 6em;
+  font-size: 12px;
+}
