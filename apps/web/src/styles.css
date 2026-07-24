@@ -374,6 +374,95 @@ body {
   margin: 0 4px;
 }
 
+/* ---- 作業編集ダイアログ(前作業 / 後作業リスト + 動的エディタ)---- */
+.op-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 460px;
+}
+.op-lists {
+  display: flex;
+  gap: 10px;
+}
+.op-list {
+  flex: 1;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.op-list-title {
+  font-size: 12px;
+  color: #666;
+  padding: 4px 8px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ddd;
+}
+.op-list-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.op-row {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: none;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.op-row:hover {
+  background: #eef4fb;
+}
+.op-row-sel {
+  background: #1d5fb0;
+  color: #fff;
+}
+.op-row-sel:hover {
+  background: #1d5fb0;
+}
+.op-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+}
+.op-radios {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.op-radio {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.op-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.op-buttons button {
+  padding: 4px 10px;
+  border: 1px solid #999;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 12px;
+  cursor: pointer;
+}
+.op-buttons button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* ---- 時刻表ビュー(ツールバー行 + グリッド)---- */
 .timetable-view {
   position: absolute;
