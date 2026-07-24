@@ -84,5 +84,25 @@ export type {
   Ressyasen,
   TrackLane,
 } from './layout/types.js';
+// ---- Light 運用探索(占有エンジン。M7b Light PR1)----
+export {
+  buildEkiOrderTable,
+  ekiIndexOfExist,
+  insertRessyaElement,
+  searchRessyaElement,
+  searchRessyaElementRev,
+} from './operationLight/occupancy.js';
+export type {
+  BeforeAfterType,
+  CustomizeChainColumn,
+  Houkou,
+  JunctionResolution,
+  Occupancy,
+  OperationElementLight,
+  OperationLightResult,
+  OpRef,
+  RessyaElement,
+} from './operationLight/types.js';
+export { opRefEquals, opRefKey } from './operationLight/types.js';
 export type { TransferSortInput } from './sort/transferSort.js';
 export { transferSortOrder } from './sort/transferSort.js';
