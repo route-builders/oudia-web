@@ -84,6 +84,17 @@ export type {
   Ressyasen,
   TrackLane,
 } from './layout/types.js';
+// ---- Light 運用探索の本体・作業抽出(M7b Light PR2)----
+export type {
+  DeriveOperationLightOptions,
+  OccupancyBuild,
+} from './operationLight/deriveOperationLight.js';
+export { buildOccupancy, deriveOperationLight } from './operationLight/deriveOperationLight.js';
+export type { ExpandContext, ExpandResult } from './operationLight/extract.js';
+export {
+  searchAfterOperationElementLight,
+  searchBeforeOperationElementLight,
+} from './operationLight/extract.js';
 // ---- Light 運用探索(占有エンジン。M7b Light PR1)----
 export {
   buildEkiOrderTable,
