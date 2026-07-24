@@ -12,11 +12,14 @@
 
 import {
   ekiIndexOfEkiOrder,
+  formatOperationLine,
   getEkiJikoku,
   getSihatsuEki,
   getSyuuchakuEki,
   getValidSihatsuEki,
   getValidSyuuchakuEki,
+  toFlatAfter,
+  toFlatBefore,
 } from '@oudia-web/domain';
 import type {
   Dia,
@@ -61,6 +64,11 @@ export interface BuildTimetableGridOptions {
   readonly displayAllEkiJikoku?: boolean;
   /** [親種別を有効にする](m_bDisplayParentSyubetsu): 子種別を親種別の略称で表示。既定 false。 */
   readonly displayParentSyubetsu?: boolean;
+  /**
+   * 運用機能(Rosen.enableOperation。0=無効/1=簡易/2=通常)。>=1 で始発駅作業/終着駅作業行に
+   * 作業テキストを表示する(M7b)。0 は従来どおり空(operationSpacer)= 黄金テスト不変。
+   */
+  readonly enableOperation?: number;
   readonly conv: JikokuConvOptions;
 }
 
@@ -73,6 +81,7 @@ export function defaultTimetableGridOptions(
     houkou,
     displayRessyamei: data.dispProp.displayRessyamei,
     displayTsuukaEkiJikoku: true,
+    enableOperation: data.rosen.enableOperation,
     conv: {
       noColon: true,
       outputSecond: false,
@@ -155,6 +164,7 @@ export function buildTimetableGrid(
           ekiCount,
           houkou,
           opts.displayParentSyubetsu ?? false,
+          opts.enableOperation ?? 0,
         ),
       );
     });
@@ -219,6 +229,7 @@ function trainCell(
   ekiCount: number,
   houkou: Ressyahoukou,
   parentSubst: boolean,
+  enableOperation: number,
 ): CellSpec {
   if (ressya.isNull) return { text: '', kind: 'empty', mark: null, style: plainStyle() };
 
@@ -250,8 +261,17 @@ function trainCell(
     case 'shuchakuEkimei':
       return text(ekimeiRyaku(getValidSyuuchakuEki(ressya)));
     case 'operationShihatsu':
-    case 'operationShuchaku':
-      return { text: '', kind: 'operationSpacer', mark: null, style: plainStyle() };
+    case 'operationShuchaku': {
+      // enableOperation=0 は従来どおり空(黄金テスト不変)。継続行(2 行目)も空。
+      if (enableOperation < 1 || row.isContinuation) {
+        return { text: '', kind: 'operationSpacer', mark: null, style: plainStyle() };
+      }
+      const opText = operationRowText(data, ressya, ekiCount, houkou, row.type);
+      if (opText === '') {
+        return { text: '', kind: 'operationSpacer', mark: null, style: plainStyle() };
+      }
+      return text(opText);
+    }
     case 'bikou':
       return text(ressya.bikou);
     case 'chaku':
@@ -281,4 +301,32 @@ function trainCell(
         syuuchaku,
       );
   }
+}
+
+/**
+ * 始発駅作業/終着駅作業の表示テキスト(原典 CreateOperationString をスペース連結)。M7b。
+ * 始発=有効始発スロットの前作業列、終着=有効終着スロットの後作業列。作業なしは空。
+ */
+function operationRowText(
+  data: RosenFileData,
+  ressya: Ressya,
+  ekiCount: number,
+  houkou: Ressyahoukou,
+  rowType: 'operationShihatsu' | 'operationShuchaku',
+): string {
+  const isShihatsu = rowType === 'operationShihatsu';
+  const order = isShihatsu ? getValidSihatsuEki(ressya) : getValidSyuuchakuEki(ressya);
+  if (order === -1) return '';
+  const slot = getEkiJikoku(ressya, order);
+  const eki = data.rosen.ekiCont[ekiIndexOfEkiOrder(order, ekiCount, houkou)];
+  const fmtCtx = {
+    tracks: eki?.ekiTrack2Cont ?? [],
+    outerTerminals: eki?.outerTerminalCont ?? [],
+  };
+  if (isShihatsu) {
+    const flat = toFlatBefore(slot.beforeOperationCont);
+    return flat.map((op) => formatOperationLine(op, false, fmtCtx)).join(' ');
+  }
+  const flat = toFlatAfter(slot.afterOperationCont);
+  return flat.map((op) => formatOperationLine(op, true, fmtCtx)).join(' ');
 }

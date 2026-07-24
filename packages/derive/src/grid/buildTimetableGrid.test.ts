@@ -70,6 +70,40 @@ describe('buildTimetableGrid(sample2 スナップショット)', () => {
       code: -1,
     });
   });
+
+  it('enableOperation=0 では作業行が空(黄金テスト不変の保証)', () => {
+    const data = loadRel('current/sample2.oud2');
+    const r = buildTimetableGrid(data, 0, {
+      ...defaultTimetableGridOptions(data, RESSYAHOUKOU_KUDARI),
+      enableOperation: 0, // 強制 0
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // 始発駅作業/終着駅作業行のセルはすべて operationSpacer(空)。
+    r.grid.rows.forEach((row, ri) => {
+      if (row.type !== 'operationShihatsu' && row.type !== 'operationShuchaku') return;
+      for (let c = 2; c < r.grid.columns.length; c++) {
+        const cell = r.grid.cells[ri]?.[c];
+        expect(cell?.text).toBe('');
+      }
+    });
+  });
+
+  it('enableOperation>=1 で作業行に作業テキストが出る(sample2 実データ)', () => {
+    const data = loadRel('current/sample2.oud2'); // EnableOperation=2
+    const r = buildTimetableGrid(data, 0, defaultTimetableGridOptions(data, RESSYAHOUKOU_KUDARI));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    // 作業行に空でないテキストが少なくとも 1 つある(出区/入区/接続 等)。
+    let found = false;
+    r.grid.rows.forEach((row, ri) => {
+      if (row.type !== 'operationShihatsu' && row.type !== 'operationShuchaku') return;
+      for (let c = 2; c < r.grid.columns.length; c++) {
+        if ((r.grid.cells[ri]?.[c]?.text ?? '') !== '') found = true;
+      }
+    });
+    expect(found).toBe(true);
+  });
 });
 
 describe('buildJikokuhyouRowSpec(行構造)', () => {
