@@ -56,6 +56,34 @@ export {
   toFlatAfter,
   toFlatBefore,
 } from './operation/editModel.js';
+// ---- 作業編集の flat 編集操作(add/insert/childAdd/clear/種別変更)----
+export type { EditResult } from './operation/editOps.js';
+export {
+  childOperationAdd,
+  operationAdd,
+  operationClear,
+  operationInsert,
+  setKind,
+} from './operation/editOps.js';
+// ---- 作業編集の時刻補完(getJikokuFromUI / Complement / UiDataToTarget)----
+export type { CompleteOptions } from './operation/operationComplete.js';
+export {
+  completeFlatAfter,
+  completeFlatBefore,
+  completeMinuteInput,
+  completeUiData,
+} from './operation/operationComplete.js';
+// ---- 作業編集の表示(行書式 formatOperationLine / field-visibility operationFieldSpec)----
+export type {
+  ControlSpec,
+  OperationFieldSpec,
+  OperationFormatCtx,
+} from './operation/operationView.js';
+export {
+  formatOperationJikoku,
+  formatOperationLine,
+  operationFieldSpec,
+} from './operation/operationView.js';
 // ---- 列車エンティティ構築・直通化相手探索 ----
 export { createNullRessya, findTrainToDirect } from './ressya.js';
 // ---- 列車の運行範囲導出(getSihatsuEki 系。derive から移設)----
