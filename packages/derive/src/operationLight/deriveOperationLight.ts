@@ -16,14 +16,30 @@
  */
 
 import { getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia-web/domain';
-import type { Dia, Eki, Jikoku, Ressya } from '@oudia-web/format';
+import type {
+  AfterJunctionType,
+  AfterOperation,
+  Dia,
+  Eki,
+  Jikoku,
+  Ressya,
+  Ressyasyubetsu,
+} from '@oudia-web/format';
 import {
   type ExpandContext,
   searchAfterOperationElementLight,
   searchBeforeOperationElementLight,
 } from './extract.js';
-import { buildEkiOrderTable, insertRessyaElement } from './occupancy.js';
-import type { Houkou, OperationLightResult, RessyaElement } from './types.js';
+import { buildEkiOrderTable, insertRessyaElement, searchRessyaElement } from './occupancy.js';
+import type {
+  BeforeAfterType,
+  Houkou,
+  JunctionResolution,
+  OperationLightResult,
+  OpRef,
+  RessyaElement,
+} from './types.js';
+import { opRefKey } from './types.js';
 
 /** 占有リスト + 次列車接続の種(PR2 の中間成果。PR3 が junction 解決に使う)。 */
 export interface OccupancyBuild {
@@ -41,6 +57,8 @@ export interface DeriveOperationLightOptions {
   readonly operationCrossKitenJikoku: boolean;
   readonly disableHiddenSyubetsu: boolean;
   readonly kitenJikoku: Jikoku;
+  /** 種別コンテナ(隠し種別跨ぎの unrelated 降格に使う)。省略時は隠し種別なし扱い。 */
+  readonly syubetsuCont?: readonly Ressyasyubetsu[];
 }
 
 /**
@@ -101,7 +119,7 @@ function registerBefore(
   const r = searchBeforeOperationElementLight(
     slot.beforeOperationCont,
     slot.hatsuJikoku,
-    [0],
+    [],
     trackConnect,
     ctx,
   );
@@ -129,7 +147,7 @@ function registerAfter(
   const r = searchAfterOperationElementLight(
     slot.afterOperationCont,
     slot.chakuJikoku,
-    [0],
+    [],
     trackRelease,
     ctx,
   );
@@ -152,19 +170,123 @@ function seedTrack(
   return hit?.trackIndex ?? 0;
 }
 
+/** junctionType(enum)→ beforeAfterType 恒等マップ(原典 :1580-1591)。 */
+function classify(junctionType: AfterJunctionType): BeforeAfterType {
+  return junctionType === 'classChange'
+    ? 'classChange'
+    : junctionType === 'propertyChange'
+      ? 'propertyChange'
+      : junctionType === 'propertySame'
+        ? 'propertySame'
+        : 'unrelated';
+}
+
+/** OpRef が指す作業(トップレベル or 入れ子)を union から辿って返す。 */
+function resolveAfterOp(dia: Dia, ref: OpRef): AfterOperation | undefined {
+  const ressya = dia.ressyaCont[ref.houkou][ref.ressyaIndex];
+  const slot = ressya?.ekiJikokuCont[ref.ekiOrder];
+  if (slot === undefined) return undefined;
+  // iLevel パスで辿る(トップは [contIndex])。入れ子は connect/release の子。
+  let afterCont: readonly AfterOperation[] = slot.afterOperationCont;
+  let beforeIsAfter = true;
+  for (let d = 0; d < ref.iLevel.length; d++) {
+    const idx = ref.iLevel[d] ?? 0;
+    if (d === ref.iLevel.length - 1) {
+      return beforeIsAfter ? afterCont[idx] : undefined;
+    }
+    const parent = afterCont[idx];
+    if (parent?.kind === 'release') {
+      afterCont = parent.formationAfterOperationCont;
+      beforeIsAfter = true;
+    } else {
+      return undefined; // connect の子は前作業列(next-junction は後作業なので通常来ない)
+    }
+  }
+  return undefined;
+}
+
 /**
- * Light 運用探索(公開 API)。PR2 では占有リスト構築 + seed 収集まで。
- * junction 解決(Step2 = PR3)と表示チェーン(Step3 = PR4)は後続で埋める。
+ * 種別ごとの隠しフラグを前計算する(原典 :662-678)。disableHiddenSyubetsu なら全 false。
+ */
+function computeHidden(
+  syubetsuCont: readonly Ressyasyubetsu[] | undefined,
+  disableHiddenSyubetsu: boolean,
+): { hidden: boolean[]; exist: boolean } {
+  if (disableHiddenSyubetsu || syubetsuCont === undefined) {
+    return { hidden: [], exist: false };
+  }
+  const hidden = syubetsuCont.map((s) => s.hidden);
+  return { hidden, exist: hidden.some((h) => h) };
+}
+
+/**
+ * junction 解決(原典 operationConnectLight の Step2、cpp:1546-2003 の分類部)。
+ * 各 seed(次列車接続)を SearchRessyaElement で解決し、junctionType で分類、
+ * 隠し種別跨ぎで unrelated へ降格する。junctionResult Map を返す。
+ */
+function resolveJunctions(
+  dia: Dia,
+  build: OccupancyBuild,
+  opts: DeriveOperationLightOptions,
+): Map<string, JunctionResolution> {
+  const result = new Map<string, JunctionResolution>();
+  const { hidden, exist: hiddenExist } = computeHidden(
+    opts.syubetsuCont,
+    opts.disableHiddenSyubetsu,
+  );
+
+  for (const { seed, ekiIndexOfExist, trackIndex } of build.junctionSeeds) {
+    const afterRef = seed.afterOp;
+    if (afterRef === null) continue;
+    const list = build.occupancy[ekiIndexOfExist]?.[trackIndex];
+    if (list === undefined) continue;
+
+    const found = searchRessyaElement(list, afterRef, opts.operationCrossKitenJikoku);
+    const nextTrain = found?.next.beforeOp ?? null;
+    if (found === null || nextTrain === null) continue; // 次列車なし → 未成立
+
+    const afterOp = resolveAfterOp(dia, afterRef);
+    const junctionType = afterOp?.kind === 'junction' ? afterOp.junctionType : 'unrelated';
+    let beforeAfterType = classify(junctionType);
+
+    // 隠し種別跨ぎで unrelated 降格。
+    if (hiddenExist && beforeAfterType !== 'unrelated') {
+      const currSyubetsu =
+        dia.ressyaCont[afterRef.houkou][afterRef.ressyaIndex]?.syubetsuIndex ?? 0;
+      const nextSyubetsu =
+        dia.ressyaCont[found.next.ressyahoukou][found.next.ressyaIndex]?.syubetsuIndex ?? 0;
+      if ((hidden[currSyubetsu] ?? false) !== (hidden[nextSyubetsu] ?? false)) {
+        beforeAfterType = 'unrelated';
+      }
+    }
+
+    const sameHoukou = afterRef.houkou === found.next.ressyahoukou;
+    result.set(opRefKey(afterRef), {
+      junctionSucceed: true,
+      beforeAfterType,
+      nextTrain,
+      junctionJikoku: found.terminalJikoku,
+      // 方向不一致で符号反転(原典 :1662-1666。prevRessyahoukou の基準は 0/1 → +1/-1 で近似)。
+      prevRessyahoukou: sameHoukou ? afterRef.houkou : -afterRef.houkou,
+      ressyajouhouOmit: beforeAfterType === 'propertySame',
+    });
+  }
+  return result;
+}
+
+/**
+ * Light 運用探索(公開 API)。占有構築 + junction 解決(Step2)。
+ * 表示チェーン(Step3 = PR4)は後続で埋める。
  */
 export function deriveOperationLight(
   dia: Dia,
   ekiCont: readonly Eki[],
   opts: DeriveOperationLightOptions,
 ): OperationLightResult {
-  // PR2: 占有構築のみ(結果は PR3 で junctionResult を埋める)。
-  buildOccupancy(dia, ekiCont, opts);
+  const build = buildOccupancy(dia, ekiCont, opts);
+  const junctionResult = resolveJunctions(dia, build, opts);
   return {
-    junctionResult: new Map(),
+    junctionResult,
     customizeRessyaIndexChains: { kudari: [], nobori: [] },
   };
 }

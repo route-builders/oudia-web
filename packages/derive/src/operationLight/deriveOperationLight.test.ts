@@ -10,12 +10,13 @@ import { createDefaultDia, createDefaultEki, createNullRessya } from '@oudia-web
 import type { AfterOperation, BeforeOperation, Dia, Eki, Ressya } from '@oudia-web/format';
 import { asSeconds } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
-import { buildOccupancy } from './deriveOperationLight.js';
+import { buildOccupancy, deriveOperationLight } from './deriveOperationLight.js';
 import {
   type ExpandContext,
   searchAfterOperationElementLight,
   searchBeforeOperationElementLight,
 } from './extract.js';
+import { opRefKey } from './types.js';
 
 const J = (h: number, m = 0) => asSeconds(h * 3600 + m * 60);
 
@@ -154,5 +155,96 @@ describe('searchBefore/AfterOperationElementLight(中間駅の入れ子展開)',
     expect(releaseIdx).toBeLessThan(childIdx);
     // 末尾 junction が seed に(親 release の子 junction + トップ末尾 junction)。
     expect(r.junctionSeeds.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('deriveOperationLight(junction 解決 = 次列車接続)', () => {
+  /** A: E0→E1 で終着(次列車接続)、B: E1→E2 で始発(前列車接続)。同一番線 0・E1 で接続。 */
+  function makeConnectedDia(junctionType: 'unrelated' | 'classChange' | 'propertySame'): {
+    dia: Dia;
+    ekiCont: Eki[];
+    aRef: () => string;
+  } {
+    const ekiCont = makeEkiCont();
+    // A: E0(order0) 発 8:00 → E1(order1) 着 8:30 で終着。order2 は none。
+    const a = createNullRessya(3, 0);
+    a.isNull = false;
+    a.ressyabangou = '1M';
+    const a0 = a.ekiJikokuCont[0];
+    const a1 = a.ekiJikokuCont[1];
+    const a2 = a.ekiJikokuCont[2];
+    if (a0) {
+      a0.ekiatsukai = 'teisya';
+      a0.hatsuJikoku = J(8);
+      a0.ressyaTrackIndex = 0;
+    }
+    if (a1) {
+      a1.ekiatsukai = 'teisya';
+      a1.chakuJikoku = J(8, 30);
+      a1.ressyaTrackIndex = 0;
+      a1.afterOperationCont = [{ kind: 'junction', syuutenJikoku: J(8, 30), junctionType }];
+    }
+    if (a2) a2.ekiatsukai = 'none';
+
+    // B: E1(order1) 発 8:40 → E2(order2) 着 9:10 で始発。order0 は none。
+    const b = createNullRessya(3, 0);
+    b.isNull = false;
+    b.ressyabangou = '3M';
+    const b0 = b.ekiJikokuCont[0];
+    const b1 = b.ekiJikokuCont[1];
+    const b2 = b.ekiJikokuCont[2];
+    if (b0) b0.ekiatsukai = 'none';
+    if (b1) {
+      b1.ekiatsukai = 'teisya';
+      b1.hatsuJikoku = J(8, 40);
+      b1.ressyaTrackIndex = 0;
+      b1.beforeOperationCont = [
+        { kind: 'junction', kitenJikoku: J(8, 40), kariOperationNumbers: [] },
+      ];
+    }
+    if (b2) {
+      b2.ekiatsukai = 'teisya';
+      b2.chakuJikoku = J(9, 10);
+      b2.ressyaTrackIndex = 0;
+    }
+
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a, b);
+    // A の終着 junction OpRef のキー(ekiOrder 1・afterOp・iLevel [0])。
+    const aRef = () =>
+      opRefKey({ houkou: 0, ressyaIndex: 0, ekiOrder: 1, opKind: 'after', iLevel: [0] });
+    return { dia, ekiCont, aRef };
+  }
+
+  it('着直後に発があれば junction 成立(unrelated でも成立)', () => {
+    const { dia, ekiCont, aRef } = makeConnectedDia('unrelated');
+    const res = deriveOperationLight(dia, ekiCont, OPTS);
+    const j = res.junctionResult.get(aRef());
+    expect(j).toBeDefined();
+    expect(j?.junctionSucceed).toBe(true);
+    expect(j?.beforeAfterType).toBe('unrelated');
+    expect(j?.nextTrain?.ressyaIndex).toBe(1); // B
+  });
+
+  it('junctionType=classChange は種別変更に分類', () => {
+    const { dia, ekiCont, aRef } = makeConnectedDia('classChange');
+    const res = deriveOperationLight(dia, ekiCont, OPTS);
+    expect(res.junctionResult.get(aRef())?.beforeAfterType).toBe('classChange');
+  });
+
+  it('junctionType=propertySame は ressyajouhouOmit=true', () => {
+    const { dia, ekiCont, aRef } = makeConnectedDia('propertySame');
+    const res = deriveOperationLight(dia, ekiCont, OPTS);
+    const j = res.junctionResult.get(aRef());
+    expect(j?.beforeAfterType).toBe('propertySame');
+    expect(j?.ressyajouhouOmit).toBe(true);
+  });
+
+  it('次列車が無ければ junction 未成立(Map に載らない)', () => {
+    const { dia, ekiCont, aRef } = makeConnectedDia('unrelated');
+    // B を削除 → A の着の後に発が無い。
+    dia.ressyaCont[0].pop();
+    const res = deriveOperationLight(dia, ekiCont, OPTS);
+    expect(res.junctionResult.get(aRef())).toBeUndefined();
   });
 });
