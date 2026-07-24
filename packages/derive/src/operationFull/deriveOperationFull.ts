@@ -25,7 +25,11 @@ import {
   searchAfterOperationElementLight,
   searchBeforeOperationElementLight,
 } from '../operationLight/extract.js';
-import { buildEkiOrderTable, insertRessyaElement } from '../operationLight/occupancy.js';
+import {
+  buildEkiOrderTable,
+  insertRessyaElement,
+  searchRessyaElementRev,
+} from '../operationLight/occupancy.js';
 import type {
   Houkou,
   OperationElementLight,
@@ -33,6 +37,7 @@ import type {
   RessyaElement,
 } from '../operationLight/types.js';
 import { opRefKey } from '../operationLight/types.js';
+import { setOperationNumberAssigned } from './operationNumber.js';
 import {
   type AssignContext,
   resolveOperation,
@@ -328,6 +333,127 @@ function setSeedNumber(numbers: OperationNumberMap, ref: OpRef, original: string
   numbers.set(key, s);
 }
 
+// ---- STEP3a: NumberChange seed からの運番割付(原典 :5285-5387)----
+
+/**
+ * STEP3a(原典 :5285-5387)。運用番号変更 seed を起点に運番を割り付ける。
+ * NumberChange はツリーに現れない独立作業(中間駅可)のため、seed の運番を直接 #2 に確定する。
+ * 非 reverse は別運用鎖の起点(再帰しない)、reverse は #3 反転を作る(原典 setOperationNumberAssigned)。
+ */
+function assignFromNumberChange(ctx: AssignContext): void {
+  for (const seed of ctx.state.numberChangeSeeds) {
+    const ref = seed.op;
+    const op = resolveOperation(ctx.dia, ref);
+    if (op?.kind !== 'numberChange') continue;
+    const original = op.operationNumbers.length > 0 ? [...op.operationNumbers] : [''];
+    const reverse = op.operationNumbers.length === 0;
+    const slots = ctx.numbers.get(opRefKey(ref)) ?? {
+      n1: [],
+      n2: [],
+      n3: [],
+      subAssigned: false,
+    };
+    setOperationNumberAssigned(slots, original, reverse);
+    ctx.numbers.set(opRefKey(ref), slots);
+  }
+}
+
+// ---- STEP3b: 孤立 junction(前が繋がらない前列車接続始発)への空白運番(原典 :5389-5478)----
+
+/**
+ * STEP3b(原典 :5389-5478)。前列車接続の始発で、前列車が存在しない(孤立)ものに空白運番を
+ * 割り付けて鎖を開始する。searchRessyaElementRev で前列車の有無を判定する。
+ */
+function assignOrphanJunctions(ctx: AssignContext): void {
+  for (const seed of ctx.state.beforeJunctionSeeds) {
+    const ref = seed.op;
+    const tree = ctx.state.trees[ref.houkou]?.[ref.ressyaIndex];
+    if (tree === undefined) continue;
+    // 既に運番が割り当たっていれば skip(hop で先に到達済み)。
+    const existing = ctx.numbers.get(opRefKey(ref));
+    if (existing !== undefined && (existing.n2.length > 0 || existing.n1.length > 0)) continue;
+    // 占有から前列車の有無を判定。
+    const loc = findBeforeOccupancy(ctx, ref);
+    if (loc === undefined) continue;
+    const list = ctx.state.occupancy[loc.ekiIndexOfExist]?.[loc.trackIndex];
+    if (list === undefined) continue;
+    if (searchRessyaElementRev(list, ref, ctx.operationCrossKitenJikoku)) continue; // 前列車あり
+    // 孤立 → 空白運番(元の仮運番があればそれ)で鎖を開始。
+    const original = originalNumberOf(ctx.dia, ref);
+    setSeedNumber(ctx.numbers, ref, original);
+    const node = findTreeNode(tree, ref);
+    if (node === undefined) continue;
+    const iLevelNext = [...node.treeLevel];
+    iLevelNext[iLevelNext.length - 1] = (iLevelNext[iLevelNext.length - 1] ?? 0) + 1;
+    runJunctionRecursion(ctx, tree, iLevelNext, original);
+  }
+}
+
+/** 前作業(前列車接続)が登録された占有 index/track を探す。 */
+function findBeforeOccupancy(
+  ctx: AssignContext,
+  ref: OpRef,
+): { ekiIndexOfExist: number; trackIndex: number } | undefined {
+  for (let eki = 0; eki < ctx.state.occupancy.length; eki++) {
+    const tracks = ctx.state.occupancy[eki];
+    if (tracks === undefined) continue;
+    for (let track = 0; track < tracks.length; track++) {
+      const list = tracks[track] ?? [];
+      for (const el of list) {
+        if (el.beforeOp !== null && opRefKey(el.beforeOp) === opRefKey(ref)) {
+          return { ekiIndexOfExist: eki, trackIndex: track };
+        }
+      }
+    }
+  }
+  return undefined;
+}
+
+// ---- WaitList retry: 増結 Sub 未着の収束ループ(原典 :5479-5592)----
+
+/**
+ * WaitList retry(原典 :5479-5592)。増結の Sub が別 seed 経由で後着したものを回収する。
+ * コピー → クリア → 各要素を再試行(処理中の再 push は次周回)。変化がなくなれば打ち切り。
+ */
+function resolveConnectWaitList(ctx: AssignContext): void {
+  for (;;) {
+    if (ctx.waitList.length === 0) break;
+    const snapshot = ctx.waitList.slice();
+    ctx.waitList.length = 0; // クリア(処理中の push は次周回へ)
+    let changed = false;
+    for (const item of snapshot) {
+      const slots = ctx.numbers.get(opRefKey(item.ref));
+      const tree = ctx.state.trees[item.ref.houkou]?.[item.ref.ressyaIndex];
+      if (slots === undefined || tree === undefined) continue;
+      if (slots.subAssigned) {
+        // Sub が到着済み → merge して再開。
+        const op = resolveOperation(ctx.dia, item.ref);
+        const reverseJoin = op?.kind === 'connect' ? op.connectToFront : false;
+        // merge のため n2 は既に Main で埋まっている前提。
+        const node = findTreeNode(tree, item.ref);
+        if (node === undefined) continue;
+        // Main を確定してから merge(原典は setOperationNumberMain 済み前提)。
+        const iLevelNext = [...node.treeLevel];
+        iLevelNext[iLevelNext.length - 1] = (iLevelNext[iLevelNext.length - 1] ?? 0) + 1;
+        // merge は operationNumber.ts の関数を使うが、ここでは runJunctionRecursion が
+        // 再度 Connect 分岐で merge するように、seed を戻して再試行する。
+        runJunctionRecursion(ctx, tree, [...node.treeLevel], item.strOperationNumber);
+        void reverseJoin;
+        changed = true;
+      } else {
+        // まだ未着 → 次周回へ持ち越し。
+        ctx.waitList.push(item);
+      }
+    }
+    if (!changed) break; // 変化なし = 残余打ち切り(解けない相互依存は捨てる)。
+  }
+}
+
+/** ツリーから OpRef 一致のノードを引く。 */
+function findTreeNode(tree: RessyaOperationTree, ref: OpRef): TreeNode | undefined {
+  return tree.nodes.find((n) => opRefKey(n.el.op) === opRefKey(ref));
+}
+
 /** 運番 Map → assignedNumbers(opRefKey → 割付運番 #1/#2 のうち非空優先)。 */
 function collectAssigned(numbers: OperationNumberMap): Map<string, string[]> {
   const out = new Map<string, string[]>();
@@ -340,8 +466,9 @@ function collectAssigned(numbers: OperationNumberMap): Map<string, string[]> {
 }
 
 /**
- * Full 運用探索(公開 API)。M7c PR-C の段階では SETUP+STEP1 + STEP2(出区/路線外 seed の運番割付)まで。
- * STEP3a/3b(NumberChange/孤立 junction)と WaitList retry は PR-D、運用表 Map 整形は PR-E。
+ * Full 運用探索(公開 API)。M7c コア(運番割付)= SETUP+STEP1 + STEP2(出区/路線外)+
+ * STEP3a(NumberChange)+ STEP3b(孤立 junction)+ WaitList retry(増結 Sub 収束)。
+ * 運用表 Map の行順整形と入出区連携一覧の構築は M7c-2/M7d(PR-E)へ。
  * 出力はすべて非永続(oud2 に書き戻さない)= 黄金テスト非該当。
  */
 export function deriveOperationFull(
@@ -362,8 +489,11 @@ export function deriveOperationFull(
     guard: { count: 0, limit: 100000 },
   };
 
-  assignFromOutOuter(ctx);
-  // STEP3a/3b・WaitList retry は PR-D。運用表 Map・入出区連携は PR-E。
+  assignFromOutOuter(ctx); // STEP2
+  assignFromNumberChange(ctx); // STEP3a
+  assignOrphanJunctions(ctx); // STEP3b
+  resolveConnectWaitList(ctx); // WaitList retry
+  // 運用表 Map・入出区連携一覧は PR-E。
 
   return {
     junctionResult: new Map(),

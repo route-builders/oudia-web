@@ -2,8 +2,9 @@
 // Copyright (C) 2026 up-tri
 
 /**
- * Full 運番割付(deriveOperationFull STEP2 + runJunctionRecursion)の単体テスト(M7c PR-C)。
- * 出区 seed からの運番伝播・次列車接続 hop・解結 split を合成データで検証する。
+ * Full 運番割付(deriveOperationFull の STEP2/3a/3b + runJunctionRecursion)の単体テスト
+ * (M7c PR-C/PR-D)。出区 seed の運番伝播・次列車接続 hop・NumberChange・孤立 junction・
+ * 循環暴走ガードを合成データで検証する。
  */
 
 import { createDefaultDia, createDefaultEki, createNullRessya } from '@oudia-web/domain';
@@ -137,6 +138,74 @@ describe('deriveOperationFull(STEP2 運番割付)', () => {
     expect(res.assignedNumbers.get(aOutKey)).toEqual(['7']);
     // 割付は A の作業のみ(B が存在しない)。
     expect(res.assignedNumbers.size).toBeGreaterThanOrEqual(1);
+  });
+
+  it('孤立した前列車接続(前列車なし)に運番が割り当たり鎖が開始する(STEP3b)', () => {
+    const ekiCont = makeEkiCont();
+    // B のみ: E1(前列車接続・仮運番 9)→ E2。前列車 A は存在しない = 孤立。
+    const b = createNullRessya(3, 0);
+    b.isNull = false;
+    const b0 = b.ekiJikokuCont[0];
+    const b1 = b.ekiJikokuCont[1];
+    const b2 = b.ekiJikokuCont[2];
+    if (b0) b0.ekiatsukai = 'none';
+    if (b1) {
+      b1.ekiatsukai = 'teisya';
+      b1.hatsuJikoku = J(8, 40);
+      b1.ressyaTrackIndex = 0;
+      b1.beforeOperationCont = [
+        { kind: 'junction', kitenJikoku: J(8, 40), kariOperationNumbers: ['9'] },
+      ];
+    }
+    if (b2) {
+      b2.ekiatsukai = 'teisya';
+      b2.chakuJikoku = J(9, 10);
+      b2.ressyaTrackIndex = 0;
+    }
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(b);
+
+    const res = deriveOperationFull(dia, ekiCont, OPTS);
+    // B の前列車接続(E1 前作業 [0])に仮運番 9 が割り当たる(#2 = hop 用 or #1 = seed)。
+    const bJuncKey = opRefKey({
+      houkou: 0,
+      ressyaIndex: 0,
+      ekiOrder: 1,
+      opKind: 'before',
+      iLevel: [0],
+    });
+    const assigned = res.assignedNumbers.get(bJuncKey);
+    expect(assigned).toEqual(['9']);
+  });
+
+  it('NumberChange seed から別運用鎖が開始する(STEP3a)', () => {
+    const ekiCont = makeEkiCont();
+    const a = createNullRessya(3, 0);
+    a.isNull = false;
+    for (let o = 0; o < 3; o++) {
+      const s = a.ekiJikokuCont[o];
+      if (s === undefined) continue;
+      s.ekiatsukai = 'teisya';
+      if (o > 0) s.chakuJikoku = J(8, o * 10);
+      if (o < 2) s.hatsuJikoku = J(8, o * 10 + 1);
+      s.ressyaTrackIndex = 0;
+    }
+    // 中間 E1 の後作業に運用番号変更(88)。
+    const a1 = a.ekiJikokuCont[1];
+    if (a1) a1.afterOperationCont = [{ kind: 'numberChange', operationNumbers: ['88'] }];
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a);
+
+    const res = deriveOperationFull(dia, ekiCont, OPTS);
+    // NumberChange 作業に 88 が割り当たる。
+    const ncKey = opRefKey({
+      houkou: 0,
+      ressyaIndex: 0,
+      ekiOrder: 1,
+      opKind: 'after',
+      iLevel: [0],
+    });
+    expect(res.assignedNumbers.get(ncKey)).toEqual(['88']);
   });
 
   it('循環運用でも無限再帰しない(暴走ガード内で完了)', () => {
