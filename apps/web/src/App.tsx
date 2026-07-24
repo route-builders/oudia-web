@@ -6,7 +6,9 @@
 import type { RosenFileData } from '@oudia-web/format';
 import { useCallback, useEffect, useState } from 'react';
 import { DiaListDialog } from './dialog/DiaListDialog.js';
+import { EmbedRosenDialog } from './dialog/EmbedRosenDialog.js';
 import { RosenPropDialog } from './dialog/RosenPropDialog.js';
+import { SubRosenDialog } from './dialog/SubRosenDialog.js';
 import { openFileObject, pickAndOpen } from './file/openFile.js';
 import { useUnsavedGuard } from './hooks/useUnsavedGuard.js';
 import { RosenTree } from './shell/RosenTree.js';
@@ -34,6 +36,8 @@ export function App(): React.ReactElement {
   const [error, setError] = useState<string | null>(null);
   const [rosenPropOpen, setRosenPropOpen] = useState(false);
   const [diaListOpen, setDiaListOpen] = useState(false);
+  const [subRosenOpen, setSubRosenOpen] = useState(false);
+  const [embedOpen, setEmbedOpen] = useState(false);
 
   // 未保存時の離脱保護(リロード/クローズで確認ダイアログ)+ タイトル * マーカー。
   useUnsavedGuard();
@@ -126,6 +130,12 @@ export function App(): React.ReactElement {
             <button className="edit-btn" onClick={() => setDiaListOpen(true)}>
               ダイヤ一覧
             </button>
+            <button className="edit-btn" onClick={() => setEmbedOpen(true)}>
+              組入れ
+            </button>
+            <button className="edit-btn" onClick={() => setSubRosenOpen(true)}>
+              切り出し
+            </button>
           </>
         )}
         {fileName !== null && (
@@ -159,6 +169,19 @@ export function App(): React.ReactElement {
       )}
       {diaListOpen && data !== null && (
         <DiaListDialog data={data} dispatch={dispatch} onClose={() => setDiaListOpen(false)} />
+      )}
+      {subRosenOpen && data !== null && (
+        <SubRosenDialog data={data} fileName={fileName} onClose={() => setSubRosenOpen(false)} />
+      )}
+      {embedOpen && data !== null && (
+        <EmbedRosenDialog
+          data={data}
+          fileName={fileName}
+          onEmbedded={(embedded, name) => {
+            loadData(embedded, name, 0);
+          }}
+          onClose={() => setEmbedOpen(false)}
+        />
       )}
 
       {data === null ? (
