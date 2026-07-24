@@ -115,7 +115,7 @@ describe('buildFullState(seed 収集)', () => {
     const full = buildFullState(dia, ekiCont, OPTS);
     expect(full.outOuterSeeds).toHaveLength(1);
     // tree も保存されている。
-    expect(full.trees[0]?.[0]?.elements.length).toBeGreaterThan(0);
+    expect(full.trees[0]?.[0]?.nodes.length).toBeGreaterThan(0);
   });
 
   it('NumberChange(非 reverse)が numberChangeSeeds に収集される', () => {

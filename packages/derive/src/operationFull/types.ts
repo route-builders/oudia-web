@@ -24,7 +24,55 @@ import type {
   JunctionResolution,
   OperationElementLight,
   OpRef,
+  RessyaElement,
 } from '../operationLight/types.js';
+
+// ---- STEP1 の中間状態(deriveOperationFull と operationNumberAssign が共有。循環回避のため types に置く)----
+
+/**
+ * ツリー要素(作業要素 + 探索用の列車全体 iLevel)。原典は 1 本の contOperationElement を
+ * 単一 iLevelAdd で並べるため、トップ桁が駅跨ぎで連番になる。TS では slot ごとに [0] 起点で
+ * 展開するので、探索用 treeLevel を別に付与し、op(OpRef)は slot 相対の元パスを保つ。
+ */
+export interface TreeNode {
+  /** 作業本体(OpRef の iLevel は slot 相対の元パス)。 */
+  readonly el: OperationElementLight;
+  /** 探索用の列車全体 iLevel(トップ桁が駅跨ぎで連番。back()++/push_back(0) はこれで辿る)。 */
+  readonly treeLevel: number[];
+}
+
+/** 1 列車ぶんの STEP1 結果(作業ノード列 + 収集 seed)。 */
+export interface RessyaOperationTree {
+  readonly houkou: Houkou;
+  readonly ressyaIndex: number;
+  /** DFS 順の作業ノード列(treeLevel で辿る)。 */
+  readonly nodes: TreeNode[];
+  readonly outOuterSeeds: TreeNode[];
+  readonly beforeJunctionSeeds: TreeNode[];
+}
+
+/** Full 探索の中間状態(SETUP + STEP1 の成果)。 */
+export interface FullState {
+  readonly occupancy: RessyaElement[][][];
+  readonly trees: (RessyaOperationTree | undefined)[][];
+  readonly junctionSeeds: {
+    readonly seed: RessyaElement;
+    readonly ekiIndexOfExist: number;
+    readonly trackIndex: number;
+  }[];
+  readonly outOuterSeeds: OperationElementLight[];
+  readonly beforeJunctionSeeds: OperationElementLight[];
+  readonly numberChangeSeeds: OperationElementLight[];
+  readonly chains: { kudari: CustomizeChainColumn[]; nobori: CustomizeChainColumn[] };
+}
+
+export interface DeriveOperationFullOptions {
+  readonly operationCrossKitenJikoku: boolean;
+  readonly disableHiddenSyubetsu: boolean;
+  readonly kitenJikoku: Jikoku;
+  /** 路線全体の運用番号順反転(m_bOperationNumberReverse)。 */
+  readonly operationNumberReverse: boolean;
+}
 
 /**
  * 運番スロット(原典 CentDedBeforeOperation の m_strOperationNumber1/2/3 + m_bBoolData2)。

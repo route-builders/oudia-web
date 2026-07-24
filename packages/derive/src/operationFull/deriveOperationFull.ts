@@ -17,7 +17,7 @@
  */
 
 import { getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia-web/domain';
-import type { Dia, Eki, Jikoku, Ressya } from '@oudia-web/format';
+import type { BeforeOperation, Dia, Eki, Jikoku, Ressya } from '@oudia-web/format';
 import { buildInitialChains } from '../operationLight/deriveOperationLight.js';
 import {
   type ExpandContext,
@@ -27,52 +27,26 @@ import {
 } from '../operationLight/extract.js';
 import { buildEkiOrderTable, insertRessyaElement } from '../operationLight/occupancy.js';
 import type {
-  CustomizeChainColumn,
   Houkou,
   OperationElementLight,
+  OpRef,
   RessyaElement,
 } from '../operationLight/types.js';
-
-/** 1 列車ぶんの STEP1 結果(作業要素ツリー + 収集 seed)。 */
-export interface RessyaOperationTree {
-  readonly houkou: Houkou;
-  readonly ressyaIndex: number;
-  /** DFS 順の作業要素列(iLevel パスつき)。junctionOperationElement が iLevel で辿る。 */
-  readonly elements: OperationElementLight[];
-  readonly outOuterSeeds: OperationElementLight[];
-  readonly beforeJunctionSeeds: OperationElementLight[];
-  readonly numberChangeSeeds: OperationElementLight[];
-}
-
-/** Full 探索の中間状態(SETUP + STEP1 の成果。PR-C 以降が消費)。 */
-export interface FullState {
-  /** occupancy[ekiIndex][trackIndex] = 起点循環ソート済み RessyaElement 列(Light と同一)。 */
-  readonly occupancy: RessyaElement[][][];
-  /** 列車ツリー: trees[houkou][ressyaIndex]。無効列車は undefined。 */
-  readonly trees: (RessyaOperationTree | undefined)[][];
-  /** 次列車接続の種(後作業末尾 Junction。占有 index/track つき)。 */
-  readonly junctionSeeds: {
-    readonly seed: RessyaElement;
-    readonly ekiIndexOfExist: number;
-    readonly trackIndex: number;
-  }[];
-  /** 出区/路線外始発 seed(全列車横断)。STEP2 起点。 */
-  readonly outOuterSeeds: OperationElementLight[];
-  /** 前列車接続始発 seed。STEP3b 孤立検査対象。 */
-  readonly beforeJunctionSeeds: OperationElementLight[];
-  /** 運用番号変更 seed。STEP3a 起点。 */
-  readonly numberChangeSeeds: OperationElementLight[];
-  /** 表示チェーン(Light と共有)。 */
-  readonly chains: { kudari: CustomizeChainColumn[]; nobori: CustomizeChainColumn[] };
-}
-
-export interface DeriveOperationFullOptions {
-  readonly operationCrossKitenJikoku: boolean;
-  readonly disableHiddenSyubetsu: boolean;
-  readonly kitenJikoku: Jikoku;
-  /** 路線全体の運用番号順反転(m_bOperationNumberReverse)。 */
-  readonly operationNumberReverse: boolean;
-}
+import { opRefKey } from '../operationLight/types.js';
+import {
+  type AssignContext,
+  resolveOperation,
+  runJunctionRecursion,
+} from './operationNumberAssign.js';
+import type {
+  ConnectWaitItem,
+  DeriveOperationFullOptions,
+  FullState,
+  OperationFullResult,
+  OperationNumberMap,
+  RessyaOperationTree,
+  TreeNode,
+} from './types.js';
 
 function slotTrackIndex(ressya: Ressya, ekiOrder: number): number {
   return ressya.ekiJikokuCont[ekiOrder]?.ressyaTrackIndex ?? 0;
@@ -133,18 +107,33 @@ export function buildFullState(
         numberChangeSeeds,
       );
 
-      const elements = [...before.elements, ...after.elements];
+      // treeLevel を列車全体で連番化(before のトップ桁数だけ after をオフセット)。
+      const beforeTop = countTopLevel(before.elements);
+      const nodes: TreeNode[] = [
+        ...before.elements.map((el) => ({ el, treeLevel: [...el.iLevel] })),
+        ...after.elements.map((el) => ({ el, treeLevel: offsetTop(el.iLevel, beforeTop) })),
+      ];
+      const outSeeds: TreeNode[] = [
+        ...before.outOuterSeeds.map((el) => ({ el, treeLevel: [...el.iLevel] })),
+        ...after.outOuterSeeds.map((el) => ({ el, treeLevel: offsetTop(el.iLevel, beforeTop) })),
+      ];
+      const bjSeeds: TreeNode[] = [
+        ...before.beforeJunctionSeeds.map((el) => ({ el, treeLevel: [...el.iLevel] })),
+        ...after.beforeJunctionSeeds.map((el) => ({
+          el,
+          treeLevel: offsetTop(el.iLevel, beforeTop),
+        })),
+      ];
       const tree: RessyaOperationTree = {
         houkou,
         ressyaIndex,
-        elements,
-        outOuterSeeds: [...before.outOuterSeeds, ...after.outOuterSeeds],
-        beforeJunctionSeeds: [...before.beforeJunctionSeeds, ...after.beforeJunctionSeeds],
-        numberChangeSeeds: [],
+        nodes,
+        outOuterSeeds: outSeeds,
+        beforeJunctionSeeds: bjSeeds,
       };
       treeRow[ressyaIndex] = tree;
-      outOuterSeeds.push(...tree.outOuterSeeds);
-      beforeJunctionSeeds.push(...tree.beforeJunctionSeeds);
+      outOuterSeeds.push(...outSeeds.map((n) => n.el));
+      beforeJunctionSeeds.push(...bjSeeds.map((n) => n.el));
     });
   }
 
@@ -264,6 +253,22 @@ function collectNumberChangeSeeds(
   }
 }
 
+/** トップレベル(iLevel.length===1)要素の最大 index+1(= トップ桁の個数)。 */
+function countTopLevel(elements: readonly OperationElementLight[]): number {
+  let max = -1;
+  for (const el of elements) {
+    if (el.iLevel.length >= 1) max = Math.max(max, el.iLevel[0] ?? 0);
+  }
+  return max + 1;
+}
+
+/** iLevel のトップ桁を offset だけずらした新配列(下位桁はそのまま)。 */
+function offsetTop(iLevel: readonly number[], offset: number): number[] {
+  const out = [...iLevel];
+  out[0] = (out[0] ?? 0) + offset;
+  return out;
+}
+
 function makeElement(
   houkou: Houkou,
   ressyaIndex: number,
@@ -277,5 +282,94 @@ function makeElement(
     ekiOrder,
     ekiIndexOfExist: -1,
     ressyaTrackIndex: -1,
+  };
+}
+
+// ---- STEP2: 出区/路線外始発 seed からの運番割付(原典 :5060-5283)----
+
+/** OpRef が指す前作業の元運番(#1 の種)を取り出す(出区/路線外始発は前作業のみ)。 */
+function originalNumberOf(dia: Dia, ref: OpRef): string[] {
+  if (ref.opKind !== 'before') return [''];
+  const op = resolveOperation(dia, ref) as BeforeOperation | undefined;
+  if (op === undefined) return [''];
+  if (op.kind === 'out' || op.kind === 'outer') {
+    return op.operationNumbers.length > 0 ? [...op.operationNumbers] : [''];
+  }
+  if (op.kind === 'junction') {
+    return op.kariOperationNumbers.length > 0 ? [...op.kariOperationNumbers] : [''];
+  }
+  return [''];
+}
+
+/**
+ * STEP2(原典 :5060-5283)。出区/路線外始発 seed を起点に運番を割り付ける。
+ * 各 seed の元運番(#1)を種として runJunctionRecursion を back()++ で起動する。
+ */
+function assignFromOutOuter(ctx: AssignContext): void {
+  for (const seed of ctx.state.outOuterSeeds) {
+    const ref = seed.op;
+    const tree = ctx.state.trees[ref.houkou]?.[ref.ressyaIndex];
+    if (tree === undefined) continue;
+    const original = originalNumberOf(ctx.dia, ref);
+    // seed 自身(出区/路線外始発)の運番を #1 に確定する(原典 setOperationNumber、cpp:5257 付近)。
+    setSeedNumber(ctx.numbers, ref, original);
+    // 次作業へ(iLevel の back()++)。
+    const iLevelNext = [...ref.iLevel];
+    iLevelNext[iLevelNext.length - 1] = (iLevelNext[iLevelNext.length - 1] ?? 0) + 1;
+    runJunctionRecursion(ctx, tree, iLevelNext, original);
+  }
+}
+
+/** seed の運番を #1 に記録する(スロットがなければ作る)。 */
+function setSeedNumber(numbers: OperationNumberMap, ref: OpRef, original: string[]): void {
+  const key = opRefKey(ref);
+  const s = numbers.get(key) ?? { n1: [], n2: [], n3: [], subAssigned: false };
+  s.n1 = [...original];
+  numbers.set(key, s);
+}
+
+/** 運番 Map → assignedNumbers(opRefKey → 割付運番 #1/#2 のうち非空優先)。 */
+function collectAssigned(numbers: OperationNumberMap): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const [key, slots] of numbers) {
+    // 割付結果は #2(Main/Assigned)優先、なければ #1。
+    const assigned = slots.n2.length > 0 ? slots.n2 : slots.n1;
+    out.set(key, assigned);
+  }
+  return out;
+}
+
+/**
+ * Full 運用探索(公開 API)。M7c PR-C の段階では SETUP+STEP1 + STEP2(出区/路線外 seed の運番割付)まで。
+ * STEP3a/3b(NumberChange/孤立 junction)と WaitList retry は PR-D、運用表 Map 整形は PR-E。
+ * 出力はすべて非永続(oud2 に書き戻さない)= 黄金テスト非該当。
+ */
+export function deriveOperationFull(
+  dia: Dia,
+  ekiCont: readonly Eki[],
+  opts: DeriveOperationFullOptions,
+): OperationFullResult {
+  const state = buildFullState(dia, ekiCont, opts);
+  const numbers: OperationNumberMap = new Map();
+  const waitList: ConnectWaitItem[] = [];
+  const ctx: AssignContext = {
+    dia,
+    state,
+    numbers,
+    waitList,
+    operationCrossKitenJikoku: opts.operationCrossKitenJikoku,
+    operationNumberReverse: opts.operationNumberReverse,
+    guard: { count: 0, limit: 100000 },
+  };
+
+  assignFromOutOuter(ctx);
+  // STEP3a/3b・WaitList retry は PR-D。運用表 Map・入出区連携は PR-E。
+
+  return {
+    junctionResult: new Map(),
+    customizeRessyaIndexChains: state.chains,
+    operationTable: new Map(),
+    assignedNumbers: collectAssigned(numbers),
+    inOutLinkCodes: new Map(),
   };
 }
