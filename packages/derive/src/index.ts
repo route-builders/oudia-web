@@ -84,6 +84,17 @@ export type {
   Ressyasen,
   TrackLane,
 } from './layout/types.js';
+// ---- Full 運用探索の型(運番割付。M7c PR-A)----
+export type {
+  BeforeAfterTypeFull,
+  ConnectWaitItem,
+  InOutLinkCodeEntry,
+  OperationFullResult,
+  OperationNumberMap,
+  OperationNumberSlots,
+  OperationTableEntry,
+  RessyaPropertyRef,
+} from './operationFull/types.js';
 export type { MoveEntry, MoveList } from './operationLight/chains.js';
 export {
   addMove,
