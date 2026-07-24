@@ -34,6 +34,7 @@ import {
   getValidSyuuchakuEki,
   isRunBetweenNextEki,
 } from '../runRange.js';
+import { adjustAllOperation, adjustRessyaOperation } from './adjustOperation.js';
 import { addToTrailingNumber } from './clipboard.js';
 import { cascadeEkiErase, cascadeEkiInsert } from './ekiCascade.js';
 import { cycleEkiDisplaySetting } from './ekiDisplayCycle.js';
@@ -875,6 +876,10 @@ export const commandReducers: {
     }
     // (4) 置換された駅は駅時刻形式が変わりうるので全列車を詰め替える(原典 adjustByEkijikokukeisiki)。
     for (let k = 0; k < overlap; k++) adjustByEkijikokukeisiki(draft, cmd.index + k);
+    // (5) 作業整合(原典 CRfEditCmd_Eki::execute step12 adjustOperation。data-model §8.3(a)-7)。
+    // 駅増減で列車の走行範囲が変わるため全列車で先端/終端作業を再正規化する。
+    // enableOperation=0 では作業 cont が空なので実質 no-op(黄金テスト非影響)。
+    adjustAllOperation(draft.rosen);
   },
 
   'eki/setProp': (draft, cmd) => {
@@ -1093,6 +1098,16 @@ export const commandReducers: {
       if (eki !== undefined) cycleEkiDisplaySetting(eki, cmd.setting, cmd.houkou, cmd.forward);
     }
   },
+
+  'ekiJikoku/setOperations': (draft, cmd) => {
+    // 1 スロットの前後作業を差し替え → 列車全体の adjustOperation で先端/終端を正規化。
+    const r = ressyaAt(draft, cmd.diaIndex, cmd.houkou, cmd.ressyaIndex);
+    const slot = slotAt(draft, r, cmd.ekiOrder);
+    slot.beforeOperationCont = cmd.beforeOperationCont.map((op) => structuredClone(op));
+    slot.afterOperationCont = cmd.afterOperationCont.map((op) => structuredClone(op));
+    r.isNull = false;
+    adjustRessyaOperation(draft.rosen, r);
+  },
 };
 
 /** 到達不能分岐(判別可能ユニオンの網羅性検査)。 */
@@ -1225,6 +1240,9 @@ export function applyCommand(draft: RosenFileData, cmd: EditCommand): void {
       return;
     case 'eki/cycleDisplaySetting':
       commandReducers['eki/cycleDisplaySetting'](draft, cmd);
+      return;
+    case 'ekiJikoku/setOperations':
+      commandReducers['ekiJikoku/setOperations'](draft, cmd);
       return;
     default:
       assertNever(cmd);

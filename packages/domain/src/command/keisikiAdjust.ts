@@ -48,10 +48,12 @@ function hatsuHyoujiNobori(k: Ekijikokukeisiki): boolean {
   );
 }
 
-function chakuHyouji(k: Ekijikokukeisiki, houkou: Ressyahoukou): boolean {
+/** 駅時刻形式 × 方向で着時刻を表示するか(原典 CdDedEki::getChakujikokuHyouji)。 */
+export function chakuHyouji(k: Ekijikokukeisiki, houkou: Ressyahoukou): boolean {
   return houkou === RESSYAHOUKOU_KUDARI ? chakuHyoujiKudari(k) : chakuHyoujiNobori(k);
 }
-function hatsuHyouji(k: Ekijikokukeisiki, houkou: Ressyahoukou): boolean {
+/** 駅時刻形式 × 方向で発時刻を表示するか(原典 CdDedEki::getHatsujikokuHyouji)。 */
+export function hatsuHyouji(k: Ekijikokukeisiki, houkou: Ressyahoukou): boolean {
   return houkou === RESSYAHOUKOU_KUDARI ? hatsuHyoujiKudari(k) : hatsuHyoujiNobori(k);
 }
 
