@@ -39,6 +39,23 @@ export {
   NEW_FILE_TYPE,
 } from './factory.js';
 export * from './jikoku.js';
+// ---- 作業編集の flat edit-model と再帰 union ⇔ flat 変換(M7b。作業編集 UI が使う)----
+export type { FlatOp, OperationEditKind } from './operation/editModel.js';
+export {
+  fromFlatAfter,
+  fromFlatBefore,
+  OP_CONNECT,
+  OP_JUNCTION,
+  OP_NUMBER_CHANGE,
+  OP_OUT_IN,
+  OP_OUTER,
+  OP_PLACEHOLDER,
+  OP_RELEASE,
+  OP_SHUNT,
+  placeholderFlat,
+  toFlatAfter,
+  toFlatBefore,
+} from './operation/editModel.js';
 // ---- 列車エンティティ構築・直通化相手探索 ----
 export { createNullRessya, findTrainToDirect } from './ressya.js';
 // ---- 列車の運行範囲導出(getSihatsuEki 系。derive から移設)----
