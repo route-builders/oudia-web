@@ -224,6 +224,15 @@ describe('deriveOperationLight(junction 解決 = 次列車接続)', () => {
     expect(j?.junctionSucceed).toBe(true);
     expect(j?.beforeAfterType).toBe('unrelated');
     expect(j?.nextTrain?.ressyaIndex).toBe(1); // B
+    // Unrelated(別列車)は一本化しない → 列は別のまま(原典 :1820 のガードは非 Unrelated 限定)。
+    expect(res.customizeRessyaIndexChains.kudari.map((c) => c.ressyaIndexCont)).toEqual([[0], [1]]);
+  });
+
+  it('classChange(非 Unrelated・主編成)は表示チェーンを一本化併合する', () => {
+    const { dia, ekiCont } = makeConnectedDia('classChange');
+    const res = deriveOperationLight(dia, ekiCont, OPTS);
+    // 種別変更は同一運用の継続 → [0,1] に一本化。
+    expect(res.customizeRessyaIndexChains.kudari.map((c) => c.ressyaIndexCont)).toEqual([[0, 1]]);
   });
 
   it('junctionType=classChange は種別変更に分類', () => {

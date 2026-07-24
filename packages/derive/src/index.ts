@@ -84,6 +84,17 @@ export type {
   Ressyasen,
   TrackLane,
 } from './layout/types.js';
+export type { MoveEntry, MoveList } from './operationLight/chains.js';
+export {
+  addMove,
+  applyConnectMoveList,
+  applyReleaseMoveList,
+  emptyMoveList,
+  findChainIndex,
+  initChains,
+  mergeChains,
+  removeChainOf,
+} from './operationLight/chains.js';
 // ---- Light 運用探索の本体・作業抽出(M7b Light PR2)----
 export type {
   DeriveOperationLightOptions,

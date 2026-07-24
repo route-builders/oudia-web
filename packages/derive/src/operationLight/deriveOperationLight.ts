@@ -9,10 +9,11 @@
  * CDedOperationConnecter::operationConnectLight、cpp:586)。M7b Light。
  *
  * 各列車の有効始発スロットの前作業列 / 有効終着スロットの後作業列を抽出・展開し、接続点
- * Junction を占有リストへ登録する。占有リストが揃ったら junctionSeeds(次列車接続)を
- * SearchRessyaElement で解決する(Step2 = PR3)。運番割付・出入区連携は行わない(Full=M7c)。
+ * Junction を占有リストへ登録する(Step1)。占有リストが揃ったら junctionSeeds(次列車接続)を
+ * SearchRessyaElement で解決し(Step2)、表示チェーンを構築する(Step3)。運番割付・出入区連携・
+ * completeCustomizeJikokuhyouContent の充填は行わない(Full=M7c / 充填は #11)。
  *
- * PR2 の段階では占有リスト構築 + junctionSeed 収集まで(junctionResult は空・チェーンは未構築)。
+ * 出力(junctionResult / customizeRessyaIndexChains)はすべて oud2 非永続 = 黄金テスト非該当。
  */
 
 import { getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia-web/domain';
@@ -26,6 +27,16 @@ import type {
   Ressyasyubetsu,
 } from '@oudia-web/format';
 import {
+  addMove,
+  applyConnectMoveList,
+  applyReleaseMoveList,
+  emptyMoveList,
+  initChains,
+  type MoveList,
+  mergeChains,
+  removeChainOf,
+} from './chains.js';
+import {
   type ExpandContext,
   searchAfterOperationElementLight,
   searchBeforeOperationElementLight,
@@ -33,6 +44,7 @@ import {
 import { buildEkiOrderTable, insertRessyaElement, searchRessyaElement } from './occupancy.js';
 import type {
   BeforeAfterType,
+  CustomizeChainColumn,
   Houkou,
   JunctionResolution,
   OperationLightResult,
@@ -222,11 +234,14 @@ function computeHidden(
 /**
  * junction 解決(原典 operationConnectLight の Step2、cpp:1546-2003 の分類部)。
  * 各 seed(次列車接続)を SearchRessyaElement で解決し、junctionType で分類、
- * 隠し種別跨ぎで unrelated へ降格する。junctionResult Map を返す。
+ * 隠し種別跨ぎで unrelated へ降格する。junctionResult Map を埋め、主編成×Unrelated の
+ * 接続で表示チェーンを一本化併合する(原典 :1948-1991)。
  */
 function resolveJunctions(
   dia: Dia,
   build: OccupancyBuild,
+  chains: { kudari: CustomizeChainColumn[]; nobori: CustomizeChainColumn[] },
+  ekiCount: number,
   opts: DeriveOperationLightOptions,
 ): Map<string, JunctionResolution> {
   const result = new Map<string, JunctionResolution>();
@@ -234,6 +249,9 @@ function resolveJunctions(
     opts.syubetsuCont,
     opts.disableHiddenSyubetsu,
   );
+  // move-list(増結/解結の並べ替え。junction ループ内で登録し、ループ後に適用)。
+  const connectMoves = { kudari: emptyMoveList(), nobori: emptyMoveList() };
+  const releaseMoves = { kudari: emptyMoveList(), nobori: emptyMoveList() };
 
   for (const { seed, ekiIndexOfExist, trackIndex } of build.junctionSeeds) {
     const afterRef = seed.afterOp;
@@ -270,13 +288,67 @@ function resolveJunctions(
       prevRessyahoukou: sameHoukou ? afterRef.houkou : -afterRef.houkou,
       ressyajouhouOmit: beforeAfterType === 'propertySame',
     });
+
+    // チェーン並べ替え(原典 :1820-1998)。ガード: 非 Unrelated かつ同一方向かつ
+    // 前後の編成タイプが「その他(2)」でなく、両方が解結/増結(1,1)でないこと。
+    // 編成タイプ(原典 iPrevRessyaType/iNextRessyaType): iLevel.length===1 → 主編成(0)、
+    // それ以外 → 解結/増結編成(1)に近似する(親作業の Connect/Release を辿る「その他(2)」の
+    // 精密判定は簡略化。単純な増解結では 0/1 のみで正しく分岐する)。
+    const prevType = afterRef.iLevel.length === 1 ? 0 : 1;
+    const nextType = nextTrain.iLevel.length === 1 ? 0 : 1;
+    const currEkiOrder = afterRef.ekiOrder;
+    const nextEkiOrder = nextTrain.ekiOrder;
+    if (
+      beforeAfterType !== 'unrelated' &&
+      sameHoukou &&
+      !(prevType === 1 && nextType === 1) &&
+      currEkiOrder <= nextEkiOrder
+    ) {
+      const chain = afterRef.houkou === 0 ? chains.kudari : chains.nobori;
+      const rel = afterRef.houkou === 0 ? releaseMoves.kudari : releaseMoves.nobori;
+      const con = afterRef.houkou === 0 ? connectMoves.kudari : connectMoves.nobori;
+      if (prevType === 1) {
+        // 解結: 分割元(curr)の駅Order へ [分割元, 分割列車] を登録。
+        addMove(rel, currEkiOrder, [afterRef.ressyaIndex, nextTrain.ressyaIndex]);
+      } else if (nextType === 1) {
+        // 増結: 併合先(next)の駅Order へ [併合先, 併合列車] を登録。
+        addMove(con, nextEkiOrder, [nextTrain.ressyaIndex, afterRef.ressyaIndex]);
+      } else {
+        // 両主編成 → 一本化併合。
+        mergeChains(chain, afterRef.ressyaIndex, nextTrain.ressyaIndex);
+      }
+    }
   }
+
+  // move-list 適用(原典 :2005-2118。増結=駅Order 降順 / 解結=昇順)。
+  const applyMoves = (chain: CustomizeChainColumn[], con: MoveList, rel: MoveList): void => {
+    applyConnectMoveList(chain, con, ekiCount);
+    applyReleaseMoveList(chain, rel, ekiCount);
+  };
+  applyMoves(chains.kudari, connectMoves.kudari, releaseMoves.kudari);
+  applyMoves(chains.nobori, connectMoves.nobori, releaseMoves.nobori);
+
   return result;
 }
 
+/** 各方向のチェーンを初期化し、除去対象(canceled/発着駅無効)の列を除く(原典 :635-762)。 */
+function buildInitialChains(dia: Dia, houkou: Houkou): CustomizeChainColumn[] {
+  const list = dia.ressyaCont[houkou];
+  const chains = initChains(list.length);
+  list.forEach((ressya, ressyaIndex) => {
+    if (ressya.isNull) return; // null は触れない(継続)
+    const sihatsu = getValidSihatsuEki(ressya);
+    const syuuchaku = getValidSyuuchakuEki(ressya);
+    if (ressya.isCanceled || sihatsu < 0 || syuuchaku < 0 || sihatsu >= syuuchaku) {
+      removeChainOf(chains, ressyaIndex);
+    }
+  });
+  return chains;
+}
+
 /**
- * Light 運用探索(公開 API)。占有構築 + junction 解決(Step2)。
- * 表示チェーン(Step3 = PR4)は後続で埋める。
+ * Light 運用探索(公開 API)。占有構築 + junction 解決(Step2)+ 表示チェーン(Step3)。
+ * チェーンの時刻等の充填(completeCustomizeJikokuhyouContent)は #11 描画側の責務。
  */
 export function deriveOperationLight(
   dia: Dia,
@@ -284,9 +356,13 @@ export function deriveOperationLight(
   opts: DeriveOperationLightOptions,
 ): OperationLightResult {
   const build = buildOccupancy(dia, ekiCont, opts);
-  const junctionResult = resolveJunctions(dia, build, opts);
+  const chains = {
+    kudari: buildInitialChains(dia, 0),
+    nobori: buildInitialChains(dia, 1),
+  };
+  const junctionResult = resolveJunctions(dia, build, chains, ekiCont.length, opts);
   return {
     junctionResult,
-    customizeRessyaIndexChains: { kudari: [], nobori: [] },
+    customizeRessyaIndexChains: chains,
   };
 }
