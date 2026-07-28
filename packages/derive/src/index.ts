@@ -84,6 +84,24 @@ export type {
 } from './layout/deriveOccupancy.js';
 export { deriveOccupancy } from './layout/deriveOccupancy.js';
 export { buildDiaLayoutFrame, findEkikanSaisyouSec } from './layout/ekiLayout.js';
+// ---- ダイヤグラムの運用記号(出区○/入区△/路線外斜線/前列車接続円弧。M7d)----
+export type {
+  ChakuOperationCode,
+  HatsuOperationCode,
+  OperationMark,
+  OperationMarkInput,
+  OperationNumberLabel,
+} from './layout/operationMark.js';
+export {
+  CHAKU_OP_OUT,
+  CHAKU_OP_OUTER,
+  CHAKU_OP_PREV_JUNCTION,
+  deriveOperationMarks,
+  deriveOperationNumberLabels,
+  HATSU_OP_IN,
+  HATSU_OP_NEXT_JUNCTION,
+  HATSU_OP_OUTER,
+} from './layout/operationMark.js';
 export type { EstimateSlot } from './layout/ressyaLayout.js';
 export { computeEstimateJikoku } from './layout/ressyaLayout.js';
 export type {

@@ -63,6 +63,22 @@ export class MockCtx implements RenderContext2D {
   fillText(text: string, x: number, y: number): void {
     this.rec('fillText', text, x, y);
   }
+  closePath(): void {
+    this.rec('closePath');
+  }
+  bezierCurveTo(
+    cp1x: number,
+    cp1y: number,
+    cp2x: number,
+    cp2y: number,
+    x: number,
+    y: number,
+  ): void {
+    this.rec('bezierCurveTo', cp1x, cp1y, cp2x, cp2y, x, y);
+  }
+  scale(x: number, y: number): void {
+    this.rec('scale', x, y);
+  }
   arc(x: number, y: number, r: number, start: number, end: number): void {
     this.rec('arc', x, y, r, start, end);
   }
