@@ -36,7 +36,21 @@ export {
   yDgrToView,
   yViewToDgr,
 } from './core/ViewTransform.js';
-
+// ---- 運用一覧図(M7e)----
+export type {
+  AllOperationDiagramLayout,
+  AllOperationDiagramPanelRow,
+  AllOperationDiagramTheme,
+  AllOperationDiagramView,
+} from './diagram/AllOperationDiagramRenderer.js';
+export {
+  drawAllOperationDiagram,
+  layoutAllOperationDiagram,
+  OPERATION_DIAGRAM_MARGIN,
+  rowOfY,
+  xOfSec,
+  yOfRow,
+} from './diagram/AllOperationDiagramRenderer.js';
 // ---- diagram(ダイヤグラム描画補助)----
 export { displayEkiRange, enumShiftSeconds, xZoneIntersects } from './diagram/culling.js';
 export type { DiagramTheme, DiagramViewState } from './diagram/DiagramRenderer.js';

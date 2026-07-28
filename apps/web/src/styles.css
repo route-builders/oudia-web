@@ -1030,3 +1030,27 @@ body {
 .box-operation-table .box-mark-triangle {
   top: 0;
 }
+
+/* ---- 運用一覧図(Canvas。原典 ViewAllOperationTable2)---- */
+.all-operation-graph-root {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.all-operation-graph-root .graph-toolbar {
+  flex: none;
+}
+.all-operation-graph-root .graph-range {
+  color: #666;
+}
+.all-operation-graph-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.all-operation-graph-canvas canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
+}

@@ -15,6 +15,7 @@ import type { AllOperationTableRow, OperationSort } from '@oudia-web/derive';
 import {
   buildAllOperationTableCsv,
   buildOperationTableCsv,
+  deriveAllOperationDiagram,
   deriveAllOperationTable,
   filterOperationTableForCsv,
   sortOperationNumbers,
@@ -27,6 +28,7 @@ import { OperationTableCsvExportDialog } from '../dialog/OperationTableCsvExport
 import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
+import { AllOperationGraph } from './AllOperationGraph.js';
 import {
   OperationSearchControls,
   operationRefreshKeyProps,
@@ -82,6 +84,25 @@ export function AllOperationTableView(props: {
       deriveBrunchLoopMap(data.rosen.ekiCont),
     );
   }, [dia, data, search.result, sort, compareBottom, displayAllRessya]);
+
+  /** 一覧図の幾何(表と同じ並び順で導出する)。表タブでは計算しない。 */
+  const diagramRows = useMemo(() => {
+    if (!graphical || dia === undefined || search.result === null || vm === null) return null;
+    return deriveAllOperationDiagram(
+      dia,
+      data.rosen,
+      vm.rows.map((r) => r.operationNumber),
+      search.result.operationTable,
+      {
+        kitenJikoku: data.rosen.kitenJikoku ?? 0,
+        displayRessyabangou: true,
+        displaySyubetsuRyakusyou: true,
+        displayRessyamei: data.dispProp.displayRessyamei,
+        displayJikokuMinute: true,
+        displayParentSyubetsu: false,
+      },
+    );
+  }, [graphical, dia, data, search.result, vm]);
 
   if (data.rosen.enableOperation < 2) {
     return (
@@ -240,7 +261,9 @@ export function AllOperationTableView(props: {
         (vm === null ? null : graphical ? (
           <AllOperationGraph
             rows={vm.rows}
-            kitenJikoku={data.rosen.kitenJikoku}
+            diagramRows={diagramRows ?? []}
+            dispProp={data.dispProp}
+            kitenJikoku={data.rosen.kitenJikoku ?? 0}
             onOpen={openOperationTable}
           />
         ) : (
@@ -334,60 +357,5 @@ function AllOperationGrid(props: {
         ))}
       </tbody>
     </table>
-  );
-}
-
-const GRAPH_HOURS = 24;
-const GRAPH_WIDTH = 1440; // 1 分 = 1px
-
-/**
- * 一覧図レンダラ(行 = 運用、横軸 = 時刻)。
- * 出区〜入区を 1 本の帯で描き、上部に「時」目盛を出す。起点時刻からの相対位置で並べる。
- */
-function AllOperationGraph(props: {
-  rows: readonly AllOperationTableRow[];
-  kitenJikoku: number | null;
-  onOpen: (operationNumber: string) => void;
-}): React.ReactElement {
-  const { rows, kitenJikoku, onOpen } = props;
-  const kiten = kitenJikoku ?? 0;
-  /** 起点時刻を 0 とした分位置(循環)。 */
-  const minuteOf = (j: number | null): number | null => {
-    if (j === null) return null;
-    let s = j - kiten;
-    if (s < 0) s += 86400;
-    return Math.floor(s / 60);
-  };
-
-  return (
-    <div className="all-operation-graph" style={{ width: GRAPH_WIDTH + 120 }}>
-      <div className="graph-scale">
-        {Array.from({ length: GRAPH_HOURS }, (_, h) => (
-          <span key={h} className="hour" style={{ left: 120 + h * 60 }}>
-            {(Math.floor(kiten / 3600) + h) % 24}
-          </span>
-        ))}
-      </div>
-      {rows.map((row) => {
-        const from = minuteOf(row.outJikoku);
-        const to = minuteOf(row.inJikoku);
-        const left = from ?? 0;
-        const width = from !== null && to !== null && to > from ? to - from : 2;
-        return (
-          <div
-            key={row.operationNumber}
-            className="graph-row"
-            onDoubleClick={() => {
-              onOpen(row.operationNumber);
-            }}
-          >
-            <span className="graph-label">{row.operationNumber}</span>
-            <span className="graph-out">{row.outEkimei}</span>
-            <span className="graph-band" style={{ left: 120 + left, width }} />
-            <span className="graph-in">{row.inEkimei}</span>
-          </div>
-        );
-      })}
-    </div>
   );
 }

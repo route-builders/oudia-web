@@ -218,6 +218,21 @@ export type {
   RessyaElement,
 } from './operationLight/types.js';
 export { opRefEquals, opRefKey } from './operationLight/types.js';
+// ---- 運用一覧図(図本体の幾何。M7e)----
+export type {
+  AllOperationDiagramOptions,
+  OperationDiagramEkimeiLabel,
+  OperationDiagramMinuteLabel,
+  OperationDiagramRow,
+  OperationDiagramSegment,
+} from './operationView/allOperationDiagram.js';
+export {
+  DEFAULT_VLINE_MODE as DEFAULT_OPERATION_VLINE_MODE,
+  deriveAllOperationDiagram,
+  deriveOperationDiagramRow,
+  OPERATION_ROW_DGR_HEIGHT,
+  VLINE_PITCHES as OPERATION_VLINE_PITCHES,
+} from './operationView/allOperationDiagram.js';
 // ---- 運用一覧表 / 運用一覧図の共通ビューモデル(M7d)----
 export type {
   AllOperationTableColumn,
