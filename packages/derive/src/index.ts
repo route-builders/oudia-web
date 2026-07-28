@@ -84,5 +84,47 @@ export type {
   Ressyasen,
   TrackLane,
 } from './layout/types.js';
+export type { MoveEntry, MoveList } from './operationLight/chains.js';
+export {
+  addMove,
+  applyConnectMoveList,
+  applyReleaseMoveList,
+  emptyMoveList,
+  findChainIndex,
+  initChains,
+  mergeChains,
+  removeChainOf,
+} from './operationLight/chains.js';
+// ---- Light 運用探索の本体・作業抽出(M7b Light PR2)----
+export type {
+  DeriveOperationLightOptions,
+  OccupancyBuild,
+} from './operationLight/deriveOperationLight.js';
+export { buildOccupancy, deriveOperationLight } from './operationLight/deriveOperationLight.js';
+export type { ExpandContext, ExpandResult } from './operationLight/extract.js';
+export {
+  searchAfterOperationElementLight,
+  searchBeforeOperationElementLight,
+} from './operationLight/extract.js';
+// ---- Light 運用探索(占有エンジン。M7b Light PR1)----
+export {
+  buildEkiOrderTable,
+  ekiIndexOfExist,
+  insertRessyaElement,
+  searchRessyaElement,
+  searchRessyaElementRev,
+} from './operationLight/occupancy.js';
+export type {
+  BeforeAfterType,
+  CustomizeChainColumn,
+  Houkou,
+  JunctionResolution,
+  Occupancy,
+  OperationElementLight,
+  OperationLightResult,
+  OpRef,
+  RessyaElement,
+} from './operationLight/types.js';
+export { opRefEquals, opRefKey } from './operationLight/types.js';
 export type { TransferSortInput } from './sort/transferSort.js';
 export { transferSortOrder } from './sort/transferSort.js';
