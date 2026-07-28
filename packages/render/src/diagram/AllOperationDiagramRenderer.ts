@@ -215,13 +215,16 @@ function drawHeader(
 
   ctx.fillStyle = theme.stringColor;
   ctx.font = theme.font;
+  // 「運用番号」は DisplayEkimeiJikoku に関係なく常に描く(原典 :545-561)。
+  // 条件付きなのは「出区駅名 / 発時刻 / 入区駅名 / 着時刻」だけ(:565-598 / :729-765)。
+  ctx.fillText('運用番号', 4, 1);
   if (view.displayEkimeiJikoku) {
-    // 左ヘッダ「運用番号 / 出区駅名 / 発時刻」・右ヘッダ「入区駅名 / 着時刻」(原典 :530-590 / :730-765)。
-    ctx.fillText('運用番号', 4, 1);
     ctx.fillText('入区駅名', layout.graphX + layout.graphW + 2, 1);
   }
 
   // 「時」目盛: 起点時刻の次の正時から 3600 秒刻み(原典 :812-861)。ラベルは左右端でクランプ。
+  // ★フォントは OperationTableFont ではなく DiaJikokuFont(原典 :124-129)。既定は両方 9pt。
+  ctx.font = theme.jikokuFont;
   const endSec = view.viewStartSec + view.viewRangeSec;
   const first = view.kitenJikoku + ((3600 - (view.kitenJikoku % 3600)) % 3600);
   for (let t = first; t <= view.kitenJikoku + 86400; t += 3600) {

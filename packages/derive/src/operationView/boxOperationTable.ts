@@ -202,10 +202,20 @@ function insertSortedUnique(list: number[], v: number): void {
   list.push(v);
 }
 
-/** 分岐駅は基幹駅へ 1 段だけ寄せる(原典 :3085-3090 / :3163-3168)。 */
+/**
+ * 分岐駅は基幹駅へ 1 段だけ寄せる(原典 :3085-3090 / :3163-3168)。
+ * 範囲外(-1 等)は -1 を返す。呼び出し側で捨てること。
+ *
+ * ★原典は範囲チェックをせず `CMup_vector::get(-1)` = NULL 参照でクラッシュする
+ * (getRunBetweenEkiForward/Backward が -1 を返し、それが運用表エントリの
+ * sihatsuEkiOrder にそのまま入る経路が実在する)。原典に「正しい挙動」が無いので、
+ * TS は**その列車の列候補を捨てる**(行は残す)方針で固定する。
+ */
 function toCore(ekiCont: readonly Eki[], ekiIndex: number): number {
+  if (!(ekiIndex >= 0 && ekiIndex < ekiCont.length)) return -1;
   const core = ekiCont[ekiIndex]?.brunchCoreEkiIndex;
-  return core === undefined || core === null || core < 0 ? ekiIndex : core;
+  if (core === undefined || core === null || core < 0) return ekiIndex;
+  return core >= 0 && core < ekiCont.length ? core : ekiIndex;
 }
 
 /** 運行区間へ丸めた始発 / 終着の駅Order(原典 :3044-3055)。-1 のときは丸めない。 */
@@ -265,18 +275,26 @@ export function buildBoxOperationTableColumns(
       // (a) 起点側: 行が下り → 先頭列車のみ / 行が上り → 末尾列車のみ(原典 :440-447)
       if ((row.houkou === 0 && cb === 0) || (row.houkou === 1 && cb === row.combineCount - 1)) {
         const v = kudari ? sOrder : ekiIndexOfEkiOrder(tOrder, n, 1);
-        const outer = kudari ? e.outerSihatsuEkiIndex !== null : e.outerSyuuchakuEkiIndex !== null;
         const core = toCore(ekiCont, v);
-        if (outer) originOuter.push(core);
-        else insertSortedUnique(display, core);
+        if (core >= 0) {
+          const outer = kudari
+            ? e.outerSihatsuEkiIndex !== null
+            : e.outerSyuuchakuEkiIndex !== null;
+          if (outer) originOuter.push(core);
+          else insertSortedUnique(display, core);
+        }
       }
       // (b) 終点側(原典 :519-527)
       if ((row.houkou === 0 && cb === row.combineCount - 1) || (row.houkou === 1 && cb === 0)) {
         const v = kudari ? tOrder : ekiIndexOfEkiOrder(sOrder, n, 1);
-        const outer = kudari ? e.outerSyuuchakuEkiIndex !== null : e.outerSihatsuEkiIndex !== null;
         const core = toCore(ekiCont, v);
-        if (outer) terminalOuter.push(core);
-        else insertSortedUnique(display, core);
+        if (core >= 0) {
+          const outer = kudari
+            ? e.outerSyuuchakuEkiIndex !== null
+            : e.outerSihatsuEkiIndex !== null;
+          if (outer) terminalOuter.push(core);
+          else insertSortedUnique(display, core);
+        }
       }
     }
   }
@@ -401,6 +419,8 @@ export function deriveBoxOperationTableView(
       const { sOrder, tOrder } = normalizedOrders(e, ressya);
       const sIdx = toCore(ekiCont, ekiIndexOfEkiOrder(sOrder, n, houkou));
       const tIdx = toCore(ekiCont, ekiIndexOfEkiOrder(tOrder, n, houkou));
+      // 運行区間が取れない列車(丸めが -1)はこの行のセルを持たない。
+      if (sIdx < 0 || tIdx < 0) continue;
       const hasPrev = cb > 0; // 同一行に前列車がいる
       const hasNext = cb < row.combineCount - 1;
       const sEki = ekiCont[ekiIndexOfEkiOrder(sOrder, n, houkou)];

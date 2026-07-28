@@ -144,6 +144,25 @@ describe('buildBoxOperationTableColumns', () => {
     expect(cols[0]).toEqual({ kind: 'outerLeft' });
     expect(cols.filter((c) => c.kind === 'outerLeft')).toHaveLength(1);
   });
+
+  it('★運行区間が取れない列車(丸めが -1)は列にも行セルにもしない', () => {
+    const { dia, rosen } = setup();
+    // 全駅を運行なしにすると getRunBetweenEkiForward/Backward が -1 を返す。
+    const r = dia.ressyaCont[0]?.[0];
+    if (r === undefined) throw new Error('no ressya');
+    for (const slot of r.ekiJikokuCont) {
+      slot.ekiatsukai = 'none';
+      slot.chakuJikoku = null;
+      slot.hatsuJikoku = null;
+    }
+    const cols = buildBoxOperationTableColumns(rosen, dia, [entry()]);
+    // 原典は eki[-1] でクラッシュする。TS は「その列車の列候補を捨てる」。
+    expect(cols.every((c) => c.kind !== 'eki' || c.ekiIndex >= 0)).toBe(true);
+    const vm = deriveBoxOperationTableView(dia, rosen, '1', [entry()], OPTS);
+    expect(vm.columns.every((c) => c.kind !== 'eki' || c.ekiIndex >= 0)).toBe(true);
+    // 行自体は残る(原典も行構築は先に済んでいる)。
+    expect(vm.rows).toHaveLength(1);
+  });
 });
 
 describe('combineBoxOperationTableRows', () => {
