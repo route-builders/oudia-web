@@ -33,9 +33,9 @@ exports[`buildTimetableGrid(sample2 スナップショット) > 下り dia0(先�
     "operationShihatsu",
     "始発駅作業/",
     [
-      "",
-      "",
-      "",
+      "0 出区 235900 1;2",
+      "0 前列車接続 --:-- ",
+      "0 出区 05900 5;6",
     ],
   ],
   [
@@ -60,9 +60,9 @@ exports[`buildTimetableGrid(sample2 スナップショット) > 下り dia0(先�
     "operationShuchaku",
     "終着駅作業/",
     [
-      "",
-      "",
-      "",
+      "0 入区 11130",
+      "0 入区 05800",
+      "0 入区 21130",
     ],
   ],
   [

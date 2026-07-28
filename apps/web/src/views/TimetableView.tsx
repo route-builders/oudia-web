@@ -11,7 +11,12 @@
  */
 
 import { buildTimetableGrid, defaultTimetableGridOptions } from '@oudia-web/derive';
-import { getEkiJikoku } from '@oudia-web/domain';
+import {
+  ekiIndexOfEkiOrder,
+  getEkiJikoku,
+  getValidSihatsuEki,
+  getValidSyuuchakuEki,
+} from '@oudia-web/domain';
 import type { RosenFileData } from '@oudia-web/format';
 import type { GridTheme } from '@oudia-web/render';
 import { drawGrid, GridGeometry } from '@oudia-web/render';
@@ -19,6 +24,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { EkiJikokuDialogTarget } from '../dialog/EkiJikokuDialog.js';
 import { EkiJikokuDialog } from '../dialog/EkiJikokuDialog.js';
 import { DEFAULT_MODIFY_OP2, ModifyEkijikokuDialog } from '../dialog/ModifyEkijikokuDialog.js';
+import type { OperationDialogTarget } from '../dialog/OperationDialog.js';
+import { OperationDialog } from '../dialog/OperationDialog.js';
 import type { RessyaPropDialogTarget } from '../dialog/RessyaPropDialog.js';
 import { RessyaPropDialog } from '../dialog/RessyaPropDialog.js';
 import { resolveCellTarget } from '../grid/cellSemantics.js';
@@ -66,7 +73,8 @@ type ActiveDialog =
       /** キー転送・初期フォーカスの宛先(フォーカス行が着行/発行のどちらか)。 */
       field: 'chaku' | 'hatsu';
     }
-  | { kind: 'ressyaProp'; target: RessyaPropDialogTarget; initial: string | undefined };
+  | { kind: 'ressyaProp'; target: RessyaPropDialogTarget; initial: string | undefined }
+  | { kind: 'operation'; target: OperationDialogTarget };
 
 export function TimetableView(props: {
   data: RosenFileData;
@@ -360,8 +368,38 @@ export function TimetableView(props: {
             syubetsuCont: data.rosen.ressyasyubetsuCont,
           },
         });
+      } else if (target.kind === 'operation') {
+        const ressya = list[target.ressyaIndex];
+        if (ressya === undefined) return;
+        // 始発駅作業行=有効始発、終着駅作業行=有効終着の駅Order を解決。
+        const ekiOrder =
+          target.rowType === 'operationShihatsu'
+            ? getValidSihatsuEki(ressya)
+            : getValidSyuuchakuEki(ressya);
+        // 有効始発/終着が無い(空列車・運行なし)なら開かない。
+        if (ekiOrder === -1) return;
+        const ekiCount = data.rosen.ekiCont.length;
+        const eki = data.rosen.ekiCont[ekiIndexOfEkiOrder(ekiOrder, ekiCount, houkou)];
+        const ej = getEkiJikoku(ressya, ekiOrder);
+        setDialog({
+          kind: 'operation',
+          target: {
+            diaIndex,
+            houkou,
+            ressyaIndex: target.ressyaIndex,
+            ekiOrder,
+            beforeCont: ej.beforeOperationCont,
+            afterCont: ej.afterOperationCont,
+            chakuJikoku: ej.chakuJikoku,
+            hatsuJikoku: ej.hatsuJikoku,
+            isTeisya: ej.ekiatsukai === 'teisya',
+            tracks: eki?.ekiTrack2Cont ?? [],
+            outerTerminals: eki?.outerTerminalCont ?? [],
+            ekimei: eki?.ekimei ?? '',
+          },
+        });
       }
-      // ekimei / track / operation / newRessya は本 M3 のダイアログ対象外(v0.5-0.7)。
+      // ekimei / track / newRessya は本 M3 のダイアログ対象外(v0.5-0.7)。
     },
     [grid, data, diaIndex, houkou],
   );
@@ -646,6 +684,26 @@ export function TimetableView(props: {
             target={dialog.target}
             {...(dialog.initial !== undefined ? { initialKeyString: dialog.initial } : {})}
             dispatch={dispatch}
+            onClose={() => {
+              setDialog(null);
+            }}
+          />
+        )}
+        {dialog?.kind === 'operation' && (
+          <OperationDialog
+            target={dialog.target}
+            onOk={(before, after) => {
+              // OK = 1 Undo 単位。adjustOperation は setOperations reducer が担う。
+              dispatch({
+                type: 'ekiJikoku/setOperations',
+                diaIndex: dialog.target.diaIndex,
+                houkou: dialog.target.houkou,
+                ressyaIndex: dialog.target.ressyaIndex,
+                ekiOrder: dialog.target.ekiOrder,
+                beforeOperationCont: before,
+                afterOperationCont: after,
+              });
+            }}
             onClose={() => {
               setDialog(null);
             }}
