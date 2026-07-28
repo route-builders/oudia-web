@@ -332,7 +332,7 @@ function resolveJunctions(
 }
 
 /** 各方向のチェーンを初期化し、除去対象(canceled/発着駅無効)の列を除く(原典 :635-762)。 */
-function buildInitialChains(dia: Dia, houkou: Houkou): CustomizeChainColumn[] {
+export function buildInitialChains(dia: Dia, houkou: Houkou): CustomizeChainColumn[] {
   const list = dia.ressyaCont[houkou];
   const chains = initChains(list.length);
   list.forEach((ressya, ressyaIndex) => {

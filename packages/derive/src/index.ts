@@ -84,6 +84,22 @@ export type {
   Ressyasen,
   TrackLane,
 } from './layout/types.js';
+// ---- Full 運用探索(運番割付。M7c)----
+export { buildFullState, deriveOperationFull } from './operationFull/deriveOperationFull.js';
+export type {
+  BeforeAfterTypeFull,
+  ConnectWaitItem,
+  DeriveOperationFullOptions,
+  FullState,
+  InOutLinkCodeEntry,
+  OperationFullResult,
+  OperationNumberMap,
+  OperationNumberSlots,
+  OperationTableEntry,
+  RessyaOperationTree,
+  RessyaPropertyRef,
+  TreeNode,
+} from './operationFull/types.js';
 export type { MoveEntry, MoveList } from './operationLight/chains.js';
 export {
   addMove,

@@ -25,11 +25,21 @@
 import type { AfterOperation, BeforeOperation, Jikoku } from '@oudia-web/format';
 import type { Houkou, OperationElementLight, OpRef, RessyaElement } from './types.js';
 
-/** 展開結果。elements=簡略図要素、existInserts=占有登録すべき要素、junctionSeeds=次列車接続の種。 */
+/**
+ * 展開結果。elements=簡略図要素、existInserts=占有登録すべき要素、junctionSeeds=次列車接続の種。
+ * Full 専用 seed(outOuterSeeds/beforeJunctionSeeds/numberChangeSeeds)は Light 呼出側では無視され、
+ * Full(M7c)の運番割付が消費する。search 本体は常に収集する(Light 無回帰=既存テストで担保)。
+ */
 export interface ExpandResult {
   elements: OperationElementLight[];
   existInserts: { ekiIndexOfExist: number; trackIndex: number; el: RessyaElement }[];
   junctionSeeds: RessyaElement[];
+  /** 出区・路線外始発(前作業先頭)。Full の STEP2 運番 seed。 */
+  outOuterSeeds: OperationElementLight[];
+  /** 前列車接続(前作業先頭 Junction)。Full の STEP3b 孤立検査対象。 */
+  beforeJunctionSeeds: OperationElementLight[];
+  /** 運用番号変更(reverse でないもののみ)。Full の STEP3a 運番 seed。 */
+  numberChangeSeeds: OperationElementLight[];
 }
 
 /** 展開の共通コンテキスト(列車・駅・占有アクセスの固定情報)。 */
@@ -41,13 +51,23 @@ export interface ExpandContext {
 }
 
 function emptyResult(): ExpandResult {
-  return { elements: [], existInserts: [], junctionSeeds: [] };
+  return {
+    elements: [],
+    existInserts: [],
+    junctionSeeds: [],
+    outOuterSeeds: [],
+    beforeJunctionSeeds: [],
+    numberChangeSeeds: [],
+  };
 }
 
 function merge(into: ExpandResult, from: ExpandResult): void {
   into.elements.push(...from.elements);
   into.existInserts.push(...from.existInserts);
   into.junctionSeeds.push(...from.junctionSeeds);
+  into.outOuterSeeds.push(...from.outOuterSeeds);
+  into.beforeJunctionSeeds.push(...from.beforeJunctionSeeds);
+  into.numberChangeSeeds.push(...from.numberChangeSeeds);
 }
 
 /** OpRef を組む(iLevel パスつき)。 */
@@ -81,9 +101,11 @@ export function searchBeforeOperationElementLight(
   if (first === undefined) return result;
 
   if (first.kind === 'out' || first.kind === 'outer') {
-    // 出区・路線外始発: 占有登録せず要素だけ集める。
+    // 出区・路線外始発: 占有登録せず要素だけ集める。Full の運番 seed(outOuter)。
     const iLevel = [...iLevelParent, 0];
-    result.elements.push(makeRef2(ctx, 'before', iLevel));
+    const el = makeRef2(ctx, 'before', iLevel);
+    result.elements.push(el);
+    result.outOuterSeeds.push(el);
   } else if (first.kind === 'junction') {
     // 前列車接続: 起点時刻を導出して占有登録(次列車探索の受け側。seed にはしない)。
     let originJikoku: Jikoku = connectJikoku;
@@ -108,13 +130,16 @@ export function searchBeforeOperationElementLight(
 
     const iLevel = [...iLevelParent, 0];
     const ref = makeRef(ctx, 'before', iLevel);
-    result.elements.push({
+    const opEl: OperationElementLight = {
       op: ref,
       iLevel,
       ekiOrder: ctx.ekiOrder,
       ekiIndexOfExist: ctx.ekiIndexOfExist,
       ressyaTrackIndex: trackIndex,
-    });
+    };
+    result.elements.push(opEl);
+    // 前列車接続の始発 = Full の STEP3b 孤立検査対象。
+    result.beforeJunctionSeeds.push(opEl);
     const el: RessyaElement = {
       beforeOp: ref,
       afterOp: null,
