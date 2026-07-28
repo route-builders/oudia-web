@@ -15,7 +15,7 @@ import {
 } from './renzoku.js';
 
 function r(type: JikokuhyouRowSpec['type'], ekiOrder: number | null = null): JikokuhyouRowSpec {
-  return { type, ekiOrder, isContinuation: false };
+  return { type, ekiOrder, isContinuation: false, operationIndex: 0, bottomBorder: 'narrow' };
 }
 
 // 行 = [列車番号, 着0, 番線0, 発0, 発1, 備考]、列車 1 本。

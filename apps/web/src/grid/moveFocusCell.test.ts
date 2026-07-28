@@ -10,7 +10,7 @@ import type { SelectionState } from './selection.js';
 import { moveFocusCellToNext, moveFocusCellToPrev } from './selection.js';
 
 function r(type: JikokuhyouRowSpec['type'], ekiOrder: number | null = null): JikokuhyouRowSpec {
-  return { type, ekiOrder, isContinuation: false };
+  return { type, ekiOrder, isContinuation: false, operationIndex: 0, bottomBorder: 'narrow' };
 }
 
 const GRID: TimetableGridSpec = {
