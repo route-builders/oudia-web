@@ -444,3 +444,74 @@ describe('deriveOperationFull(入出区連携コード。M7c-2 PR-2)', () => {
     expect(list).toHaveLength(1);
   });
 });
+
+describe('deriveOperationFull(次列車接続の表示解決。M7c-2 PR-3)', () => {
+  it('接続成立時に junctionResult が Light と同じ内容で埋まる', () => {
+    const ekiCont = makeEkiCont();
+    // A: E0 出区 → E1 終着(次列車接続・同一列車扱い)。B: E1 前列車接続 → E2 終着。
+    const a = createNullRessya(3, 0);
+    a.isNull = false;
+    const a0 = a.ekiJikokuCont[0];
+    const a1 = a.ekiJikokuCont[1];
+    const a2 = a.ekiJikokuCont[2];
+    if (a0) {
+      a0.ekiatsukai = 'teisya';
+      a0.hatsuJikoku = J(8);
+      a0.ressyaTrackIndex = 0;
+      a0.beforeOperationCont = [
+        { kind: 'out', outJikoku: J(7, 50), inOutLinkCode: '', operationNumbers: ['5'] },
+      ];
+    }
+    if (a1) {
+      a1.ekiatsukai = 'teisya';
+      a1.chakuJikoku = J(8, 30);
+      a1.ressyaTrackIndex = 0;
+      a1.afterOperationCont = [
+        { kind: 'junction', syuutenJikoku: J(8, 30), junctionType: 'propertySame' },
+      ];
+    }
+    if (a2) a2.ekiatsukai = 'none';
+
+    const b = createNullRessya(3, 0);
+    b.isNull = false;
+    const b0 = b.ekiJikokuCont[0];
+    const b1 = b.ekiJikokuCont[1];
+    const b2 = b.ekiJikokuCont[2];
+    if (b0) b0.ekiatsukai = 'none';
+    if (b1) {
+      b1.ekiatsukai = 'teisya';
+      b1.hatsuJikoku = J(8, 40);
+      b1.ressyaTrackIndex = 0;
+      b1.beforeOperationCont = [
+        { kind: 'junction', kitenJikoku: J(8, 40), kariOperationNumbers: [] },
+      ];
+    }
+    if (b2) {
+      b2.ekiatsukai = 'teisya';
+      b2.chakuJikoku = J(9, 10);
+      b2.ressyaTrackIndex = 0;
+    }
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a, b);
+
+    const res = deriveOperationFull(dia, ekiCont, OPTS);
+    const aJuncKey = opRefKey({
+      houkou: 0,
+      ressyaIndex: 0,
+      ekiOrder: 1,
+      opKind: 'after',
+      iLevel: [0],
+    });
+    const jr = res.junctionResult.get(aJuncKey);
+    expect(jr?.junctionSucceed).toBe(true);
+    expect(jr?.beforeAfterType).toBe('propertySame');
+    expect(jr?.ressyajouhouOmit).toBe(true);
+    expect(jr?.nextTrain?.ressyaIndex).toBe(1);
+    expect(jr?.junctionJikoku).toBe(J(8, 30));
+    // 同一列車扱いの主編成同士 → 表示チェーンが 1 本に併合される。
+    const merged = res.customizeRessyaIndexChains.kudari.find(
+      (c) => c.ressyaIndexCont.length === 2,
+    );
+    expect(merged?.ressyaIndexCont).toEqual([0, 1]);
+  });
+});

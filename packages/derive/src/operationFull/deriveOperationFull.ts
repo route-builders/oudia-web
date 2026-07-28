@@ -20,6 +20,11 @@
 
 import { getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia-web/domain';
 import type { BeforeOperation, Dia, Eki, Jikoku, Ressya } from '@oudia-web/format';
+import {
+  applyConnectMoveList,
+  applyReleaseMoveList,
+  emptyMoveList,
+} from '../operationLight/chains.js';
 import { buildInitialChains, computeHidden } from '../operationLight/deriveOperationLight.js';
 import type { ExpandContext, ExpandResult } from '../operationLight/extract.js';
 import {
@@ -36,6 +41,7 @@ import {
 } from '../operationLight/occupancy.js';
 import type {
   Houkou,
+  JunctionResolution,
   OperationElementLight,
   OpRef,
   RessyaElement,
@@ -555,6 +561,9 @@ export function deriveOperationFull(
     opts.syubetsuCont,
     opts.disableHiddenSyubetsu,
   );
+  const connectMoves = { kudari: emptyMoveList(), nobori: emptyMoveList() };
+  const releaseMoves = { kudari: emptyMoveList(), nobori: emptyMoveList() };
+  const junctionResult = new Map<string, JunctionResolution>();
   const ctx: AssignContext = {
     dia,
     state,
@@ -568,6 +577,10 @@ export function deriveOperationFull(
     operationNumberReverse: opts.operationNumberReverse,
     hidden,
     hiddenExist,
+    junctionResult,
+    chains: state.chains,
+    connectMoves,
+    releaseMoves,
     guard: { count: 0, limit: 100000 },
   };
 
@@ -576,8 +589,15 @@ export function deriveOperationFull(
   assignOrphanJunctions(ctx); // STEP3b
   resolveConnectWaitList(ctx); // WaitList retry
 
+  // 表示チェーンの並べ替えを適用(原典 completeCustomizeJikokuhyouContent :8417-8560。
+  // 増結 = 駅Order 降順 / 解結 = 昇順)。
+  applyConnectMoveList(state.chains.kudari, connectMoves.kudari, ekiCont.length);
+  applyReleaseMoveList(state.chains.kudari, releaseMoves.kudari, ekiCont.length);
+  applyConnectMoveList(state.chains.nobori, connectMoves.nobori, ekiCont.length);
+  applyReleaseMoveList(state.chains.nobori, releaseMoves.nobori, ekiCont.length);
+
   return {
-    junctionResult: new Map(),
+    junctionResult,
     customizeRessyaIndexChains: state.chains,
     operationTable: ctx.opTable.table,
     assignedNumbers: collectAssigned(dia, state, numbers),

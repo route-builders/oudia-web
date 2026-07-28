@@ -20,10 +20,18 @@
  * 依存する。無限再帰しないことは合成フィクスチャで実測する(出たら ADR で visited 導入を検討)。
  */
 
-import type { AfterOperation, BeforeOperation, Dia, Ressya } from '@oudia-web/format';
+import type { AfterOperation, BeforeOperation, Dia, Jikoku, Ressya } from '@oudia-web/format';
+import type { MoveList } from '../operationLight/chains.js';
+import { addMove, mergeChains } from '../operationLight/chains.js';
 import { classify } from '../operationLight/deriveOperationLight.js';
 import { searchRessyaElement } from '../operationLight/occupancy.js';
-import type { BeforeAfterType, Houkou, OpRef } from '../operationLight/types.js';
+import type {
+  BeforeAfterType,
+  CustomizeChainColumn,
+  Houkou,
+  JunctionResolution,
+  OpRef,
+} from '../operationLight/types.js';
 import { opRefKey } from '../operationLight/types.js';
 import {
   emptySlots,
@@ -62,6 +70,12 @@ export interface AssignContext {
   /** 種別 index → 隠し種別か(隠し跨ぎで接続種別を unrelated へ降格。原典 :7503-7515)。 */
   readonly hidden: readonly boolean[];
   readonly hiddenExist: boolean;
+  /** 次列車接続の表示解決(原典 setJunctionSucceed / JunctionJikoku ほか、:7528-7960)。 */
+  readonly junctionResult: Map<string, JunctionResolution>;
+  /** 表示チェーンと並べ替え move-list(実処理は completeCustomizeJikokuhyouContent 相当で適用)。 */
+  readonly chains: { kudari: CustomizeChainColumn[]; nobori: CustomizeChainColumn[] };
+  readonly connectMoves: { kudari: MoveList; nobori: MoveList };
+  readonly releaseMoves: { kudari: MoveList; nobori: MoveList };
   /** 再帰の暴走ガード(実測用。原典にはない安全弁。閾値超過で打ち切り)。 */
   readonly guard: { count: number; readonly limit: number };
 }
@@ -404,6 +418,9 @@ function hopToNextTrain(
 
   // 折返し反転(方向差 && size>1)。
   const sameHoukou = ref.houkou === result.next.ressyahoukou;
+
+  // 表示解決 + 表示チェーンの並べ替え登録(原典 :7528-7960。Light の resolveJunctions と同型)。
+  registerJunctionDisplay(ctx, ref, node, result, beforeAfterType, sameHoukou);
   let carried = reverseForRoute(temp, ctx.operationNumberReverse, sameHoukou);
 
   const nextSlots = slotsOf(ctx, nextBefore);
@@ -436,6 +453,66 @@ function hopToNextTrain(
 
   void iLevelSearch;
   runJunctionRecursion(ctx, nextProperty, nextTree, nextLevel(nextNode.treeLevel), carried);
+}
+
+/**
+ * 次列車接続の表示解決を記録し、表示チェーンの並べ替えを登録する(原典 :7528-7960)。
+ * Light の resolveJunctions(:1546-2003)と同じ判定を Full の再帰内で行う。
+ */
+function registerJunctionDisplay(
+  ctx: AssignContext,
+  ref: OpRef,
+  node: TreeNode,
+  result: {
+    next: { beforeOp: OpRef | null; ressyahoukou: Houkou; ressyaIndex: number };
+    terminalJikoku: Jikoku;
+  },
+  beforeAfterType: BeforeAfterTypeFull,
+  sameHoukou: boolean,
+): void {
+  const nextTrain = result.next.beforeOp;
+  if (nextTrain === null) return;
+  ctx.junctionResult.set(opRefKey(ref), {
+    junctionSucceed: true,
+    beforeAfterType: toLightType(beforeAfterType),
+    nextTrain,
+    junctionJikoku: result.terminalJikoku,
+    // 方向不一致で符号反転(原典 :1662-1666 / :7590)。
+    prevRessyahoukou: sameHoukou ? ref.houkou : -ref.houkou,
+    ressyajouhouOmit: beforeAfterType === 'propertySame',
+  });
+
+  // 編成タイプ: 探索パスのトップレベル(length===1)が主編成(原典 :7598/:7625/:7677)。
+  const prevType = node.treeLevel.length === 1 ? 0 : 1;
+  const nextNode = ctx.state.trees[result.next.ressyahoukou]?.[result.next.ressyaIndex]?.nodes.find(
+    (n) => opRefKey(n.el.op) === opRefKey(nextTrain),
+  );
+  const nextType = (nextNode?.treeLevel.length ?? 1) === 1 ? 0 : 1;
+  const currEkiOrder = ref.ekiOrder;
+  const nextEkiOrder = nextTrain.ekiOrder;
+  if (
+    beforeAfterType === 'unrelated' ||
+    !sameHoukou ||
+    (prevType === 1 && nextType === 1) ||
+    currEkiOrder > nextEkiOrder
+  ) {
+    return;
+  }
+  const chain = ref.houkou === 0 ? ctx.chains.kudari : ctx.chains.nobori;
+  const rel = ref.houkou === 0 ? ctx.releaseMoves.kudari : ctx.releaseMoves.nobori;
+  const con = ref.houkou === 0 ? ctx.connectMoves.kudari : ctx.connectMoves.nobori;
+  if (prevType === 1) {
+    addMove(rel, currEkiOrder, [ref.ressyaIndex, nextTrain.ressyaIndex]);
+  } else if (nextType === 1) {
+    addMove(con, nextEkiOrder, [nextTrain.ressyaIndex, ref.ressyaIndex]);
+  } else {
+    mergeChains(chain, ref.ressyaIndex, nextTrain.ressyaIndex);
+  }
+}
+
+/** Full の 7 値を Light 表示用の 4 値へ落とす(出入区・路線外・運番変更は別列車扱い)。 */
+function toLightType(t: BeforeAfterTypeFull): BeforeAfterType {
+  return t === 'classChange' || t === 'propertyChange' || t === 'propertySame' ? t : 'unrelated';
 }
 
 /** 隠し種別跨ぎで unrelated へ降格する(原典 :7503-7515)。 */
