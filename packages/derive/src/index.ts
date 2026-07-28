@@ -192,5 +192,31 @@ export {
   countRessyaInOperation,
   deriveAllOperationTable,
 } from './operationView/allOperationTable.js';
+// ---- 入出区連携コード一覧ビューモデル(M7d)----
+export type {
+  InOutLinkCodeListColumn,
+  InOutLinkCodeListRow,
+  InOutLinkCodeListSideCell,
+  InOutLinkCodeListViewModel,
+} from './operationView/inOutLinkCodeList.js';
+export {
+  deriveInOutLinkCodeList,
+  IN_OUT_LINK_CODE_LIST_COLUMNS,
+  IN_OUT_LINK_CODE_LIST_HEADER,
+} from './operationView/inOutLinkCodeList.js';
+// ---- 運用表ビュー(従来形式)ビューモデル(M7d)----
+export type {
+  OperationTableColumn,
+  OperationTableEkiCell,
+  OperationTableViewModel,
+  OperationTableViewOptions,
+  OperationTableViewRow,
+} from './operationView/operationTableView.js';
+export {
+  buildOperationTableColumns,
+  combineOperationTableRows,
+  deriveOperationTableView,
+  OPERATION_TABLE_HEADER,
+} from './operationView/operationTableView.js';
 export type { TransferSortInput } from './sort/transferSort.js';
 export { transferSortOrder } from './sort/transferSort.js';
