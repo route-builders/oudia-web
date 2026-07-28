@@ -18,7 +18,11 @@ import { useMemo, useState } from 'react';
 import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
-import { OperationSearchControls, operationSearchPlaceholder } from './OperationSearchControls.js';
+import {
+  OperationSearchControls,
+  operationRefreshKeyProps,
+  operationSearchPlaceholder,
+} from './OperationSearchControls.js';
 
 export function OperationTableView(props: {
   data: RosenFileData;
@@ -63,7 +67,12 @@ export function OperationTableView(props: {
   const placeholder = operationSearchPlaceholder(search, dia !== undefined && vm !== null);
 
   return (
-    <div className="operation-table">
+    <div
+      className="operation-table"
+      {...operationRefreshKeyProps(() => {
+        setManualKey((k) => k + 1);
+      })}
+    >
       <div className="view-toolbar">
         <span className="op-number-title">運用番号 {operationNumber}</span>
         <label>

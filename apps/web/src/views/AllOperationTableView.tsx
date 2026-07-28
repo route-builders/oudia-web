@@ -19,7 +19,11 @@ import { useMemo, useState } from 'react';
 import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
-import { OperationSearchControls, operationSearchPlaceholder } from './OperationSearchControls.js';
+import {
+  OperationSearchControls,
+  operationRefreshKeyProps,
+  operationSearchPlaceholder,
+} from './OperationSearchControls.js';
 
 const SORT_LABEL: Readonly<Record<OperationSort, string>> = {
   operationNumber: '運用番号順',
@@ -84,7 +88,12 @@ export function AllOperationTableView(props: {
   };
 
   return (
-    <div className="all-operation-table">
+    <div
+      className="all-operation-table"
+      {...operationRefreshKeyProps(() => {
+        setManualKey((k) => k + 1);
+      })}
+    >
       <div className="view-toolbar">
         <label>
           並び順

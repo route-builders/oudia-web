@@ -17,7 +17,11 @@ import type { RosenFileData } from '@oudia-web/format';
 import { useMemo, useState } from 'react';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
-import { OperationSearchControls, operationSearchPlaceholder } from './OperationSearchControls.js';
+import {
+  OperationSearchControls,
+  operationRefreshKeyProps,
+  operationSearchPlaceholder,
+} from './OperationSearchControls.js';
 
 export function InOutLinkCodeListView(props: {
   data: RosenFileData;
@@ -45,7 +49,12 @@ export function InOutLinkCodeListView(props: {
   const placeholder = operationSearchPlaceholder(search, dia !== undefined && vm !== null);
 
   return (
-    <div className="inout-link-code-list">
+    <div
+      className="inout-link-code-list"
+      {...operationRefreshKeyProps(() => {
+        setManualKey((k) => k + 1);
+      })}
+    >
       <div className="view-toolbar">
         <OperationSearchControls
           search={search}

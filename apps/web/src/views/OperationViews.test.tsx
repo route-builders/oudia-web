@@ -95,6 +95,21 @@ describe('AllOperationTableView', () => {
     expect(screen.getByLabelText(/並び順/)).toBeTruthy();
   });
 
+  it('F5 で手動更新が走る(ブラウザ再読み込みは抑止)', async () => {
+    const { container } = render(
+      <AllOperationTableView data={data} diaIndex={0} graphical={false} />,
+    );
+    await screen.findByText('運用番号');
+    const root = container.querySelector('.all-operation-table');
+    if (root === null) throw new Error('root not found');
+    // 前回結果を保持したまま再探索 → ツールバーに「運用探索中…」が出る。
+    fireEvent.keyDown(root, { key: 'F5' });
+    expect(screen.getByText('運用探索中…')).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByText('運用探索中…')).toBeNull();
+    });
+  });
+
   it('図に切り替えると別タブとして開く', async () => {
     render(<AllOperationTableView data={data} diaIndex={0} graphical={false} />);
     await screen.findByText('運用番号');

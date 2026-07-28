@@ -8,7 +8,26 @@
  * (設計 §3.6 / roadmap M7 完了条件 #2)。初回はまだ前回結果が無いので「探索中」を出す。
  */
 
+import type { KeyboardEvent } from 'react';
 import type { UseOperationSearchResult } from '../hooks/useOperationSearch.js';
+
+/**
+ * 運用手動更新のキー(設計 05 §4.3: F5 / Alt+F5。ブラウザの再読み込みは preventDefault で抑止)。
+ * ビュー根の div に spread して使う。傍受は「そのビューにフォーカスがあるとき」だけ。
+ */
+export function operationRefreshKeyProps(onRefresh: () => void): {
+  tabIndex: number;
+  onKeyDown: (e: KeyboardEvent<HTMLElement>) => void;
+} {
+  return {
+    tabIndex: -1,
+    onKeyDown: (e) => {
+      if (e.key !== 'F5') return;
+      e.preventDefault();
+      onRefresh();
+    },
+  };
+}
 
 export function OperationSearchControls(props: {
   search: UseOperationSearchResult;
