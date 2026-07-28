@@ -11,6 +11,7 @@ import { asSeconds } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import {
   type ExpandContext,
+  ROOT_LEVEL,
   searchBeforeOperationElementLight,
 } from '../operationLight/extract.js';
 
@@ -22,7 +23,7 @@ describe('extract Full seed 収集', () => {
     const cont: BeforeOperation[] = [
       { kind: 'out', outJikoku: J(8), inOutLinkCode: '', operationNumbers: ['1'] },
     ];
-    const r = searchBeforeOperationElementLight(cont, null, [], 0, ctx);
+    const r = searchBeforeOperationElementLight(cont, null, ROOT_LEVEL, 0, ctx);
     expect(r.outOuterSeeds).toHaveLength(1);
     expect(r.beforeJunctionSeeds).toHaveLength(0);
     // outOuter は占有登録しない(existInserts 空)。
@@ -40,7 +41,7 @@ describe('extract Full seed 収集', () => {
         operationNumbers: [],
       },
     ];
-    const r = searchBeforeOperationElementLight(cont, null, [], 0, ctx);
+    const r = searchBeforeOperationElementLight(cont, null, ROOT_LEVEL, 0, ctx);
     expect(r.outOuterSeeds).toHaveLength(1);
   });
 
@@ -48,7 +49,7 @@ describe('extract Full seed 収集', () => {
     const cont: BeforeOperation[] = [
       { kind: 'junction', kitenJikoku: J(8), kariOperationNumbers: [] },
     ];
-    const r = searchBeforeOperationElementLight(cont, null, [], 0, ctx);
+    const r = searchBeforeOperationElementLight(cont, null, ROOT_LEVEL, 0, ctx);
     expect(r.beforeJunctionSeeds).toHaveLength(1);
     expect(r.outOuterSeeds).toHaveLength(0);
     // 前列車接続は占有登録する(受け側)。
@@ -68,7 +69,7 @@ describe('extract Full seed 収集', () => {
         ],
       },
     ];
-    const r = searchBeforeOperationElementLight(cont, null, [], 0, ctx);
+    const r = searchBeforeOperationElementLight(cont, null, ROOT_LEVEL, 0, ctx);
     // トップの前列車接続 + 子の出区。
     expect(r.beforeJunctionSeeds).toHaveLength(1); // トップ junction
     expect(r.outOuterSeeds).toHaveLength(1); // 子の out

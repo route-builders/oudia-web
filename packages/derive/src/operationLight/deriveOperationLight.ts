@@ -38,6 +38,7 @@ import {
 } from './chains.js';
 import {
   type ExpandContext,
+  ROOT_LEVEL,
   searchAfterOperationElementLight,
   searchBeforeOperationElementLight,
 } from './extract.js';
@@ -131,7 +132,7 @@ function registerBefore(
   const r = searchBeforeOperationElementLight(
     slot.beforeOperationCont,
     slot.hatsuJikoku,
-    [],
+    ROOT_LEVEL,
     trackConnect,
     ctx,
   );
@@ -159,7 +160,7 @@ function registerAfter(
   const r = searchAfterOperationElementLight(
     slot.afterOperationCont,
     slot.chakuJikoku,
-    [],
+    ROOT_LEVEL,
     trackRelease,
     ctx,
   );
@@ -182,8 +183,8 @@ function seedTrack(
   return hit?.trackIndex ?? 0;
 }
 
-/** junctionType(enum)→ beforeAfterType 恒等マップ(原典 :1580-1591)。 */
-function classify(junctionType: AfterJunctionType): BeforeAfterType {
+/** junctionType(enum)→ beforeAfterType 恒等マップ(原典 :1580-1591)。Full も共有する。 */
+export function classify(junctionType: AfterJunctionType): BeforeAfterType {
   return junctionType === 'classChange'
     ? 'classChange'
     : junctionType === 'propertyChange'
@@ -219,8 +220,9 @@ function resolveAfterOp(dia: Dia, ref: OpRef): AfterOperation | undefined {
 
 /**
  * 種別ごとの隠しフラグを前計算する(原典 :662-678)。disableHiddenSyubetsu なら全 false。
+ * Full(operationNumberAssign)も次列車接続の分類降格で共有する。
  */
-function computeHidden(
+export function computeHidden(
   syubetsuCont: readonly Ressyasyubetsu[] | undefined,
   disableHiddenSyubetsu: boolean,
 ): { hidden: boolean[]; exist: boolean } {

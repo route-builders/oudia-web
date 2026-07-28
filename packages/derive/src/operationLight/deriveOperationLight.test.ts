@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { buildOccupancy, deriveOperationLight } from './deriveOperationLight.js';
 import {
   type ExpandContext,
+  ROOT_LEVEL,
   searchAfterOperationElementLight,
   searchBeforeOperationElementLight,
 } from './extract.js';
@@ -98,7 +99,8 @@ describe('searchBefore/AfterOperationElementLight(中間駅の入れ子展開)',
   const ctx: ExpandContext = { houkou: 0, ressyaIndex: 0, ekiOrder: 1, ekiIndexOfExist: 1 };
 
   it('前作業の増結: 子が先・親が後、iLevel が [親, 子] で伸長', () => {
-    // 前作業 [junction(先頭), connect{子: [shunt]}]。
+    // 前作業 [junction(先頭), connect{子: [junction, shunt]}]。
+    // 子は増結編成の前作業列なので先頭に前列車接続が立つ(adjustOperation の先端作業不変条件)。
     const cont: BeforeOperation[] = [
       { kind: 'junction', kitenJikoku: null, kariOperationNumbers: [] },
       {
@@ -106,6 +108,7 @@ describe('searchBefore/AfterOperationElementLight(中間駅の入れ子展開)',
         connectToFront: false,
         connectJikoku: J(8),
         formationBeforeOperationCont: [
+          { kind: 'junction', kitenJikoku: null, kariOperationNumbers: [] },
           {
             kind: 'shunt',
             shuntTrackIndex: 1,
@@ -116,14 +119,14 @@ describe('searchBefore/AfterOperationElementLight(中間駅の入れ子展開)',
         ],
       },
     ];
-    const r = searchBeforeOperationElementLight(cont, null, [0], 0, ctx);
-    // elements: 先頭 junction([0,0])、子 shunt([0,1,0])、親 connect([0,1]) の順(子先・親後)。
+    const r = searchBeforeOperationElementLight(cont, null, ROOT_LEVEL, 0, ctx);
+    // elements: 先頭 junction([0])、子 junction([1,0])、親 connect([1]) の順(子先・親後)。
     const shape = r.elements.map((e) => e.iLevel);
-    // 先頭 Junction は iLevel [0,0]、子 shunt は [0,1,0]、親 connect は [0,1]。
-    expect(shape).toContainEqual([0, 0]);
-    const connectIdx = shape.findIndex((l) => l.length === 2 && l[1] === 1);
-    const childIdx = shape.findIndex((l) => l.length === 3);
+    expect(shape).toContainEqual([0]);
+    const connectIdx = shape.findIndex((l) => l.length === 1 && l[0] === 1);
+    const childIdx = shape.findIndex((l) => l.length === 2);
     // 子が親より先。
+    expect(childIdx).toBeGreaterThanOrEqual(0);
     expect(childIdx).toBeLessThan(connectIdx);
   });
 
@@ -147,11 +150,11 @@ describe('searchBefore/AfterOperationElementLight(中間駅の入れ子展開)',
       },
       { kind: 'junction', syuutenJikoku: J(9), junctionType: 'unrelated' },
     ];
-    const r = searchAfterOperationElementLight(cont, null, [0], 0, ctx);
+    const r = searchAfterOperationElementLight(cont, null, ROOT_LEVEL, 0, ctx);
     const shape = r.elements.map((e) => e.iLevel);
-    // 親 release [0,0] が子 [0,0,*] より先。
-    const releaseIdx = shape.findIndex((l) => l.length === 2 && l[1] === 0);
-    const childIdx = shape.findIndex((l) => l.length === 3);
+    // 親 release [0] が子 [0,*] より先。
+    const releaseIdx = shape.findIndex((l) => l.length === 1 && l[0] === 0);
+    const childIdx = shape.findIndex((l) => l.length === 2);
     expect(releaseIdx).toBeLessThan(childIdx);
     // 末尾 junction が seed に(親 release の子 junction + トップ末尾 junction)。
     expect(r.junctionSeeds.length).toBeGreaterThanOrEqual(1);

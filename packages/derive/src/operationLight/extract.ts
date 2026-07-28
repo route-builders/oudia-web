@@ -5,21 +5,29 @@
 // and OuDia (Copyright (C) 2006-2017 take-okm)
 
 /**
- * Light 運用探索の作業抽出 + 中間駅の増解結入れ子展開(原典
- * searchBeforeOperationElementLight / searchAfterOperationElementLight、cpp:5860 / 6260)。
- * M7b Light PR2。
+ * 運用探索の作業抽出 + 増解結入れ子展開(原典
+ * searchBeforeOperationElementLight / searchAfterOperationElementLight、cpp:5860 / 6260、
+ * および Full 版 searchBeforeOperationElement / searchAfterOperationElement、cpp:5640 / 6048)。
+ * M7b Light PR2 / M7c-2 PR-1。
  *
  * 各列車の前作業/後作業コンテナを平坦化して OperationElementLight 列にし、接続点 Junction
  * (前作業先頭=前列車接続 / 後作業末尾=次列車接続)だけを占有リストへ登録する。中間駅の
  * 増結(Connect)は前作業列を、解結(Release)は後作業列を子に持ち、再帰展開する。
  * 並び順: 増結=[...子展開, 親](子先・親後)、解結=[親, ...子展開](親先・子後)。
  *
+ * ★2 種類の iLevel を持つ(原典との差分の要):
+ * - `OperationElementLight.iLevel` = **探索パス**。原典 iLevelAdd と同じ採番で、入換(Shunt)を
+ *   飛ばして増解結・運番変更だけを数える。`back()++` の走査はこちらを使う。
+ * - `OperationElementLight.op.iLevel` = **union の実パス**(コンテナ index そのもの)。
+ *   作業実体を引く resolveOperation と作業の同一性(OpRef)はこちらを使う。
+ *   原典はポインタを別に保持するのでこの区別が要らないが、TS は参照を index パスで表すため必要。
+ *
  * 純関数化: 原典は m_contRessyaExist / m_contJunctionList を副作用で書くが、TS では
  * 「占有登録すべき RessyaElement 列(existInserts)」と「次列車接続の種(junctionSeeds)」を
- * 戻り値で返し、呼出側(deriveOperationLight)がイミュータブルに畳み込む。
+ * 戻り値で返し、呼出側(deriveOperationLight / deriveOperationFull)が畳み込む。
  *
  * Light 省略(原典との差分): clearOperationNumber・出入区連携・運番割当・PatternDiagramPreview
- * 周期複製(m_iPatternDiagramPreviewCycleSecond>0)。
+ * 周期複製(m_iPatternDiagramPreviewCycleSecond>0)・運用番号変更(collectNumberChange=false)。
  */
 
 import type { AfterOperation, BeforeOperation, Jikoku } from '@oudia-web/format';
@@ -38,8 +46,11 @@ export interface ExpandResult {
   outOuterSeeds: OperationElementLight[];
   /** 前列車接続(前作業先頭 Junction)。Full の STEP3b 孤立検査対象。 */
   beforeJunctionSeeds: OperationElementLight[];
-  /** 運用番号変更(reverse でないもののみ)。Full の STEP3a 運番 seed。 */
-  numberChangeSeeds: OperationElementLight[];
+  /**
+   * 運用番号変更(反転でないもののみ)。Full の STEP3a 運番 seed。
+   * jikoku は運用表の挿入位置決めに使う当駅時刻(原典 :4371/:4565/:4655/:4771 の暫定措置)。
+   */
+  numberChangeSeeds: { el: OperationElementLight; jikoku: Jikoku }[];
 }
 
 /** 展開の共通コンテキスト(列車・駅・占有アクセスの固定情報)。 */
@@ -48,7 +59,26 @@ export interface ExpandContext {
   readonly ressyaIndex: number;
   readonly ekiOrder: number;
   readonly ekiIndexOfExist: number;
+  /**
+   * 運用番号変更を作業要素として収集するか(Full のみ true)。原典は Light 版
+   * (searchBefore/AfterOperationElementLight, :5860/:6260)が NumberChange を扱わず、
+   * Full 版(:5640/:6048)だけが扱って iLevelAdd も進める。既定 false = Light 互換。
+   */
+  readonly collectNumberChange?: boolean;
+  /** 運用番号変更 seed に刻む当駅時刻(collectNumberChange のときのみ使う)。 */
+  readonly numberChangeJikoku?: Jikoku;
 }
+
+/** 親のパス組(探索パス / union 実パス)。トップレベルは両方とも空配列。 */
+export interface LevelParent {
+  /** 探索パス(iLevelAdd 採番。入換を飛ばす)。 */
+  readonly search: readonly number[];
+  /** union の実パス(コンテナ index)。 */
+  readonly real: readonly number[];
+}
+
+/** トップレベル(親なし)の LevelParent。 */
+export const ROOT_LEVEL: LevelParent = { search: [], real: [] };
 
 function emptyResult(): ExpandResult {
   return {
@@ -70,29 +100,51 @@ function merge(into: ExpandResult, from: ExpandResult): void {
   into.numberChangeSeeds.push(...from.numberChangeSeeds);
 }
 
-/** OpRef を組む(iLevel パスつき)。 */
-function makeRef(ctx: ExpandContext, opKind: 'before' | 'after', iLevel: number[]): OpRef {
+/** 子のパス組を作る。 */
+function childLevel(parent: LevelParent, searchIdx: number, realIdx: number): LevelParent {
+  return { search: [...parent.search, searchIdx], real: [...parent.real, realIdx] };
+}
+
+/** OpRef を組む(union の実パス)。 */
+function makeRef(ctx: ExpandContext, opKind: 'before' | 'after', real: readonly number[]): OpRef {
   return {
     houkou: ctx.houkou,
     ressyaIndex: ctx.ressyaIndex,
     ekiOrder: ctx.ekiOrder,
     opKind,
-    iLevel,
+    iLevel: [...real],
+  };
+}
+
+/** 占有登録しない作業要素(番線・占有 index は使わないので -1)。 */
+function makeElement(
+  ctx: ExpandContext,
+  opKind: 'before' | 'after',
+  level: LevelParent,
+): OperationElementLight {
+  return {
+    op: makeRef(ctx, opKind, level.real),
+    iLevel: [...level.search],
+    ekiOrder: ctx.ekiOrder,
+    ekiIndexOfExist: ctx.ekiIndexOfExist,
+    ressyaTrackIndex: -1,
   };
 }
 
 /**
- * 前作業列を展開する(原典 searchBeforeOperationElementLight、cpp:5860-6045)。
+ * 前作業列を展開する(原典 searchBeforeOperationElement(Light) :5860-6045 / Full :5640-5859)。
+ * 先頭は出区・路線外始発・前列車接続として特別扱いする(列車の先端 or 増結編成の先端)。
+ *
  * @param cont          前作業列(増結の子 = 別編成の前作業列)
  * @param connectJikoku 親の増結時刻(先頭 Junction の起点時刻フォールバック)
- * @param iLevelParent  親の iLevel(トップは [contIndex])
+ * @param parent        親のパス組(トップは ROOT_LEVEL)
  * @param trackConnect  親の増結が行われた番線 index(先頭 Junction の占有番線)
  * @param ctx           展開コンテキスト
  */
 export function searchBeforeOperationElementLight(
   cont: readonly BeforeOperation[],
   connectJikoku: Jikoku,
-  iLevelParent: readonly number[],
+  parent: LevelParent,
   trackConnect: number,
   ctx: ExpandContext,
 ): ExpandResult {
@@ -102,8 +154,7 @@ export function searchBeforeOperationElementLight(
 
   if (first.kind === 'out' || first.kind === 'outer') {
     // 出区・路線外始発: 占有登録せず要素だけ集める。Full の運番 seed(outOuter)。
-    const iLevel = [...iLevelParent, 0];
-    const el = makeRef2(ctx, 'before', iLevel);
+    const el = makeElement(ctx, 'before', childLevel(parent, 0, 0));
     result.elements.push(el);
     result.outOuterSeeds.push(el);
   } else if (first.kind === 'junction') {
@@ -128,11 +179,11 @@ export function searchBeforeOperationElementLight(
     // 明示の起点時刻があれば優先(原典 :5926-5929)。
     if (first.kitenJikoku !== null) originJikoku = first.kitenJikoku;
 
-    const iLevel = [...iLevelParent, 0];
-    const ref = makeRef(ctx, 'before', iLevel);
+    const level = childLevel(parent, 0, 0);
+    const ref = makeRef(ctx, 'before', level.real);
     const opEl: OperationElementLight = {
       op: ref,
-      iLevel,
+      iLevel: [...level.search],
       ekiOrder: ctx.ekiOrder,
       ekiIndexOfExist: ctx.ekiIndexOfExist,
       ressyaTrackIndex: trackIndex,
@@ -150,39 +201,47 @@ export function searchBeforeOperationElementLight(
     result.existInserts.push({ ekiIndexOfExist: ctx.ekiIndexOfExist, trackIndex, el });
   }
 
-  // 中間の増解結(idxb=1..size-1、原典 :5975-5943)。
+  // 中間の増解結・運番変更(idxb=1..size-1、原典 :5975-6043 / Full :5766-5856)。
   let iLevelAdd = 1;
   for (let idxb = 1; idxb < cont.length; idxb++) {
     const op = cont[idxb];
     if (op === undefined) continue;
     if (op.kind === 'connect') {
-      const iLevel = [...iLevelParent, iLevelAdd];
+      const level = childLevel(parent, iLevelAdd, idxb);
       const trackIndex = backwardShuntTrack(cont, idxb, trackConnect);
-      const child = searchBeforeOperationElementLight(
+      const sub = searchBeforeOperationElementLight(
         op.formationBeforeOperationCont,
         op.connectJikoku,
-        iLevel,
+        level,
         trackIndex,
         ctx,
       );
       // 増結: [...子展開, 親](子先・親後)。
-      merge(result, child);
-      result.elements.push(makeRef2(ctx, 'before', iLevel));
+      merge(result, sub);
+      result.elements.push(makeElement(ctx, 'before', level));
       iLevelAdd++;
     } else if (op.kind === 'release') {
-      const iLevel = [...iLevelParent, iLevelAdd];
+      const level = childLevel(parent, iLevelAdd, idxb);
       const trackIndex = backwardShuntTrack(cont, idxb, trackConnect);
-      const parentEl = makeRef2(ctx, 'before', iLevel);
-      const child = searchAfterOperationElementLight(
+      const parentEl = makeElement(ctx, 'before', level);
+      const sub = searchAfterOperationElementLight(
         op.formationAfterOperationCont,
         op.releaseJikoku,
-        iLevel,
+        level,
         trackIndex,
         ctx,
       );
       // 解結: [親, ...子展開](親先・子後)。
       result.elements.push(parentEl);
-      merge(result, child);
+      merge(result, sub);
+      iLevelAdd++;
+    } else if (op.kind === 'numberChange' && (ctx.collectNumberChange ?? false)) {
+      // 運用番号変更(Full のみ。原典 :5833-5856)。反転(空配列)は seed にしないが探索桁は進める。
+      const el = makeElement(ctx, 'before', childLevel(parent, iLevelAdd, idxb));
+      result.elements.push(el);
+      if (op.operationNumbers.length > 0) {
+        result.numberChangeSeeds.push({ el, jikoku: ctx.numberChangeJikoku ?? null });
+      }
       iLevelAdd++;
     }
   }
@@ -190,61 +249,70 @@ export function searchBeforeOperationElementLight(
 }
 
 /**
- * 後作業列を展開する(原典 searchAfterOperationElementLight、cpp:6260-6345)。
+ * 後作業列を展開する(原典 searchAfterOperationElement(Light) :6260-6345 / Full :6048-6259)。
  * 末尾 Junction(次列車接続)を占有登録し、junctionSeeds へも push する(前作業との非対称)。
  */
 export function searchAfterOperationElementLight(
   cont: readonly AfterOperation[],
   releaseJikoku: Jikoku,
-  iLevelParent: readonly number[],
+  parent: LevelParent,
   trackRelease: number,
   ctx: ExpandContext,
 ): ExpandResult {
   const result = emptyResult();
-  const last = cont[cont.length - 1];
+  const lastIdx = cont.length - 1;
+  const last = cont[lastIdx];
 
-  // 中間の増解結(idxa=0..size-2、原典 :6279)。
+  // 中間の増解結・運番変更(idxa=0..size-2、原典 :6279 / Full :6067)。
   let iLevelAdd = 0;
-  for (let idxa = 0; idxa < cont.length - 1; idxa++) {
+  for (let idxa = 0; idxa < lastIdx; idxa++) {
     const op = cont[idxa];
     if (op === undefined) continue;
     if (op.kind === 'connect') {
-      const iLevel = [...iLevelParent, iLevelAdd];
+      const level = childLevel(parent, iLevelAdd, idxa);
       const trackIndex = forwardShuntTrackAfter(cont, idxa, trackRelease);
-      const child = searchBeforeOperationElementLight(
+      const sub = searchBeforeOperationElementLight(
         op.formationBeforeOperationCont,
         op.connectJikoku,
-        iLevel,
+        level,
         trackIndex,
         ctx,
       );
-      merge(result, child);
-      result.elements.push(makeRef2(ctx, 'after', iLevel));
+      merge(result, sub);
+      result.elements.push(makeElement(ctx, 'after', level));
       iLevelAdd++;
     } else if (op.kind === 'release') {
-      const iLevel = [...iLevelParent, iLevelAdd];
+      const level = childLevel(parent, iLevelAdd, idxa);
       const trackIndex = forwardShuntTrackAfter(cont, idxa, trackRelease);
-      const parentEl = makeRef2(ctx, 'after', iLevel);
-      const child = searchAfterOperationElementLight(
+      const parentEl = makeElement(ctx, 'after', level);
+      const sub = searchAfterOperationElementLight(
         op.formationAfterOperationCont,
         op.releaseJikoku,
-        iLevel,
+        level,
         trackIndex,
         ctx,
       );
       result.elements.push(parentEl);
-      merge(result, child);
+      merge(result, sub);
+      iLevelAdd++;
+    } else if (op.kind === 'numberChange' && (ctx.collectNumberChange ?? false)) {
+      // 運用番号変更(Full のみ。原典 :6133-6156)。
+      const el = makeElement(ctx, 'after', childLevel(parent, iLevelAdd, idxa));
+      result.elements.push(el);
+      if (op.operationNumbers.length > 0) {
+        result.numberChangeSeeds.push({ el, jikoku: ctx.numberChangeJikoku ?? null });
+      }
       iLevelAdd++;
     }
   }
 
   // 末尾: 入区・路線外終着は集めるだけ、次列車接続は占有登録 + seed。
   if (last !== undefined) {
-    const iLevel = [...iLevelParent, iLevelAdd];
+    const level = childLevel(parent, iLevelAdd, lastIdx);
     if (last.kind === 'junction') {
       let terminalJikoku: Jikoku = releaseJikoku;
       let trackIndex = trackRelease;
-      for (let idxa = 0; idxa < cont.length - 1; idxa++) {
+      for (let idxa = 0; idxa < lastIdx; idxa++) {
         const op = cont[idxa];
         if (op === undefined) continue;
         if (op.kind === 'shunt') {
@@ -260,10 +328,10 @@ export function searchAfterOperationElementLight(
       }
       if (last.syuutenJikoku !== null) terminalJikoku = last.syuutenJikoku;
 
-      const ref = makeRef(ctx, 'after', iLevel);
+      const ref = makeRef(ctx, 'after', level.real);
       result.elements.push({
         op: ref,
-        iLevel,
+        iLevel: [...level.search],
         ekiOrder: ctx.ekiOrder,
         ekiIndexOfExist: ctx.ekiIndexOfExist,
         ressyaTrackIndex: trackIndex,
@@ -278,7 +346,111 @@ export function searchAfterOperationElementLight(
       result.existInserts.push({ ekiIndexOfExist: ctx.ekiIndexOfExist, trackIndex, el });
       result.junctionSeeds.push(el);
     } else if (last.kind === 'in' || last.kind === 'outer') {
-      result.elements.push(makeRef2(ctx, 'after', iLevel));
+      result.elements.push(makeElement(ctx, 'after', level));
+    }
+  }
+  return result;
+}
+
+/**
+ * 駅の前作業列を「先頭の特別扱いなし」で展開する(原典 STEP1 の中間駅ループ :4496-4583 /
+ * 終着駅 :4701-4783)。増結・解結・運用番号変更だけを拾い、入換は探索桁を消費しない。Full 専用。
+ */
+export function expandStationBefore(
+  cont: readonly BeforeOperation[],
+  parent: LevelParent,
+  trackDefault: number,
+  ctx: ExpandContext,
+): ExpandResult {
+  const result = emptyResult();
+  let iLevelAdd = 0;
+  for (let idxb = 0; idxb < cont.length; idxb++) {
+    const op = cont[idxb];
+    if (op === undefined) continue;
+    if (op.kind === 'connect') {
+      const level = childLevel(parent, iLevelAdd, idxb);
+      const sub = searchBeforeOperationElementLight(
+        op.formationBeforeOperationCont,
+        op.connectJikoku,
+        level,
+        backwardShuntTrack(cont, idxb, trackDefault),
+        ctx,
+      );
+      merge(result, sub);
+      result.elements.push(makeElement(ctx, 'before', level));
+      iLevelAdd++;
+    } else if (op.kind === 'release') {
+      const level = childLevel(parent, iLevelAdd, idxb);
+      const parentEl = makeElement(ctx, 'before', level);
+      const sub = searchAfterOperationElementLight(
+        op.formationAfterOperationCont,
+        op.releaseJikoku,
+        level,
+        backwardShuntTrack(cont, idxb, trackDefault),
+        ctx,
+      );
+      result.elements.push(parentEl);
+      merge(result, sub);
+      iLevelAdd++;
+    } else if (op.kind === 'numberChange') {
+      const el = makeElement(ctx, 'before', childLevel(parent, iLevelAdd, idxb));
+      result.elements.push(el);
+      if (op.operationNumbers.length > 0) {
+        result.numberChangeSeeds.push({ el, jikoku: ctx.numberChangeJikoku ?? null });
+      }
+      iLevelAdd++;
+    }
+  }
+  return result;
+}
+
+/**
+ * 駅の後作業列を「末尾の特別扱いなし」で展開する(原典 STEP1 の始発駅 :4390-4479 /
+ * 中間駅ループ :4585-4676)。Full 専用。
+ */
+export function expandStationAfter(
+  cont: readonly AfterOperation[],
+  parent: LevelParent,
+  trackDefault: number,
+  ctx: ExpandContext,
+): ExpandResult {
+  const result = emptyResult();
+  let iLevelAdd = 0;
+  for (let idxa = 0; idxa < cont.length; idxa++) {
+    const op = cont[idxa];
+    if (op === undefined) continue;
+    if (op.kind === 'connect') {
+      const level = childLevel(parent, iLevelAdd, idxa);
+      const sub = searchBeforeOperationElementLight(
+        op.formationBeforeOperationCont,
+        op.connectJikoku,
+        level,
+        forwardShuntTrackAfter(cont, idxa, trackDefault),
+        ctx,
+      );
+      merge(result, sub);
+      result.elements.push(makeElement(ctx, 'after', level));
+      iLevelAdd++;
+    } else if (op.kind === 'release') {
+      const level = childLevel(parent, iLevelAdd, idxa);
+      const parentEl = makeElement(ctx, 'after', level);
+      const sub = searchAfterOperationElementLight(
+        op.formationAfterOperationCont,
+        op.releaseJikoku,
+        level,
+        forwardShuntTrackAfter(cont, idxa, trackDefault),
+        ctx,
+      );
+      result.elements.push(parentEl);
+      merge(result, sub);
+      iLevelAdd++;
+    } else if (op.kind === 'numberChange') {
+      const el = makeElement(ctx, 'after', childLevel(parent, iLevelAdd, idxa));
+      result.elements.push(el);
+      if (op.operationNumbers.length > 0) {
+        result.numberChangeSeeds.push({ el, jikoku: ctx.numberChangeJikoku ?? null });
+      }
+      iLevelAdd++;
     }
   }
   return result;
@@ -310,19 +482,4 @@ function forwardShuntTrackAfter(
     if (op?.kind === 'shunt') track = op.shuntTrackIndex;
   }
   return track;
-}
-
-/** 占有登録しない単純な OperationElementLight(番線・占有 index は使わないので 0/未使用)。 */
-function makeRef2(
-  ctx: ExpandContext,
-  opKind: 'before' | 'after',
-  iLevel: number[],
-): OperationElementLight {
-  return {
-    op: makeRef(ctx, opKind, iLevel),
-    iLevel,
-    ekiOrder: ctx.ekiOrder,
-    ekiIndexOfExist: ctx.ekiIndexOfExist,
-    ressyaTrackIndex: -1,
-  };
 }

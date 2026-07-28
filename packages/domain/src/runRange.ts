@@ -145,3 +145,16 @@ export function getRunBetweenEkiForward(ressya: Ressya, fromOrder: number): numb
   }
   return -1;
 }
+
+/**
+ * fromOrder-2 以下で最初に isRunBetweenNextEki が真になる駅Order + 1。なければ -1
+ * (原典 CentDedRessya::getRunBetweenEkiBackward、CentDedRessya.cpp:1613-1629)。
+ * 分岐/環状駅で着側・発側が分かれるとき、終着作業を着側の駅Order へ寄せるのに使う。
+ */
+export function getRunBetweenEkiBackward(ressya: Ressya, fromOrder: number): number {
+  if (!(fromOrder >= 0 && fromOrder < ressya.ekiJikokuCont.length)) return -1;
+  for (let i = fromOrder - 2; i >= 0; i--) {
+    if (isRunBetweenNextEki(ressya, i)) return i + 1;
+  }
+  return -1;
+}
