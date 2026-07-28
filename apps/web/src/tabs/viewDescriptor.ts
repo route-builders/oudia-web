@@ -37,12 +37,38 @@ export interface SyubetsuViewDescriptor {
   readonly type: 'syubetsuView';
 }
 
+/** 運用表ビュー(1 ダイヤ × 1 運用番号)。M7d。 */
+export interface OperationTableDescriptor {
+  readonly type: 'operationTable';
+  readonly diaIndex: number;
+  readonly operationNumber: string;
+}
+
+/**
+ * 運用一覧表 / 運用一覧図(1 ダイヤ)。M7d。
+ * 設計 §3.6 の「1 ビューモデル + 2 レンダラ」。graphical で表(false)/図(true)を分ける。
+ */
+export interface AllOperationTableDescriptor {
+  readonly type: 'allOperationTable';
+  readonly diaIndex: number;
+  readonly graphical: boolean;
+}
+
+/** 入出区連携コード一覧(1 ダイヤ)。M7d。 */
+export interface InOutLinkCodeListDescriptor {
+  readonly type: 'inOutLinkCodeList';
+  readonly diaIndex: number;
+}
+
 export type ViewDescriptor =
   | DiagramDescriptor
   | TimetableDescriptor
   | EkiJikokuhyouDescriptor
   | EkiViewDescriptor
-  | SyubetsuViewDescriptor;
+  | SyubetsuViewDescriptor
+  | OperationTableDescriptor
+  | AllOperationTableDescriptor
+  | InOutLinkCodeListDescriptor;
 
 /** 記述子の一意キー(dedup 用)。 */
 export function descriptorKey(d: ViewDescriptor): string {
@@ -57,6 +83,12 @@ export function descriptorKey(d: ViewDescriptor): string {
       return 'ekiView';
     case 'syubetsuView':
       return 'syubetsuView';
+    case 'operationTable':
+      return `operationTable:${String(d.diaIndex)}:${d.operationNumber}`;
+    case 'allOperationTable':
+      return `allOperationTable:${String(d.diaIndex)}:${d.graphical ? 'g' : 't'}`;
+    case 'inOutLinkCodeList':
+      return `inOutLinkCodeList:${String(d.diaIndex)}`;
   }
 }
 
@@ -74,6 +106,12 @@ export function descriptorLabel(d: ViewDescriptor, diaName: string, ekimei?: str
       return '駅';
     case 'syubetsuView':
       return '列車種別';
+    case 'operationTable':
+      return `${diaName} 運用表 ${d.operationNumber}`;
+    case 'allOperationTable':
+      return `${diaName} ${d.graphical ? '運用一覧図' : '運用一覧表'}`;
+    case 'inOutLinkCodeList':
+      return `${diaName} 入出区連携コード一覧`;
   }
 }
 
@@ -91,5 +129,9 @@ export function isDescriptorValid(d: ViewDescriptor, diaCount: number, ekiCount:
     case 'ekiView':
     case 'syubetsuView':
       return true; // 路線単位ビューは常に有効
+    case 'operationTable':
+    case 'allOperationTable':
+    case 'inOutLinkCodeList':
+      return d.diaIndex >= 0 && d.diaIndex < diaCount;
   }
 }

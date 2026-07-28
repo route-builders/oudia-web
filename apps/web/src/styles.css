@@ -808,3 +808,120 @@ body {
   color: #555;
   margin: 0 0 4px;
 }
+
+/* ---- 運用系ビュー(M7d)---- */
+.view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid #ccc;
+  background: #f6f6f6;
+  font-size: 12px;
+}
+.view-toolbar label {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.view-toolbar .stale-note {
+  color: #b06000;
+}
+.view-toolbar .op-number-title {
+  font-weight: bold;
+}
+
+.all-operation-table,
+.operation-table,
+.inout-link-code-list {
+  overflow: auto;
+  height: 100%;
+}
+.all-operation-grid,
+.operation-table-grid,
+.inout-link-grid {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.all-operation-grid th,
+.all-operation-grid td,
+.operation-table-grid th,
+.operation-table-grid td,
+.inout-link-grid th,
+.inout-link-grid td {
+  border: 1px solid #ddd;
+  padding: 2px 6px;
+}
+.all-operation-grid th,
+.operation-table-grid th,
+.inout-link-grid th {
+  background: #eee;
+  position: sticky;
+  top: 0;
+}
+.all-operation-grid .jikoku,
+.operation-table-grid .jikoku {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.all-operation-grid .arrow,
+.operation-table-grid .arrow,
+.inout-link-grid .arrow {
+  text-align: center;
+}
+.all-operation-grid tbody tr:hover,
+.operation-table-grid tbody tr:hover,
+.inout-link-grid tbody tr:hover {
+  background: #f0f6ff;
+}
+.all-operation-grid .ressya-cell > span {
+  margin-right: 6px;
+}
+
+/* 運用一覧図 */
+.all-operation-graph {
+  position: relative;
+  font-size: 11px;
+}
+.all-operation-graph .graph-scale {
+  position: relative;
+  height: 18px;
+  border-bottom: 1px solid #ccc;
+}
+.all-operation-graph .graph-scale .hour {
+  position: absolute;
+  transform: translateX(-50%);
+  color: #666;
+}
+.all-operation-graph .graph-row {
+  position: relative;
+  height: 20px;
+  border-bottom: 1px solid #eee;
+}
+.all-operation-graph .graph-label {
+  position: absolute;
+  left: 0;
+  width: 60px;
+  font-weight: bold;
+}
+.all-operation-graph .graph-out {
+  position: absolute;
+  left: 60px;
+  width: 58px;
+  overflow: hidden;
+  color: #666;
+}
+.all-operation-graph .graph-band {
+  position: absolute;
+  top: 6px;
+  height: 8px;
+  background: #3b6ea5;
+  border-radius: 4px;
+}
+.all-operation-graph .graph-in {
+  position: absolute;
+  right: 0;
+  color: #666;
+}
