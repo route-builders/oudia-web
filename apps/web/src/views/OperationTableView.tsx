@@ -1,0 +1,173 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 up-tri
+
+/**
+ * 運用表ビュー(従来形式)。「ダイヤ × 運用番号」ごとに開く読み取り専用グリッド。M7d。
+ *
+ * derive の deriveOperationTableView が返す行列をそのまま DOM テーブルで表示する。
+ * 箱ダイヤ形式は別レンダラ(後続タスク)。
+ */
+
+import { deriveOperationTableView, OPERATION_TABLE_HEADER } from '@oudia-web/derive';
+import type { RosenFileData } from '@oudia-web/format';
+import { useMemo, useState } from 'react';
+import { useOperationSearch } from '../hooks/useOperationSearch.js';
+import { useDocStore } from '../store/docStore.js';
+
+export function OperationTableView(props: {
+  data: RosenFileData;
+  diaIndex: number;
+  operationNumber: string;
+}): React.ReactElement {
+  const { data, diaIndex, operationNumber } = props;
+  const openView = useDocStore((s) => s.openView);
+  const [displayTrackName, setDisplayTrackName] = useState(false);
+  const [noboriLeftToRight, setNoboriLeftToRight] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [manualKey, setManualKey] = useState(0);
+
+  const search = useOperationSearch(data, diaIndex, paused, manualKey);
+  const dia = data.rosen.diaCont[diaIndex];
+
+  const vm = useMemo(() => {
+    if (dia === undefined || search.result === null) return null;
+    const entries = search.result.operationTable.get(operationNumber) ?? [];
+    return deriveOperationTableView(dia, data.rosen, operationNumber, entries, {
+      displayRessyamei: data.dispProp.displayRessyamei,
+      displayTrackName,
+      displayParentSyubetsu: false,
+      displayNoboriLeftToRight: noboriLeftToRight,
+      conv: {
+        noColon: false,
+        outputSecond: false,
+        secondRoundChaku: data.dispProp.secondRoundChaku,
+        secondRoundHatsu: data.dispProp.secondRoundHatsu,
+        display2400: data.dispProp.display2400,
+      },
+    });
+  }, [dia, data, search.result, operationNumber, displayTrackName, noboriLeftToRight]);
+
+  if (data.rosen.enableOperation < 2) {
+    return (
+      <div className="view-error">
+        運用表は運用機能が「通常」(EnableOperation=2)のときだけ表示できます。
+      </div>
+    );
+  }
+  if (dia === undefined || vm === null) {
+    return <div className="view-error">運用探索の結果がありません。</div>;
+  }
+  if (vm.rows.length === 0) {
+    return <div className="view-error">運用番号「{operationNumber}」の運用がありません。</div>;
+  }
+
+  return (
+    <div className="operation-table">
+      <div className="view-toolbar">
+        <span className="op-number-title">運用番号 {operationNumber}</span>
+        <label>
+          <input
+            type="checkbox"
+            checked={displayTrackName}
+            onChange={(e) => {
+              setDisplayTrackName(e.target.checked);
+            }}
+          />
+          着発番線名を表示
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={noboriLeftToRight}
+            onChange={(e) => {
+              setNoboriLeftToRight(e.target.checked);
+            }}
+          />
+          上り始発駅を左に
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            openView({ type: 'allOperationTable', diaIndex, graphical: false });
+          }}
+        >
+          運用一覧表へ
+        </button>
+        <label>
+          <input
+            type="checkbox"
+            checked={paused}
+            onChange={(e) => {
+              setPaused(e.target.checked);
+            }}
+          />
+          運用更新を一時停止
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            setManualKey((k) => k + 1);
+          }}
+        >
+          更新(F5)
+        </button>
+      </div>
+      <table className="operation-table-grid">
+        <thead>
+          <tr>
+            {vm.columns.map((c) => (
+              <th key={c}>{OPERATION_TABLE_HEADER[c]}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {vm.rows.map((row, i) => (
+            <tr
+              key={i}
+              onDoubleClick={() => {
+                openView({ type: 'timetable', diaIndex, houkou: row.houkou });
+              }}
+            >
+              {vm.columns.map((c) => {
+                switch (c) {
+                  case 'ressyabangou':
+                    return <td key={c}>{row.ressyabangou}</td>;
+                  case 'ressyasyubetsu':
+                    return <td key={c}>{row.syubetsumei}</td>;
+                  case 'ressyamei':
+                    return <td key={c}>{row.ressyamei}</td>;
+                  case 'originSideEkimei':
+                    return <td key={c}>{row.originSide.ekimei}</td>;
+                  case 'originSideEkiTrack':
+                    return <td key={c}>{row.originSide.track}</td>;
+                  case 'originSideEkijikoku':
+                    return (
+                      <td key={c} className="jikoku">
+                        {row.originSide.jikokuText}
+                      </td>
+                    );
+                  case 'ressyahoukou':
+                    return (
+                      <td key={c} className="arrow">
+                        {row.houkouArrow}
+                      </td>
+                    );
+                  case 'terminalSideEkimei':
+                    return <td key={c}>{row.terminalSide.ekimei}</td>;
+                  case 'terminalSideEkiTrack':
+                    return <td key={c}>{row.terminalSide.track}</td>;
+                  case 'terminalSideEkijikoku':
+                    return (
+                      <td key={c} className="jikoku">
+                        {row.terminalSide.jikokuText}
+                      </td>
+                    );
+                }
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}

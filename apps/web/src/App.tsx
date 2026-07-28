@@ -15,9 +15,12 @@ import { RosenTree } from './shell/RosenTree.js';
 import { TabBar } from './shell/TabBar.js';
 import { useDocStore } from './store/docStore.js';
 import type { ViewDescriptor } from './tabs/viewDescriptor.js';
+import { AllOperationTableView } from './views/AllOperationTableView.js';
 import { DiagramView } from './views/DiagramView.js';
 import { EkiJikokuhyouView } from './views/EkiJikokuhyouView.js';
 import { EkiView } from './views/EkiView.js';
+import { InOutLinkCodeListView } from './views/InOutLinkCodeListView.js';
+import { OperationTableView } from './views/OperationTableView.js';
 import { SyubetsuView } from './views/SyubetsuView.js';
 import { TimetableView } from './views/TimetableView.js';
 
@@ -255,5 +258,13 @@ function renderView(data: RosenFileData, d: ViewDescriptor): React.ReactElement 
       return <EkiView data={data} />;
     case 'syubetsuView':
       return <SyubetsuView data={data} />;
+    case 'operationTable':
+      return (
+        <OperationTableView data={data} diaIndex={d.diaIndex} operationNumber={d.operationNumber} />
+      );
+    case 'allOperationTable':
+      return <AllOperationTableView data={data} diaIndex={d.diaIndex} graphical={d.graphical} />;
+    case 'inOutLinkCodeList':
+      return <InOutLinkCodeListView data={data} diaIndex={d.diaIndex} />;
   }
 }
