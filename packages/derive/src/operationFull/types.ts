@@ -17,7 +17,7 @@
  * よって Full 出力は黄金テスト(バイト一致)非該当。#1 は seed の入力として消費するだけで書き戻さない。
  */
 
-import type { Jikoku } from '@oudia-web/format';
+import type { Jikoku, Ressyasyubetsu } from '@oudia-web/format';
 import type {
   CustomizeChainColumn,
   Houkou,
@@ -45,7 +45,7 @@ export interface TreeNode {
 export interface RessyaOperationTree {
   readonly houkou: Houkou;
   readonly ressyaIndex: number;
-  /** DFS 順の作業ノード列(treeLevel で辿る)。 */
+  /** 原典 contOperationElement 順の作業ノード列(treeLevel で辿る)。 */
   readonly nodes: TreeNode[];
   readonly outOuterSeeds: TreeNode[];
   readonly beforeJunctionSeeds: TreeNode[];
@@ -60,9 +60,14 @@ export interface FullState {
     readonly ekiIndexOfExist: number;
     readonly trackIndex: number;
   }[];
-  readonly outOuterSeeds: OperationElementLight[];
-  readonly beforeJunctionSeeds: OperationElementLight[];
-  readonly numberChangeSeeds: OperationElementLight[];
+  /** 出区・路線外始発(原典 m_contOutOuter)。 */
+  readonly outOuterSeeds: TreeNode[];
+  /** 前列車接続の始発(原典 m_contJunctionList)。 */
+  readonly beforeJunctionSeeds: TreeNode[];
+  /** 運用番号変更(反転を除く。原典 m_contNumberChange)。jikoku は運用表の挿入位置決め用。 */
+  readonly numberChangeSeeds: { node: TreeNode; jikoku: Jikoku }[];
+  /** 入出区連携コード一覧(原典 CentDedDia::m_contInOutLinkCodeContent)。STEP1 で確定する。 */
+  readonly inOutLinks: Map<string, InOutLinkCodeEntry>;
   readonly chains: { kudari: CustomizeChainColumn[]; nobori: CustomizeChainColumn[] };
 }
 
@@ -72,6 +77,8 @@ export interface DeriveOperationFullOptions {
   readonly kitenJikoku: Jikoku;
   /** 路線全体の運用番号順反転(m_bOperationNumberReverse)。 */
   readonly operationNumberReverse: boolean;
+  /** 種別コンテナ(隠し種別跨ぎの unrelated 降格に使う)。省略時は隠し種別なし扱い。 */
+  readonly syubetsuCont?: readonly Ressyasyubetsu[];
 }
 
 /**

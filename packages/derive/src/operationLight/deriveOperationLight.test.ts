@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { buildOccupancy, deriveOperationLight } from './deriveOperationLight.js';
 import {
   type ExpandContext,
+  ROOT_LEVEL,
   searchAfterOperationElementLight,
   searchBeforeOperationElementLight,
 } from './extract.js';
@@ -98,7 +99,8 @@ describe('searchBefore/AfterOperationElementLight(中間駅の入れ子展開)',
   const ctx: ExpandContext = { houkou: 0, ressyaIndex: 0, ekiOrder: 1, ekiIndexOfExist: 1 };
 
   it('前作業の増結: 子が先・親が後、iLevel が [親, 子] で伸長', () => {
-    // 前作業 [junction(先頭), connect{子: [shunt]}]。
+    // 前作業 [junction(先頭), connect{子: [junction, shunt]}]。
+    // 子は増結編成の前作業列なので先頭に前列車接続が立つ(adjustOperation の先端作業不変条件)。
     const cont: BeforeOperation[] = [
       { kind: 'junction', kitenJikoku: null, kariOperationNumbers: [] },
       {
@@ -106,6 +108,7 @@ describe('searchBefore/AfterOperationElementLight(中間駅の入れ子展開)',
         connectToFront: false,
         connectJikoku: J(8),
         formationBeforeOperationCont: [
+          { kind: 'junction', kitenJikoku: null, kariOperationNumbers: [] },
           {
             kind: 'shunt',
             shuntTrackIndex: 1,
@@ -116,14 +119,14 @@ describe('searchBefore/AfterOperationElementLight(中間駅の入れ子展開)',
         ],
       },
     ];
-    const r = searchBeforeOperationElementLight(cont, null, [0], 0, ctx);
-    // elements: 先頭 junction([0,0])、子 shunt([0,1,0])、親 connect([0,1]) の順(子先・親後)。
+    const r = searchBeforeOperationElementLight(cont, null, ROOT_LEVEL, 0, ctx);
+    // elements: 先頭 junction([0])、子 junction([1,0])、親 connect([1]) の順(子先・親後)。
     const shape = r.elements.map((e) => e.iLevel);
-    // 先頭 Junction は iLevel [0,0]、子 shunt は [0,1,0]、親 connect は [0,1]。
-    expect(shape).toContainEqual([0, 0]);
-    const connectIdx = shape.findIndex((l) => l.length === 2 && l[1] === 1);
-    const childIdx = shape.findIndex((l) => l.length === 3);
+    expect(shape).toContainEqual([0]);
+    const connectIdx = shape.findIndex((l) => l.length === 1 && l[0] === 1);
+    const childIdx = shape.findIndex((l) => l.length === 2);
     // 子が親より先。
+    expect(childIdx).toBeGreaterThanOrEqual(0);
     expect(childIdx).toBeLessThan(connectIdx);
   });
 
@@ -147,11 +150,11 @@ describe('searchBefore/AfterOperationElementLight(中間駅の入れ子展開)',
       },
       { kind: 'junction', syuutenJikoku: J(9), junctionType: 'unrelated' },
     ];
-    const r = searchAfterOperationElementLight(cont, null, [0], 0, ctx);
+    const r = searchAfterOperationElementLight(cont, null, ROOT_LEVEL, 0, ctx);
     const shape = r.elements.map((e) => e.iLevel);
-    // 親 release [0,0] が子 [0,0,*] より先。
-    const releaseIdx = shape.findIndex((l) => l.length === 2 && l[1] === 0);
-    const childIdx = shape.findIndex((l) => l.length === 3);
+    // 親 release [0] が子 [0,*] より先。
+    const releaseIdx = shape.findIndex((l) => l.length === 1 && l[0] === 0);
+    const childIdx = shape.findIndex((l) => l.length === 2);
     expect(releaseIdx).toBeLessThan(childIdx);
     // 末尾 junction が seed に(親 release の子 junction + トップ末尾 junction)。
     expect(r.junctionSeeds.length).toBeGreaterThanOrEqual(1);
@@ -255,5 +258,95 @@ describe('deriveOperationLight(junction 解決 = 次列車接続)', () => {
     dia.ressyaCont[0].pop();
     const res = deriveOperationLight(dia, ekiCont, OPTS);
     expect(res.junctionResult.get(aRef())).toBeUndefined();
+  });
+});
+
+describe('buildOccupancy(全駅走査。M7c-2-PR4 の穴埋め)', () => {
+  it('中間駅で解結した編成の次列車接続も占有に載る', () => {
+    const ekiCont = makeEkiCont();
+    // A: E0→E2 走行。中間 E1 の後作業で解結し、解結編成は E1 で次列車接続(終点 8:30)。
+    const a = makeTrain('1M');
+    const a1 = a.ekiJikokuCont[1];
+    if (a1) {
+      a1.afterOperationCont = [
+        {
+          kind: 'release',
+          releasePosition: 0,
+          releaseCount: 1,
+          releaseJikoku: J(8, 10),
+          formationAfterOperationCont: [
+            { kind: 'junction', syuutenJikoku: J(8, 30), junctionType: 'unrelated' },
+          ],
+        },
+      ];
+    }
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a);
+
+    const build = buildOccupancy(dia, ekiCont, OPTS);
+    // E1(index 1)番線 0 に解結編成の次列車接続(afterOp)が載る。
+    const list = build.occupancy[1]?.[0] ?? [];
+    expect(list.some((e) => e.afterOp !== null)).toBe(true);
+    expect(build.junctionSeeds.some((s) => s.ekiIndexOfExist === 1)).toBe(true);
+  });
+
+  it('通過駅 × 路線外始発 × 当駅着時刻 NULL では路線外作業以外を拾わない', () => {
+    const ekiCont = makeEkiCont();
+    const a = makeTrain('1M');
+    const a0 = a.ekiJikokuCont[0];
+    if (a0) {
+      a0.ekiatsukai = 'tsuuka';
+      a0.beforeOperationCont = [
+        {
+          kind: 'outer',
+          outerTerminalIndex: 0,
+          outerHatsuJikoku: J(7, 30),
+          chakuJikoku: null, // ← ガード条件
+          inOutLinkCode: '',
+          operationNumbers: [],
+        },
+        {
+          kind: 'release',
+          releasePosition: 0,
+          releaseCount: 1,
+          releaseJikoku: J(8),
+          formationAfterOperationCont: [
+            { kind: 'junction', syuutenJikoku: J(8, 5), junctionType: 'unrelated' },
+          ],
+        },
+      ];
+    }
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a);
+
+    const build = buildOccupancy(dia, ekiCont, OPTS);
+    // 解結編成の次列車接続は無効 → E0 の占有に何も載らない。
+    expect(build.occupancy[0]?.[0] ?? []).toHaveLength(0);
+    expect(build.junctionSeeds.filter((s) => s.ekiIndexOfExist === 0)).toHaveLength(0);
+  });
+
+  it('入換着時刻があれば接続の終点時刻に使う(なければ入換発時刻)', () => {
+    const ekiCont = makeEkiCont();
+    const a = makeTrain('1M');
+    const a2 = a.ekiJikokuCont[2];
+    if (a2) {
+      a2.afterOperationCont = [
+        {
+          kind: 'shunt',
+          shuntTrackIndex: 1,
+          shuntHatsuJikoku: J(9),
+          shuntChakuJikoku: J(9, 5), // 着時刻が優先される
+          displayJikoku: false,
+        },
+        { kind: 'junction', syuutenJikoku: null, junctionType: 'unrelated' },
+      ];
+    }
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a);
+
+    const build = buildOccupancy(dia, ekiCont, OPTS);
+    const list = build.occupancy[2]?.[1] ?? [];
+    expect(list).toHaveLength(1);
+    expect(list[0]?.jikoku).toBe(J(9, 5));
   });
 });

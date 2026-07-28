@@ -23,7 +23,6 @@ import type {
   Dia,
   Eki,
   Jikoku,
-  Ressya,
   Ressyasyubetsu,
 } from '@oudia-web/format';
 import {
@@ -36,11 +35,7 @@ import {
   mergeChains,
   removeChainOf,
 } from './chains.js';
-import {
-  type ExpandContext,
-  searchAfterOperationElementLight,
-  searchBeforeOperationElementLight,
-} from './extract.js';
+import { walkTrainOperations } from './extract.js';
 import { buildEkiOrderTable, insertRessyaElement, searchRessyaElement } from './occupancy.js';
 import type {
   BeforeAfterType,
@@ -74,10 +69,10 @@ export interface DeriveOperationLightOptions {
 }
 
 /**
- * 占有リストを構築し junctionSeed を収集する(原典 operationConnectLight の Step1 相当)。
- * 各列車について:
- * - 有効始発スロットの前作業列を searchBeforeOperationElementLight で展開(先頭 Junction を占有登録)
- * - 有効終着スロットの後作業列を searchAfterOperationElementLight で展開(末尾 Junction を占有登録 + seed)
+ * 占有リストを構築し junctionSeed を収集する(原典 operationConnectLight の Step1、:790-1330)。
+ * 各列車を walkTrainOperations で「始発駅(前+後)→ 中間駅(前+後)→ 終着駅(前+後)」の順に
+ * 展開し、接続点 Junction(前作業先頭 / 後作業末尾)を占有リストへ登録する。
+ * 中間駅で増解結した相手編成の Junction も占有に載る(これが次列車接続の受け側になる)。
  */
 export function buildOccupancy(
   dia: Dia,
@@ -100,90 +95,38 @@ export function buildOccupancy(
       const syuuchaku = getValidSyuuchakuEki(ressya);
       if (sihatsu < 0 || syuuchaku < 0 || sihatsu >= syuuchaku) return;
 
-      // 有効始発の前作業列(前列車接続 = 受け側)。
-      registerBefore(ressya, ressyaIndex, houkou, sihatsu, table, occupancy, opts);
-      // 有効終着の後作業列(次列車接続 = 種)。
-      registerAfter(ressya, ressyaIndex, houkou, syuuchaku, table, occupancy, junctionSeeds, opts);
+      // 原典 STEP1 と同じ全駅走査(始発前後 → 中間駅 → 終着前後)。運用番号変更は Light では拾わない。
+      const stages = walkTrainOperations(
+        ressya,
+        ressyaIndex,
+        houkou,
+        sihatsu,
+        syuuchaku,
+        table,
+        false,
+      );
+      for (const stage of stages) {
+        for (const ins of stage.result.existInserts) {
+          const trackList = occupancy[ins.ekiIndexOfExist]?.[ins.trackIndex];
+          if (trackList !== undefined) insertRessyaElement(trackList, ins.el, opts.kitenJikoku);
+        }
+        for (const seed of stage.result.junctionSeeds) {
+          const hit = stage.result.existInserts.find((ins) => ins.el === seed);
+          junctionSeeds.push({
+            seed,
+            ekiIndexOfExist: hit?.ekiIndexOfExist ?? 0,
+            trackIndex: hit?.trackIndex ?? 0,
+          });
+        }
+      }
     });
   }
 
   return { occupancy, junctionSeeds };
 }
 
-function slotTrackIndex(ressya: Ressya, ekiOrder: number): number {
-  return ressya.ekiJikokuCont[ekiOrder]?.ressyaTrackIndex ?? 0;
-}
-
-function registerBefore(
-  ressya: Ressya,
-  ressyaIndex: number,
-  houkou: Houkou,
-  ekiOrder: number,
-  table: number[][],
-  occupancy: RessyaElement[][][],
-  opts: DeriveOperationLightOptions,
-): void {
-  const slot = ressya.ekiJikokuCont[ekiOrder];
-  if (slot === undefined || slot.beforeOperationCont.length === 0) return;
-  const ekiIndexOfExist = table[ekiOrder]?.[houkou] ?? ekiOrder;
-  const ctx: ExpandContext = { houkou, ressyaIndex, ekiOrder, ekiIndexOfExist };
-  const trackConnect = slotTrackIndex(ressya, ekiOrder);
-  const r = searchBeforeOperationElementLight(
-    slot.beforeOperationCont,
-    slot.hatsuJikoku,
-    [],
-    trackConnect,
-    ctx,
-  );
-  for (const ins of r.existInserts) {
-    const trackList = occupancy[ins.ekiIndexOfExist]?.[ins.trackIndex];
-    if (trackList !== undefined) insertRessyaElement(trackList, ins.el, opts.kitenJikoku);
-  }
-}
-
-function registerAfter(
-  ressya: Ressya,
-  ressyaIndex: number,
-  houkou: Houkou,
-  ekiOrder: number,
-  table: number[][],
-  occupancy: RessyaElement[][][],
-  junctionSeeds: OccupancyBuild['junctionSeeds'],
-  opts: DeriveOperationLightOptions,
-): void {
-  const slot = ressya.ekiJikokuCont[ekiOrder];
-  if (slot === undefined || slot.afterOperationCont.length === 0) return;
-  const ekiIndexOfExist = table[ekiOrder]?.[houkou] ?? ekiOrder;
-  const ctx: ExpandContext = { houkou, ressyaIndex, ekiOrder, ekiIndexOfExist };
-  const trackRelease = slotTrackIndex(ressya, ekiOrder);
-  const r = searchAfterOperationElementLight(
-    slot.afterOperationCont,
-    slot.chakuJikoku,
-    [],
-    trackRelease,
-    ctx,
-  );
-  for (const ins of r.existInserts) {
-    const trackList = occupancy[ins.ekiIndexOfExist]?.[ins.trackIndex];
-    if (trackList !== undefined) insertRessyaElement(trackList, ins.el, opts.kitenJikoku);
-  }
-  for (const seed of r.junctionSeeds) {
-    // seed が登録された占有 index/track を控える(PR3 の SearchRessyaElement 用)。
-    junctionSeeds.push({ seed, ekiIndexOfExist, trackIndex: seedTrack(r, seed) });
-  }
-}
-
-/** seed に対応する existInsert の trackIndex を引く。 */
-function seedTrack(
-  r: { existInserts: { el: RessyaElement; trackIndex: number }[] },
-  seed: RessyaElement,
-): number {
-  const hit = r.existInserts.find((ins) => ins.el === seed);
-  return hit?.trackIndex ?? 0;
-}
-
-/** junctionType(enum)→ beforeAfterType 恒等マップ(原典 :1580-1591)。 */
-function classify(junctionType: AfterJunctionType): BeforeAfterType {
+/** junctionType(enum)→ beforeAfterType 恒等マップ(原典 :1580-1591)。Full も共有する。 */
+export function classify(junctionType: AfterJunctionType): BeforeAfterType {
   return junctionType === 'classChange'
     ? 'classChange'
     : junctionType === 'propertyChange'
@@ -219,8 +162,9 @@ function resolveAfterOp(dia: Dia, ref: OpRef): AfterOperation | undefined {
 
 /**
  * 種別ごとの隠しフラグを前計算する(原典 :662-678)。disableHiddenSyubetsu なら全 false。
+ * Full(operationNumberAssign)も次列車接続の分類降格で共有する。
  */
-function computeHidden(
+export function computeHidden(
   syubetsuCont: readonly Ressyasyubetsu[] | undefined,
   disableHiddenSyubetsu: boolean,
 ): { hidden: boolean[]; exist: boolean } {

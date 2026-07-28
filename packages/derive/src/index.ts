@@ -86,6 +86,16 @@ export type {
 } from './layout/types.js';
 // ---- Full 運用探索(運番割付。M7c)----
 export { buildFullState, deriveOperationFull } from './operationFull/deriveOperationFull.js';
+// ---- 入出区連携コードの状態機械(M7c-2)----
+export type { InOutLinkElement } from './operationFull/inOutLink.js';
+export { insertInOutLinkCodeElement, isLinkActive } from './operationFull/inOutLink.js';
+// ---- 運用表エントリの生成・時刻順挿入(M7c-2)----
+export type { OperationTableContext } from './operationFull/operationTable.js';
+export {
+  addOperationTableContent,
+  createOperationTableContext,
+  insertOperationTableContentToBuffer,
+} from './operationFull/operationTable.js';
 export type {
   BeforeAfterTypeFull,
   ConnectWaitItem,
@@ -117,10 +127,20 @@ export type {
   OccupancyBuild,
 } from './operationLight/deriveOperationLight.js';
 export { buildOccupancy, deriveOperationLight } from './operationLight/deriveOperationLight.js';
-export type { ExpandContext, ExpandResult } from './operationLight/extract.js';
+export type {
+  ExpandContext,
+  ExpandResult,
+  LevelParent,
+  TrainStage,
+} from './operationLight/extract.js';
 export {
+  countTopLevel,
+  expandStationAfter,
+  expandStationBefore,
+  ROOT_LEVEL,
   searchAfterOperationElementLight,
   searchBeforeOperationElementLight,
+  walkTrainOperations,
 } from './operationLight/extract.js';
 // ---- Light 運用探索(占有エンジン。M7b Light PR1)----
 export {
