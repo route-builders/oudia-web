@@ -18,6 +18,7 @@ import { describe, expect, it } from 'vitest';
 import { createViewTransform, viewTransformFromZone } from './core/ViewTransform.js';
 import type { DiagramTheme, DiagramViewState } from './diagram/DiagramRenderer.js';
 import { drawL1, drawL2, drawL3 } from './diagram/DiagramRenderer.js';
+import { drawOperationMarks } from './diagram/OperationMarkRenderer.js';
 import { GridGeometry } from './grid/GridGeometry.js';
 import { drawGrid } from './grid/GridRenderer.js';
 import { MockCtx } from './testMockCtx.js';
@@ -128,5 +129,77 @@ describe('GridRenderer(sample2)', () => {
     expect(ctx.texts().some((t) => t.includes('列車番号'))).toBe(true);
     // 通過マーク ﾚ が glyph 解決されて描かれる。
     expect(ctx.texts().some((t) => t.includes('ﾚ'))).toBe(true);
+  });
+});
+
+describe('drawOperationMarks(運用記号)', () => {
+  const theme = {
+    senColor: '#000',
+    mojiColor: '#333',
+    outerLabelColor: '#666',
+    font: '10px sans-serif',
+  };
+  const geom = { xOf: (x: number) => x, baseY: 100, markSize: 12 };
+  const ops = (ctx: MockCtx): string[] => ctx.calls.map((c) => c.op);
+  const texts = (ctx: MockCtx): string[] =>
+    ctx.calls.filter((c) => c.op === 'fillText').map((c) => String(c.args[0]));
+
+  it('出区 ○ は中抜きの円 + 運番ラベル', () => {
+    const ctx = new MockCtx();
+    drawOperationMarks(
+      ctx,
+      [{ kind: 'outCircle', dgrX: 50, yShift: -1, operationNumber: '5' }],
+      geom,
+      theme,
+    );
+    expect(ops(ctx)).toContain('arc');
+    expect(ops(ctx)).not.toContain('fill'); // 中抜き(NULLBRUSH)
+    expect(texts(ctx)).toContain('5');
+  });
+
+  it('入区 △ は 3 点を閉じた折れ線(塗らない)', () => {
+    const ctx = new MockCtx();
+    drawOperationMarks(
+      ctx,
+      [{ kind: 'inTriangle', dgrX: 80, yShift: 1, operationNumber: '' }],
+      geom,
+      theme,
+    );
+    expect(ops(ctx).filter((o) => o === 'lineTo')).toHaveLength(2);
+    expect(ops(ctx)).toContain('closePath');
+    expect(ops(ctx)).not.toContain('fill');
+    expect(texts(ctx)).toHaveLength(0); // 空運番はラベルを出さない
+  });
+
+  it('前列車接続は 3 次ベジェで描く', () => {
+    const ctx = new MockCtx();
+    drawOperationMarks(
+      ctx,
+      [{ kind: 'prevJunctionArc', dgrXLeft: 10, dgrXRight: 90, leftShape: 0, rightShape: 1 }],
+      geom,
+      theme,
+    );
+    expect(ops(ctx)).toContain('bezierCurveTo');
+  });
+
+  it('路線外斜線は 1 本の線 + 駅名ラベル', () => {
+    const ctx = new MockCtx();
+    drawOperationMarks(
+      ctx,
+      [
+        {
+          kind: 'outerSlash',
+          dgrXInner: 100,
+          dgrXOuter: 58,
+          yShift: -1,
+          isSihatsu: true,
+          label: '車庫 5',
+        },
+      ],
+      geom,
+      theme,
+    );
+    expect(ops(ctx).filter((o) => o === 'lineTo')).toHaveLength(1);
+    expect(texts(ctx)).toContain('車庫 5');
   });
 });

@@ -50,6 +50,15 @@ export {
 } from './diagram/hitTest.js';
 export type { OccupancyDrawInput } from './diagram/OccupancyRenderer.js';
 export { drawOccupancy } from './diagram/OccupancyRenderer.js';
+// ---- 運用記号の描画(M7d)----
+export type {
+  OperationMarkGeometry,
+  OperationMarkTheme,
+} from './diagram/OperationMarkRenderer.js';
+export {
+  drawOperationMarks,
+  drawOperationNumberLabels,
+} from './diagram/OperationMarkRenderer.js';
 export type { VlinePitch, VlineStyle } from './diagram/vlineTable.js';
 export { DEFAULT_VLINE_MODE, enumVlines, VLINE_TABLE, vlineStyleAt } from './diagram/vlineTable.js';
 
