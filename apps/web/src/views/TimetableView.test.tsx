@@ -108,7 +108,10 @@ describe('TimetableView(対話グリッド)', () => {
     renderView();
     const root = document.querySelector('.grid-root')!;
     // 列車番号行から下へ十分移動して駅時刻(着)行に入る。
-    for (let i = 0; i < 12; i++) fireEvent.keyDown(root, { key: 'ArrowDown' });
+    // sample2(EnableOperation=2 / OperationNumberRows=2 / DisplayInOutLinkCode=1)のヘッダは
+    // 列車番号1 + 運用番号2 + 種別1 + 始発駅名1 + 始発駅作業4 + 終着駅名1 + 終着駅作業3 = 13 行。
+    // 14 行目が最初の駅時刻(発)行(M7d で運用行が増えた)。
+    for (let i = 0; i < 14; i++) fireEvent.keyDown(root, { key: 'ArrowDown' });
     fireEvent.keyDown(root, { key: 'Enter' });
     // 駅時刻ダイアログ or 列車プロパティのどちらか(行種別依存)。駅時刻なら見出しに「駅時刻」。
     const titles = screen.queryAllByText(/駅時刻のプロパティ|列車のプロパティ/);

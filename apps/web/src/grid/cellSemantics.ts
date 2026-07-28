@@ -93,6 +93,9 @@ function resolveRessyaCell(row: JikokuhyouRowSpec, ressyaIndex: number): CellTar
     case 'operationShihatsu':
     case 'operationShuchaku':
       return { kind: 'operation', ressyaIndex, rowType: row.type };
+    case 'operationNumber':
+      // 運用番号行は参照専用(原典はダブルクリックで運用表へ移動する。M7d app 配線で扱う)。
+      return { kind: 'ressyaProp', ressyaIndex, rowType: 'ressyabangou' };
     // 列車プロパティ行(種別/番号/名前/号数/号/始発駅名/終着駅名/備考)。
     case 'ressyabangou':
     case 'ressyasyubetsu':
