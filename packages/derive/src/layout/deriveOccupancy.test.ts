@@ -122,3 +122,59 @@ describe('deriveOccupancy', () => {
     expect(occ.nobori).toHaveLength(0);
   });
 });
+
+describe('作業コード(M7e・単独駅)', () => {
+  it('出区 → 着側 3(○)、入区 → 発側 3(△)。運番は永続 #1 を使う', () => {
+    const data = rosenOccupancy();
+    data.rosen.enableOperation = 2;
+    const dia = data.rosen.diaCont[0];
+    const r = dia?.ressyaCont[0]?.[0];
+    const first = r?.ekiJikokuCont[0];
+    const last = r?.ekiJikokuCont[1];
+    if (first === undefined || last === undefined) throw new Error('no slot');
+    first.beforeOperationCont = [
+      { kind: 'out', outJikoku: asSeconds(6 * 3600), inOutLinkCode: '', operationNumbers: ['7'] },
+    ];
+    last.afterOperationCont = [{ kind: 'in', inJikoku: asSeconds(8 * 3600), inOutLinkCode: '' }];
+    const frame = buildDiaLayoutFrame(
+      data.rosen,
+      dia?.ressyaCont[0] ?? [],
+      dia?.ressyaCont[1] ?? [],
+    );
+    const occ = deriveOccupancy(
+      data.rosen,
+      dia?.ressyaCont[0] ?? [],
+      dia?.ressyaCont[1] ?? [],
+      frame.ekiLayouts,
+    );
+    const lineA = occ.kudari[0]?.trackLines[0];
+    expect(lineA?.chakuOperation).toBe(3);
+    expect(lineA?.operationNumber).toBe('7');
+    // 終着駅 B は在線表駅ではないので trackLine が出ない。始発駅の発側は -1。
+    expect(lineA?.hatsuOperation).toBe(-1);
+  });
+
+  it('運用機能が無効なら作業コードは 0 / -1 のまま', () => {
+    const data = rosenOccupancy();
+    data.rosen.enableOperation = 0;
+    const dia = data.rosen.diaCont[0];
+    const first = dia?.ressyaCont[0]?.[0]?.ekiJikokuCont[0];
+    if (first === undefined) throw new Error('no slot');
+    first.beforeOperationCont = [
+      { kind: 'out', outJikoku: asSeconds(6 * 3600), inOutLinkCode: '', operationNumbers: ['7'] },
+    ];
+    const frame = buildDiaLayoutFrame(
+      data.rosen,
+      dia?.ressyaCont[0] ?? [],
+      dia?.ressyaCont[1] ?? [],
+    );
+    const occ = deriveOccupancy(
+      data.rosen,
+      dia?.ressyaCont[0] ?? [],
+      dia?.ressyaCont[1] ?? [],
+      frame.ekiLayouts,
+    );
+    expect(occ.kudari[0]?.trackLines[0]?.chakuOperation).toBe(0);
+    expect(occ.kudari[0]?.trackLines[0]?.operationNumber).toBe('');
+  });
+});
