@@ -206,14 +206,10 @@ export function OperationTableCsvExportDialog(props: {
         />
         路線外発着を含む
       </label>
-      {/* 箱ダイヤ形式の CSV は後続タスク。実装まで操作できないようにしておく
-          (原典には disabled 連動が無いので、これは実装状況に伴う一時的な差分)。 */}
       <label className="dialog-check">
         <input
           type="checkbox"
           checked={boxDia}
-          disabled
-          title="箱ダイヤ形式は未実装です"
           onChange={(e) => {
             setBoxDia(e.target.checked);
           }}

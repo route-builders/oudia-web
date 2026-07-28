@@ -130,6 +130,33 @@ describe('buildOperationTableCsv', () => {
   });
 });
 
+describe('buildOperationTableCsv(箱ダイヤ形式)', () => {
+  it('1 列車 = 着 / 線 / 発 の 3 行。記号は文字で表す(原典 :2531-2612)', () => {
+    const { dia, rosen } = setup();
+    const table = new Map<string, OperationTableEntry[]>([['5', [entry()]]]);
+    const csv = buildOperationTableCsv({
+      rosen,
+      dia,
+      operationNumbers: ['5'],
+      operationTable: table,
+      options: VIEW_OPTS,
+      boxDia: true,
+    });
+    const lines = csv.replace(/^\ufeff/, '').split('\r\n');
+    expect(lines[0]).toBe('ダイヤA');
+    expect(lines[1]).toBe('');
+    expect(lines[2]).toBe('5');
+    // 項目名行の駅列は駅名。
+    expect(lines[3]).toBe('列車番号,列車種別,E0,E2');
+    // 着行: 出区は ○、終着は着時刻。
+    expect(lines[4]).toContain('　　○　　');
+    // 線行: 下り始発 = 右半分、下り終着 = 左半分。
+    expect(lines[5]).toBe(',,　　　━━,━━　　　');
+    // 発行: 入区は △。
+    expect(lines[6]).toContain('　　△　　');
+  });
+});
+
 describe('buildAllOperationTableCsv', () => {
   it('FileType 行 → ダイヤ名 → 空行 → 項目名行 → データ行', () => {
     const { dia, rosen } = setup();

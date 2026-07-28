@@ -127,6 +127,8 @@ export function AllOperationTableView(props: {
         dia,
         operationNumbers: numbers,
         operationTable: filtered,
+        boxDia: settings.boxDia,
+        displayTsuukaEkiJikoku: settings.displayTsuukaEkiJikoku,
         options: {
           displayRessyamei: data.dispProp.displayRessyamei,
           displayTrackName: settings.displayTrackName,

@@ -144,6 +144,22 @@ describe('AllOperationTableView', () => {
   });
 });
 
+describe('OperationTableView(箱ダイヤ形式)', () => {
+  it('[箱ダイヤ形式で表示] で駅=列・列車=行の表に切り替わる', async () => {
+    const { OperationTableView } = await import('./OperationTableView.js');
+    // sample2 の dia0 には出区→入区の 1 本運用が並ぶ。運番 "1" を開く。
+    render(<OperationTableView data={data} diaIndex={0} operationNumber="1" />);
+    await screen.findByText('列車番号');
+    // 従来形式では方向矢印列がある。
+    expect(screen.getAllByText('駅名').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getByLabelText('箱ダイヤ形式で表示'));
+    // 箱ダイヤでは駅名が列見出しになり、従来形式の「駅名」見出しは消える。
+    expect(screen.queryByText('駅名')).toBeNull();
+    expect(screen.getByText('列車番号')).toBeTruthy();
+    expect(screen.getByText('種別')).toBeTruthy();
+  });
+});
+
 describe('InOutLinkCodeListView', () => {
   it('連携コードがなければ案内文を出す', async () => {
     render(<InOutLinkCodeListView data={data} diaIndex={0} />);

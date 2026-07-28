@@ -14,13 +14,16 @@
  *
  * ★運用表 CSV の 1 行目はダイヤ名のみ(FileType 行は原典でコメントアウト、:272-279)。
  * ★運用一覧表 CSV には FileType 行がある。
- * ★箱ダイヤ形式の CSV は別タスク(表示駅リスト構築が必要)。
+ * ★箱ダイヤ形式(options.boxDia)は 1 行 = 3 CSV 行(着 / 線 / 発)で、記号は文字で表す
+ * (原典 :2531-2612)。灰色にできない通過駅時刻には末尾に ASCII の '?' を付ける(:1073 ほか)。
  */
 
 import type { Dia, Rosen } from '@oudia-web/format';
 import { encodeCsvDocument } from '@oudia-web/format';
 import type { OperationTableEntry } from '../operationFull/types.js';
 import type { AllOperationTableViewModel } from '../operationView/allOperationTable.js';
+import type { BoxCell, BoxLineType, BoxSymbol } from '../operationView/boxOperationTable.js';
+import { deriveBoxOperationTableView } from '../operationView/boxOperationTable.js';
 import type {
   OperationTableViewModel,
   OperationTableViewOptions,
@@ -46,6 +49,44 @@ export interface BuildOperationTableCsvParams {
   /** deriveOperationFull の operationTable。 */
   readonly operationTable: ReadonlyMap<string, readonly OperationTableEntry[]>;
   readonly options: OperationTableViewOptions;
+  /** [箱ダイヤ形式で表示する]。既定 false。 */
+  readonly boxDia?: boolean;
+  /** [通過駅の駅時刻を表示する(箱ダイヤ時のみ)]。既定 false。 */
+  readonly displayTsuukaEkiJikoku?: boolean;
+}
+
+/** 線行の文字表現(原典 :2533-2545)。 */
+const BOX_LINE_TEXT: Readonly<Record<BoxLineType, string>> = {
+  none: '',
+  full: '━━━━━',
+  right: '　　　━━',
+  left: '━━　　　',
+  dash: '・・・・・',
+};
+
+/** 着 / 発セルの記号の文字表現(原典 :2547-2566)。記号があるときは時刻を**置き換える**。 */
+const BOX_SYMBOL_TEXT: Readonly<Record<BoxSymbol, string>> = {
+  none: '',
+  vline: '　　┃　　',
+  circle: '　　○　　',
+  triangle: '　　△　　',
+};
+
+/** 通過駅時刻の印(原典 :1073 ほか。GUI の灰色に対応する ASCII の '?')。 */
+function boxJikokuText(text: string, gray: boolean): string {
+  return text === '' || !gray ? text : `${text}?`;
+}
+
+function boxChakuText(cell: BoxCell | null): string {
+  if (cell === null) return '';
+  if (cell.chakuSymbol !== 'none') return BOX_SYMBOL_TEXT[cell.chakuSymbol];
+  return boxJikokuText(cell.chaku, cell.chakuGray);
+}
+
+function boxHatsuText(cell: BoxCell | null): string {
+  if (cell === null) return '';
+  if (cell.hatsuSymbol !== 'none') return BOX_SYMBOL_TEXT[cell.hatsuSymbol];
+  return boxJikokuText(cell.hatsu, cell.hatsuGray);
 }
 
 /**
@@ -65,6 +106,50 @@ export function buildOperationTableCsv(params: BuildOperationTableCsvParams): st
   for (const operationNumber of operationNumbers) {
     const entries = operationTable.get(operationNumber) ?? [];
     if (entries.length === 0) continue;
+
+    if (params.boxDia === true) {
+      const box = deriveBoxOperationTableView(dia, rosen, operationNumber, entries, {
+        displayRessyamei: options.displayRessyamei,
+        displayTrackName: options.displayTrackName,
+        displayParentSyubetsu: options.displayParentSyubetsu,
+        displayTsuukaEkiJikoku: params.displayTsuukaEkiJikoku === true,
+        conv: options.conv,
+      });
+      rows.push([]);
+      rows.push([operationNumber]);
+      // 項目名行。駅列は駅名(路線外スロットは空文字。原典 :647-658)。
+      const boxHeader: string[] = [WORD_RESSYABANGOU, WORD_RESSYASYUBETSU];
+      if (showRessyamei) boxHeader.push(WORD_RESSYAMEI, WORD_GOUSUU, '');
+      boxHeader.push(...box.headers);
+      rows.push(boxHeader);
+      // 1 列車 = 着 / 線 / 発 の 3 CSV 行(原典 :2569-2612)。
+      for (const row of box.rows) {
+        const label = (v: string): string => (row.isContinue ? '↓' : v);
+        const lead = (first: string, second: string): string[] => {
+          const c = [first, second];
+          if (showRessyamei) {
+            const [mei, gou] = splitRessyameiGousuu(row.ressyamei);
+            c.push(
+              row.isContinue ? '↓' : mei,
+              row.isContinue ? '' : gou,
+              gou === '' || row.isContinue ? '' : '号',
+            );
+          }
+          return c;
+        };
+        rows.push([
+          ...lead(label(row.ressyabangou), label(row.syubetsumei)),
+          ...row.cells.map(boxChakuText),
+        ]);
+        rows.push([
+          ...lead('', ''),
+          ...row.cells.map((c) => (c === null ? '' : BOX_LINE_TEXT[c.line])),
+        ]);
+        rows.push([...lead('', ''), ...row.cells.map(boxHatsuText)]);
+      }
+      continue;
+    }
+
     const vm: OperationTableViewModel = deriveOperationTableView(
       dia,
       rosen,

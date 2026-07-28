@@ -10,6 +10,7 @@
 
 import {
   buildOperationTableCsv,
+  deriveBoxOperationTableView,
   deriveOperationTableView,
   OPERATION_TABLE_HEADER,
 } from '@oudia-web/derive';
@@ -18,6 +19,7 @@ import { useMemo, useState } from 'react';
 import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
+import { BoxOperationTable } from './BoxOperationTable.js';
 import {
   OperationSearchControls,
   operationRefreshKeyProps,
@@ -33,6 +35,10 @@ export function OperationTableView(props: {
   const openView = useDocStore((s) => s.openView);
   const [displayTrackName, setDisplayTrackName] = useState(false);
   const [noboriLeftToRight, setNoboriLeftToRight] = useState(false);
+  // [箱ダイヤ形式で表示する](原典 m_bDisplayExtensionOperationTable)。既定 false。
+  const [boxDia, setBoxDia] = useState(false);
+  // [通過駅の駅時刻を表示する(箱ダイヤ時のみ)](原典 m_bDisplayTsuukaEkiJikoku)。
+  const [displayTsuukaEkiJikoku, setDisplayTsuukaEkiJikoku] = useState(false);
   const [paused, setPaused] = useState(false);
   const [manualKey, setManualKey] = useState(0);
 
@@ -56,6 +62,24 @@ export function OperationTableView(props: {
       },
     });
   }, [dia, data, search.result, operationNumber, displayTrackName, noboriLeftToRight]);
+
+  const boxVm = useMemo(() => {
+    if (!boxDia || dia === undefined || search.result === null) return null;
+    const entries = search.result.operationTable.get(operationNumber) ?? [];
+    return deriveBoxOperationTableView(dia, data.rosen, operationNumber, entries, {
+      displayRessyamei: data.dispProp.displayRessyamei,
+      displayTrackName,
+      displayParentSyubetsu: false,
+      displayTsuukaEkiJikoku,
+      conv: {
+        noColon: false,
+        outputSecond: false,
+        secondRoundChaku: data.dispProp.secondRoundChaku,
+        secondRoundHatsu: data.dispProp.secondRoundHatsu,
+        display2400: data.dispProp.display2400,
+      },
+    });
+  }, [boxDia, dia, data, search.result, operationNumber, displayTrackName, displayTsuukaEkiJikoku]);
 
   if (data.rosen.enableOperation < 2) {
     return (
@@ -88,12 +112,33 @@ export function OperationTableView(props: {
         <label>
           <input
             type="checkbox"
+            checked={boxDia}
+            onChange={(e) => {
+              setBoxDia(e.target.checked);
+            }}
+          />
+          箱ダイヤ形式で表示
+        </label>
+        {/* 原典どおり、この 2 つは対応する形式のときだけ効く。 */}
+        <label>
+          <input
+            type="checkbox"
             checked={noboriLeftToRight}
             onChange={(e) => {
               setNoboriLeftToRight(e.target.checked);
             }}
           />
-          上り始発駅を左に
+          上り始発駅を左に(従来形式時のみ)
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={displayTsuukaEkiJikoku}
+            onChange={(e) => {
+              setDisplayTsuukaEkiJikoku(e.target.checked);
+            }}
+          />
+          通過駅時刻を表示(箱ダイヤ時のみ)
         </label>
         <button
           type="button"
@@ -147,7 +192,16 @@ export function OperationTableView(props: {
       {placeholder === null && vm !== null && vm.rows.length === 0 && (
         <div className="view-error">運用番号「{operationNumber}」の運用がありません。</div>
       )}
-      {placeholder === null && vm !== null && vm.rows.length > 0 && (
+      {placeholder === null && boxVm !== null && boxVm.rows.length > 0 && (
+        <BoxOperationTable
+          vm={boxVm}
+          displayRessyamei={data.dispProp.displayRessyamei}
+          onOpenTimetable={(houkou) => {
+            openView({ type: 'timetable', diaIndex, houkou });
+          }}
+        />
+      )}
+      {placeholder === null && !boxDia && vm !== null && vm.rows.length > 0 && (
         <table className="operation-table-grid">
           <thead>
             <tr>

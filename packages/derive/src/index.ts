@@ -233,6 +233,22 @@ export {
   countRessyaInOperation,
   deriveAllOperationTable,
 } from './operationView/allOperationTable.js';
+// ---- 運用表の箱ダイヤ形式ビューモデル(M7e)----
+export type {
+  BoxCell,
+  BoxColumn,
+  BoxLineType,
+  BoxOperationTableOptions,
+  BoxOperationTableViewModel,
+  BoxRow,
+  BoxSymbol,
+  CombinedBoxRow,
+} from './operationView/boxOperationTable.js';
+export {
+  buildBoxOperationTableColumns,
+  combineBoxOperationTableRows,
+  deriveBoxOperationTableView,
+} from './operationView/boxOperationTable.js';
 // ---- 入出区連携コード一覧ビューモデル(M7d)----
 export type {
   InOutLinkCodeListColumn,

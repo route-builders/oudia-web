@@ -9,7 +9,7 @@
  * CentDedRessya.cpp:358-640)。すべて駅Order(方向基準)で扱う。
  */
 
-import type { EkiJikoku, Ressya } from '@oudia-web/format';
+import type { EkiJikoku, Jikoku, Ressya } from '@oudia-web/format';
 
 /**
  * 駅Order の駅時刻を取得する(原典 getCentDedEkiJikoku。CentDedRessya.cpp:236)。
@@ -157,4 +157,46 @@ export function getRunBetweenEkiBackward(ressya: Ressya, fromOrder: number): num
     if (isRunBetweenNextEki(ressya, i)) return i + 1;
   }
   return -1;
+}
+
+/**
+ * 「入換着時刻を当駅の着時刻とみなして表示する」を考慮した着時刻(原典
+ * CentDedEkiJikoku::getVirtualChakujikoku、CentDedEkiJikoku.cpp:203-232)。
+ *
+ * 着時刻が null ならそのまま null。そうでなければ前作業列を**末尾から**辿り、
+ * 「番線が現在の在線番線と違う入換」を探す(同一番線への入換は無効扱いで読み飛ばす)。
+ * 見つかった入換が「着時刻を表示する」なら**その入換着時刻**を当駅の着時刻として返す。
+ * 表示しない設定なら在線番線をその入換元へ更新して探索を続ける。
+ */
+export function getVirtualChakuJikoku(slot: EkiJikoku): Jikoku {
+  if (slot.chakuJikoku === null) return null;
+  let track = slot.ressyaTrackIndex;
+  for (let idx = slot.beforeOperationCont.length - 1; idx >= 0; idx--) {
+    const op = slot.beforeOperationCont[idx];
+    if (op === undefined || op.kind !== 'shunt') continue;
+    if (track === op.shuntTrackIndex) continue; // 同一番線からの入換は無効
+    if (op.displayJikoku) {
+      // 原典 getOperationChakuJikoku(true) = 入換着時刻、null なら入換発時刻。
+      return op.shuntChakuJikoku ?? op.shuntHatsuJikoku;
+    }
+    track = op.shuntTrackIndex;
+  }
+  return slot.chakuJikoku;
+}
+
+/**
+ * 「入換発時刻を当駅の発時刻とみなして表示する」を考慮した発時刻(原典
+ * getVirtualHatsujikoku、CentDedEkiJikoku.cpp:259-288)。着側と対称だが、
+ * 後作業列は**先頭から**辿る。
+ */
+export function getVirtualHatsuJikoku(slot: EkiJikoku): Jikoku {
+  if (slot.hatsuJikoku === null) return null;
+  let track = slot.ressyaTrackIndex;
+  for (const op of slot.afterOperationCont) {
+    if (op.kind !== 'shunt') continue;
+    if (track === op.shuntTrackIndex) continue;
+    if (op.displayJikoku) return op.shuntHatsuJikoku;
+    track = op.shuntTrackIndex;
+  }
+  return slot.hatsuJikoku;
 }

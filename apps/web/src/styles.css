@@ -959,3 +959,74 @@ body {
   right: 0;
   color: #666;
 }
+
+/* ---- 運用表 箱ダイヤ形式(原典 CWndDcdGridOperationTable の Extension 経路)---- */
+/* 1 列車 = 着行 / 線行(3px)/ 発行 の 3 段。着行・線行の下に横罫線を引かないことで
+   1 行が 1 つの「箱」に見える(原典 :1055-1090 の NULLPEN 化)。 */
+.box-operation-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.box-operation-table th,
+.box-operation-table td {
+  padding: 0 4px;
+  text-align: center;
+}
+.box-operation-table thead th {
+  border-bottom: 1px solid #999;
+  background: #f4f4f4;
+  font-weight: normal;
+}
+.box-operation-table tbody th {
+  border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  font-weight: normal;
+  text-align: left;
+}
+/* 発行の下だけ細線。着行・線行の下は引かない(= 箱)。 */
+.box-operation-table .box-tr-hatsu td {
+  border-bottom: 1px solid #ccc;
+}
+.box-operation-table .box-chaku,
+.box-operation-table .box-hatsu {
+  position: relative;
+  height: 15px;
+  min-width: 40px;
+}
+/* 通過(運転停車)駅の時刻は灰色。括弧は付けない(原典 CdColorProp(128,128,128))。 */
+.box-operation-table .tsuuka {
+  color: #808080;
+}
+.box-operation-table .box-line-cell {
+  position: relative;
+  height: 3px;
+  padding: 0;
+}
+.box-operation-table .box-line {
+  position: absolute;
+  top: 0;
+  height: 3px;
+}
+/* 縦線は幅 3px でセル中央(原典 VerticalLine)。 */
+.box-operation-table .box-vline {
+  position: absolute;
+  left: calc(50% - 1px);
+  top: 0;
+  width: 3px;
+  height: 100%;
+}
+/* ○ / △ はセル高の 0.8 倍。○ は下端、△ は上端が線行に接する。 */
+.box-operation-table .box-mark {
+  position: absolute;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%);
+}
+.box-operation-table .box-mark-circle {
+  bottom: 0;
+}
+.box-operation-table .box-mark-triangle {
+  top: 0;
+}
