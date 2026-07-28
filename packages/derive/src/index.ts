@@ -34,6 +34,16 @@ export type {
   EkiTimetableCsvOptions,
 } from './csv/ekiTimetableCsv.js';
 export { buildEkiTimetableCsv } from './csv/ekiTimetableCsv.js';
+// ---- 運用表 CSV / 運用一覧表 CSV(M7d)----
+export type {
+  BuildAllOperationTableCsvParams,
+  BuildOperationTableCsvParams,
+} from './csv/operationCsv.js';
+export {
+  ALL_OPERATION_TABLE_CSV_FILETYPE,
+  buildAllOperationTableCsv,
+  buildOperationTableCsv,
+} from './csv/operationCsv.js';
 export type {
   BuildTimetableCsvParams,
   BuildTimetableCsvResult,

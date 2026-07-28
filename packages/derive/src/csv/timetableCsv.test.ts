@@ -49,7 +49,7 @@ describe('buildTimetableCsv(実ファイル sample2 スナップショット)', 
     if (r.ok) expect(r.csv).toMatchSnapshot();
   });
 
-  it('先頭が FileType 行、末尾が LF、CRLF/BOM なし', () => {
+  it('BOM 付き UTF-8 + CRLF で FileType 行から始まる(原典 stringToFile と同じ)', () => {
     const data = loadFixture('current/sample2.oud2');
     const r = buildTimetableCsv(data, {
       diaIndex: 0,
@@ -57,10 +57,11 @@ describe('buildTimetableCsv(実ファイル sample2 スナップショット)', 
       options: defaultTimetableCsvOptions(data),
     });
     if (!r.ok) throw new Error('build failed');
-    expect(r.csv.startsWith('FileType,OuDiaSecond.JikokuhyouCsv.2\n')).toBe(true);
-    expect(r.csv.endsWith('\n')).toBe(true);
-    expect(r.csv.includes('\r')).toBe(false);
-    expect(r.csv.startsWith('﻿')).toBe(false);
+    // 原典 vectorToFile.cpp:174-204 の stringToFile("w , ccs=UTF-8")が
+    // UTF-8 BOM を出し、テキストモードが \n を CRLF に変換する。
+    expect(r.csv.startsWith('﻿')).toBe(true);
+    expect(r.csv.startsWith('﻿FileType,OuDiaSecond.JikokuhyouCsv.2\r\n')).toBe(true);
+    expect(r.csv.endsWith('\r\n')).toBe(true);
   });
 
   it('不正な diaIndex は -1', () => {

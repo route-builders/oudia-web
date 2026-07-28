@@ -8,9 +8,14 @@
  * 箱ダイヤ形式は別レンダラ(後続タスク)。
  */
 
-import { deriveOperationTableView, OPERATION_TABLE_HEADER } from '@oudia-web/derive';
+import {
+  buildOperationTableCsv,
+  deriveOperationTableView,
+  OPERATION_TABLE_HEADER,
+} from '@oudia-web/derive';
 import type { RosenFileData } from '@oudia-web/format';
 import { useMemo, useState } from 'react';
+import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
 
@@ -110,6 +115,36 @@ export function OperationTableView(props: {
           }}
         >
           更新(F5)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            if (search.result === null) return;
+            downloadCsv(
+              buildOperationTableCsv({
+                rosen: data.rosen,
+                dia,
+                operationNumbers: [operationNumber],
+                operationTable: search.result.operationTable,
+                options: {
+                  displayRessyamei: data.dispProp.displayRessyamei,
+                  displayTrackName,
+                  displayParentSyubetsu: false,
+                  displayNoboriLeftToRight: noboriLeftToRight,
+                  conv: {
+                    noColon: false,
+                    outputSecond: false,
+                    secondRoundChaku: data.dispProp.secondRoundChaku,
+                    secondRoundHatsu: data.dispProp.secondRoundHatsu,
+                    display2400: data.dispProp.display2400,
+                  },
+                },
+              }),
+              `${dia.name}_運用表_${operationNumber}.csv`,
+            );
+          }}
+        >
+          CSV 出力
         </button>
       </div>
       <table className="operation-table-grid">

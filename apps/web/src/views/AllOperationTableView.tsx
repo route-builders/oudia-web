@@ -12,10 +12,11 @@
  */
 
 import type { AllOperationTableRow, OperationSort } from '@oudia-web/derive';
-import { deriveAllOperationTable } from '@oudia-web/derive';
+import { buildAllOperationTableCsv, deriveAllOperationTable } from '@oudia-web/derive';
 import { deriveBrunchLoopMap } from '@oudia-web/domain';
 import type { RosenFileData } from '@oudia-web/format';
 import { useMemo, useState } from 'react';
+import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
 
@@ -148,6 +149,22 @@ export function AllOperationTableView(props: {
           }}
         >
           更新(F5)
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            downloadCsv(
+              buildAllOperationTableCsv({
+                dia,
+                viewModel: vm,
+                displayRessyamei: data.dispProp.displayRessyamei,
+                displayAllRessya,
+              }),
+              `${dia.name}_運用一覧表.csv`,
+            );
+          }}
+        >
+          CSV 出力
         </button>
         {paused && <span className="stale-note">一時停止中</span>}
       </div>
