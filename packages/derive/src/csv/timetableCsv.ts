@@ -227,7 +227,9 @@ export function buildTimetableCsv(
     appendRessya(ressya);
   }
 
-  return { ok: true, csv: encodeCsvDocument(rows) };
+  // 原典も時刻表 CSV を stringToFile(_tfopen_s "w , ccs=UTF-8")で書き出すため
+  // UTF-8 BOM + CRLF になる(vectorToFile.cpp:174-204)。駅時刻表 CSV と同じ指定。
+  return { ok: true, csv: encodeCsvDocument(rows, { lineEnding: '\r\n', bom: true }) };
 
   function appendRessya(ressya: Ressya): void {
     if (ressya.isNull) {
