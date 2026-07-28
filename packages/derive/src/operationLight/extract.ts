@@ -30,7 +30,7 @@
  * 周期複製(m_iPatternDiagramPreviewCycleSecond>0)・運用番号変更(collectNumberChange=false)。
  */
 
-import type { AfterOperation, BeforeOperation, Jikoku } from '@oudia-web/format';
+import type { AfterOperation, BeforeOperation, Jikoku, Ressya } from '@oudia-web/format';
 import type { Houkou, OperationElementLight, OpRef, RessyaElement } from './types.js';
 
 /**
@@ -72,6 +72,12 @@ export interface ExpandContext {
   readonly collectNumberChange?: boolean;
   /** 運用番号変更 seed に刻む当駅時刻(collectNumberChange のときのみ使う)。 */
   readonly numberChangeJikoku?: Jikoku;
+  /**
+   * 通過駅の路線外始発/終着で当駅着(発)時刻が NULL のとき、路線外作業以外を無効にする
+   * (原典 bTsuukaOuterJikokuNull、:919/:1227/:4295/:4695)。true なら中間の増解結・運番変更を
+   * 一切拾わない(先頭/末尾の作業だけを残す)。
+   */
+  readonly skipMiddle?: boolean;
 }
 
 /** 親のパス組(探索パス / union 実パス)。トップレベルは両方とも空配列。 */
@@ -218,8 +224,9 @@ export function searchBeforeOperationElementLight(
   }
 
   // 中間の増解結・運番変更(idxb=1..size-1、原典 :5975-6043 / Full :5766-5856)。
+  // 通過駅 × 路線外始発 × 当駅着時刻 NULL では走査ごとスキップ(原典 :929 の for 条件)。
   let iLevelAdd = 1;
-  for (let idxb = 1; idxb < cont.length; idxb++) {
+  for (let idxb = 1; idxb < cont.length && !(ctx.skipMiddle ?? false); idxb++) {
     const op = cont[idxb];
     if (op === undefined) continue;
     if (op.kind === 'connect') {
@@ -280,8 +287,9 @@ export function searchAfterOperationElementLight(
   const last = cont[lastIdx];
 
   // 中間の増解結・運番変更(idxa=0..size-2、原典 :6279 / Full :6067)。
+  // 通過駅 × 路線外終着 × 当駅発時刻 NULL では走査ごとスキップ(原典 :1305/:4790 の for 条件)。
   let iLevelAdd = 0;
-  for (let idxa = 0; idxa < lastIdx; idxa++) {
+  for (let idxa = 0; idxa < lastIdx && !(ctx.skipMiddle ?? false); idxa++) {
     const op = cont[idxa];
     if (op === undefined) continue;
     if (op.kind === 'connect') {
@@ -333,7 +341,8 @@ export function searchAfterOperationElementLight(
         if (op === undefined) continue;
         if (op.kind === 'shunt') {
           if (trackIndex !== op.shuntTrackIndex) {
-            terminalJikoku = op.shuntHatsuJikoku;
+            // 原典 getOperationChakuJikoku(true) = 入換着時刻、NULL なら入換発時刻(:6199)。
+            terminalJikoku = op.shuntChakuJikoku ?? op.shuntHatsuJikoku;
             trackIndex = op.shuntTrackIndex;
           }
         } else if (op.kind === 'connect') {
@@ -508,4 +517,145 @@ function forwardShuntTrackAfter(
     if (op?.kind === 'shunt') track = op.shuntTrackIndex;
   }
   return track;
+}
+
+// ---- 1 列車ぶんの全駅走査(Light / Full 共通。原典 STEP1 の駅ループ)----
+
+/** 1 段(駅 × 前作業/後作業)の展開結果と、その段が消費した探索トップ桁数。 */
+export interface TrainStage {
+  readonly result: ExpandResult;
+  readonly topCount: number;
+}
+
+/** 探索トップ桁(iLevel[0])の最大値 + 1 = その段の消費数。 */
+export function countTopLevel(elements: readonly OperationElementLight[]): number {
+  let max = -1;
+  for (const el of elements) {
+    if (el.iLevel.length >= 1) max = Math.max(max, el.iLevel[0] ?? 0);
+  }
+  return max + 1;
+}
+
+/**
+ * 1 列車の作業を原典 STEP1 と同じ順序・同じ範囲で展開する
+ * (原典 Light :790-1330 / Full :4114-5053)。
+ *
+ * 順序 = 始発駅前作業 → 始発駅後作業 → 中間駅(前 → 後)× n → 終着駅前作業 → 終着駅後作業。
+ * 先頭(出区/路線外始発/前列車接続)は始発駅の前作業列だけ、末尾(入区/路線外終着/次列車接続)は
+ * 終着駅の後作業列だけが特別扱いされる。通過駅 × 路線外 × 時刻 NULL のガードもここで効かせる。
+ *
+ * @param collectNumberChange Full は true(運用番号変更も作業要素にする)、Light は false
+ */
+export function walkTrainOperations(
+  ressya: Ressya,
+  ressyaIndex: number,
+  houkou: Houkou,
+  sihatsu: number,
+  syuuchaku: number,
+  ekiOrderTable: readonly (readonly number[])[],
+  collectNumberChange: boolean,
+): TrainStage[] {
+  const stages: TrainStage[] = [];
+  const push = (result: ExpandResult): void => {
+    stages.push({ result, topCount: countTopLevel(result.elements) });
+  };
+  const trackOf = (ekiOrder: number): number =>
+    ressya.ekiJikokuCont[ekiOrder]?.ressyaTrackIndex ?? 0;
+  const ctxOf = (ekiOrder: number, ncJikoku: Jikoku, skipMiddle: boolean): ExpandContext => ({
+    houkou,
+    ressyaIndex,
+    ekiOrder,
+    ekiIndexOfExist: ekiOrderTable[ekiOrder]?.[houkou] ?? ekiOrder,
+    collectNumberChange,
+    numberChangeJikoku: ncJikoku,
+    skipMiddle,
+  });
+
+  const sihatsuSlot = ressya.ekiJikokuCont[sihatsu];
+  const syuuchakuSlot = ressya.ekiJikokuCont[syuuchaku];
+
+  // 始発駅(原典 :4114-4479)。通過 × 路線外始発 × 当駅着時刻 NULL なら路線外作業以外は無効。
+  if (sihatsuSlot !== undefined) {
+    const first = sihatsuSlot.beforeOperationCont[0];
+    const skip =
+      sihatsuSlot.ekiatsukai === 'tsuuka' && first?.kind === 'outer' && first.chakuJikoku === null;
+    if (sihatsuSlot.beforeOperationCont.length > 0) {
+      push(
+        searchBeforeOperationElementLight(
+          sihatsuSlot.beforeOperationCont,
+          sihatsuSlot.hatsuJikoku,
+          ROOT_LEVEL,
+          trackOf(sihatsu),
+          ctxOf(sihatsu, sihatsuSlot.hatsuJikoku, skip),
+        ),
+      );
+    }
+    if (!skip && sihatsuSlot.afterOperationCont.length > 0) {
+      push(
+        expandStationAfter(
+          sihatsuSlot.afterOperationCont,
+          ROOT_LEVEL,
+          trackOf(sihatsu),
+          ctxOf(sihatsu, sihatsuSlot.hatsuJikoku, false),
+        ),
+      );
+    }
+  }
+
+  // 中間駅(原典 :4487-4677)。前作業 → 後作業の順。ガードはない。
+  for (let ekiOrder = sihatsu + 1; ekiOrder < syuuchaku; ekiOrder++) {
+    const slot = ressya.ekiJikokuCont[ekiOrder];
+    if (slot === undefined) continue;
+    if (slot.beforeOperationCont.length > 0) {
+      push(
+        expandStationBefore(
+          slot.beforeOperationCont,
+          ROOT_LEVEL,
+          trackOf(ekiOrder),
+          ctxOf(ekiOrder, slot.chakuJikoku, false),
+        ),
+      );
+    }
+    if (slot.afterOperationCont.length > 0) {
+      push(
+        expandStationAfter(
+          slot.afterOperationCont,
+          ROOT_LEVEL,
+          trackOf(ekiOrder),
+          ctxOf(ekiOrder, slot.hatsuJikoku, false),
+        ),
+      );
+    }
+  }
+
+  // 終着駅(原典 :4681-5053)。通過 × 路線外終着 × 当駅発時刻 NULL なら路線外作業以外は無効。
+  if (syuuchakuSlot !== undefined) {
+    const cont = syuuchakuSlot.afterOperationCont;
+    const last = cont[cont.length - 1];
+    const skip =
+      syuuchakuSlot.ekiatsukai === 'tsuuka' && last?.kind === 'outer' && last.hatsuJikoku === null;
+    if (!skip && syuuchakuSlot.beforeOperationCont.length > 0) {
+      push(
+        expandStationBefore(
+          syuuchakuSlot.beforeOperationCont,
+          ROOT_LEVEL,
+          trackOf(syuuchaku),
+          ctxOf(syuuchaku, syuuchakuSlot.chakuJikoku, false),
+        ),
+      );
+    }
+    if (cont.length > 0) {
+      push(
+        searchAfterOperationElementLight(
+          cont,
+          syuuchakuSlot.chakuJikoku,
+          ROOT_LEVEL,
+          trackOf(syuuchaku),
+          ctxOf(syuuchaku, syuuchakuSlot.chakuJikoku, skip),
+        ),
+      );
+    }
+  }
+
+  return stages;
 }

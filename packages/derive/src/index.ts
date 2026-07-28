@@ -127,13 +127,20 @@ export type {
   OccupancyBuild,
 } from './operationLight/deriveOperationLight.js';
 export { buildOccupancy, deriveOperationLight } from './operationLight/deriveOperationLight.js';
-export type { ExpandContext, ExpandResult, LevelParent } from './operationLight/extract.js';
+export type {
+  ExpandContext,
+  ExpandResult,
+  LevelParent,
+  TrainStage,
+} from './operationLight/extract.js';
 export {
+  countTopLevel,
   expandStationAfter,
   expandStationBefore,
   ROOT_LEVEL,
   searchAfterOperationElementLight,
   searchBeforeOperationElementLight,
+  walkTrainOperations,
 } from './operationLight/extract.js';
 // ---- Light 運用探索(占有エンジン。M7b Light PR1)----
 export {

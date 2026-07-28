@@ -19,21 +19,14 @@
  */
 
 import { getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia-web/domain';
-import type { BeforeOperation, Dia, Eki, Jikoku, Ressya } from '@oudia-web/format';
+import type { BeforeOperation, Dia, Eki, Jikoku } from '@oudia-web/format';
 import {
   applyConnectMoveList,
   applyReleaseMoveList,
   emptyMoveList,
 } from '../operationLight/chains.js';
 import { buildInitialChains, computeHidden } from '../operationLight/deriveOperationLight.js';
-import type { ExpandContext, ExpandResult } from '../operationLight/extract.js';
-import {
-  expandStationAfter,
-  expandStationBefore,
-  ROOT_LEVEL,
-  searchAfterOperationElementLight,
-  searchBeforeOperationElementLight,
-} from '../operationLight/extract.js';
+import { walkTrainOperations } from '../operationLight/extract.js';
 import {
   buildEkiOrderTable,
   insertRessyaElement,
@@ -69,17 +62,6 @@ import type {
   TreeNode,
 } from './types.js';
 
-function slotTrackIndex(ressya: Ressya, ekiOrder: number): number {
-  return ressya.ekiJikokuCont[ekiOrder]?.ressyaTrackIndex ?? 0;
-}
-
-/** 1 駅ぶんの展開結果とその探索桁数(トップ桁の消費量)。 */
-interface StagePart {
-  readonly result: ExpandResult;
-  /** この段が消費したトップ桁数(次段のオフセット)。 */
-  readonly topCount: number;
-}
-
 /**
  * SETUP + STEP1(原典 :3901-5058)。占有格子を構築し、各列車の作業要素ツリーと seed を収集する。
  * 占有登録ロジックは Light(buildOccupancy)と同一で、運用番号変更を含まない路線では
@@ -112,7 +94,15 @@ export function buildFullState(
       const syuuchaku = getValidSyuuchakuEki(ressya);
       if (sihatsu < 0 || syuuchaku < 0 || sihatsu >= syuuchaku) return;
 
-      const parts = buildTrainParts(ressya, ressyaIndex, houkou, sihatsu, syuuchaku, table);
+      const parts = walkTrainOperations(
+        ressya,
+        ressyaIndex,
+        houkou,
+        sihatsu,
+        syuuchaku,
+        table,
+        true,
+      );
 
       // 段を順に連結し、トップ桁を列車全体の連番へ寄せる(原典 iLevelAdd)。
       const nodes: TreeNode[] = [];
@@ -191,120 +181,6 @@ export function buildFullState(
     inOutLinks,
     chains,
   };
-}
-
-/**
- * 1 列車の作業ツリーを段(駅 × 前作業/後作業)に分けて展開する(原典 STEP1 :4114-4900)。
- * 順序 = 始発駅前作業 → 始発駅後作業 → 中間駅(前 → 後)× n → 終着駅前作業 → 終着駅後作業。
- */
-function buildTrainParts(
-  ressya: Ressya,
-  ressyaIndex: number,
-  houkou: Houkou,
-  sihatsu: number,
-  syuuchaku: number,
-  table: number[][],
-): StagePart[] {
-  const parts: StagePart[] = [];
-  const ctxOf = (ekiOrder: number, ncJikoku: Jikoku): ExpandContext => ({
-    houkou,
-    ressyaIndex,
-    ekiOrder,
-    ekiIndexOfExist: table[ekiOrder]?.[houkou] ?? ekiOrder,
-    collectNumberChange: true,
-    numberChangeJikoku: ncJikoku,
-  });
-  const push = (result: ExpandResult): void => {
-    parts.push({ result, topCount: countTopLevel(result.elements) });
-  };
-
-  const sihatsuSlot = ressya.ekiJikokuCont[sihatsu];
-  const syuuchakuSlot = ressya.ekiJikokuCont[syuuchaku];
-
-  // 始発駅: 前作業列(先頭 = 出区/路線外始発/前列車接続)。運番変更 seed の時刻は当駅発時刻。
-  if (sihatsuSlot !== undefined && sihatsuSlot.beforeOperationCont.length > 0) {
-    push(
-      searchBeforeOperationElementLight(
-        sihatsuSlot.beforeOperationCont,
-        sihatsuSlot.hatsuJikoku,
-        ROOT_LEVEL,
-        slotTrackIndex(ressya, sihatsu),
-        ctxOf(sihatsu, sihatsuSlot.hatsuJikoku),
-      ),
-    );
-  }
-  // 始発駅: 後作業列(末尾の特別扱いなし。原典 :4390-4479)。
-  if (sihatsuSlot !== undefined && sihatsuSlot.afterOperationCont.length > 0) {
-    push(
-      expandStationAfter(
-        sihatsuSlot.afterOperationCont,
-        ROOT_LEVEL,
-        slotTrackIndex(ressya, sihatsu),
-        ctxOf(sihatsu, sihatsuSlot.hatsuJikoku),
-      ),
-    );
-  }
-
-  // 中間駅(原典 :4487-4677)。前作業 → 後作業の順。
-  for (let ekiOrder = sihatsu + 1; ekiOrder < syuuchaku; ekiOrder++) {
-    const slot = ressya.ekiJikokuCont[ekiOrder];
-    if (slot === undefined) continue;
-    const track = slotTrackIndex(ressya, ekiOrder);
-    if (slot.beforeOperationCont.length > 0) {
-      push(
-        expandStationBefore(
-          slot.beforeOperationCont,
-          ROOT_LEVEL,
-          track,
-          ctxOf(ekiOrder, slot.chakuJikoku),
-        ),
-      );
-    }
-    if (slot.afterOperationCont.length > 0) {
-      push(
-        expandStationAfter(
-          slot.afterOperationCont,
-          ROOT_LEVEL,
-          track,
-          ctxOf(ekiOrder, slot.hatsuJikoku),
-        ),
-      );
-    }
-  }
-
-  // 終着駅: 前作業列(先頭の特別扱いなし。原典 :4701-4783)→ 後作業列(末尾 = 入区/路線外終着/次列車接続)。
-  if (syuuchakuSlot !== undefined && syuuchakuSlot.beforeOperationCont.length > 0) {
-    push(
-      expandStationBefore(
-        syuuchakuSlot.beforeOperationCont,
-        ROOT_LEVEL,
-        slotTrackIndex(ressya, syuuchaku),
-        ctxOf(syuuchaku, syuuchakuSlot.chakuJikoku),
-      ),
-    );
-  }
-  if (syuuchakuSlot !== undefined && syuuchakuSlot.afterOperationCont.length > 0) {
-    push(
-      searchAfterOperationElementLight(
-        syuuchakuSlot.afterOperationCont,
-        syuuchakuSlot.chakuJikoku,
-        ROOT_LEVEL,
-        slotTrackIndex(ressya, syuuchaku),
-        ctxOf(syuuchaku, syuuchakuSlot.chakuJikoku),
-      ),
-    );
-  }
-
-  return parts;
-}
-
-/** トップレベル(iLevel[0])の最大値 + 1(= トップ桁の消費数)。 */
-function countTopLevel(elements: readonly OperationElementLight[]): number {
-  let max = -1;
-  for (const el of elements) {
-    if (el.iLevel.length >= 1) max = Math.max(max, el.iLevel[0] ?? 0);
-  }
-  return max + 1;
 }
 
 /** iLevel のトップ桁を offset だけずらした新配列(下位桁はそのまま)。 */

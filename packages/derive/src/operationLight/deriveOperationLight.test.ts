@@ -260,3 +260,93 @@ describe('deriveOperationLight(junction 解決 = 次列車接続)', () => {
     expect(res.junctionResult.get(aRef())).toBeUndefined();
   });
 });
+
+describe('buildOccupancy(全駅走査。M7c-2-PR4 の穴埋め)', () => {
+  it('中間駅で解結した編成の次列車接続も占有に載る', () => {
+    const ekiCont = makeEkiCont();
+    // A: E0→E2 走行。中間 E1 の後作業で解結し、解結編成は E1 で次列車接続(終点 8:30)。
+    const a = makeTrain('1M');
+    const a1 = a.ekiJikokuCont[1];
+    if (a1) {
+      a1.afterOperationCont = [
+        {
+          kind: 'release',
+          releasePosition: 0,
+          releaseCount: 1,
+          releaseJikoku: J(8, 10),
+          formationAfterOperationCont: [
+            { kind: 'junction', syuutenJikoku: J(8, 30), junctionType: 'unrelated' },
+          ],
+        },
+      ];
+    }
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a);
+
+    const build = buildOccupancy(dia, ekiCont, OPTS);
+    // E1(index 1)番線 0 に解結編成の次列車接続(afterOp)が載る。
+    const list = build.occupancy[1]?.[0] ?? [];
+    expect(list.some((e) => e.afterOp !== null)).toBe(true);
+    expect(build.junctionSeeds.some((s) => s.ekiIndexOfExist === 1)).toBe(true);
+  });
+
+  it('通過駅 × 路線外始発 × 当駅着時刻 NULL では路線外作業以外を拾わない', () => {
+    const ekiCont = makeEkiCont();
+    const a = makeTrain('1M');
+    const a0 = a.ekiJikokuCont[0];
+    if (a0) {
+      a0.ekiatsukai = 'tsuuka';
+      a0.beforeOperationCont = [
+        {
+          kind: 'outer',
+          outerTerminalIndex: 0,
+          outerHatsuJikoku: J(7, 30),
+          chakuJikoku: null, // ← ガード条件
+          inOutLinkCode: '',
+          operationNumbers: [],
+        },
+        {
+          kind: 'release',
+          releasePosition: 0,
+          releaseCount: 1,
+          releaseJikoku: J(8),
+          formationAfterOperationCont: [
+            { kind: 'junction', syuutenJikoku: J(8, 5), junctionType: 'unrelated' },
+          ],
+        },
+      ];
+    }
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a);
+
+    const build = buildOccupancy(dia, ekiCont, OPTS);
+    // 解結編成の次列車接続は無効 → E0 の占有に何も載らない。
+    expect(build.occupancy[0]?.[0] ?? []).toHaveLength(0);
+    expect(build.junctionSeeds.filter((s) => s.ekiIndexOfExist === 0)).toHaveLength(0);
+  });
+
+  it('入換着時刻があれば接続の終点時刻に使う(なければ入換発時刻)', () => {
+    const ekiCont = makeEkiCont();
+    const a = makeTrain('1M');
+    const a2 = a.ekiJikokuCont[2];
+    if (a2) {
+      a2.afterOperationCont = [
+        {
+          kind: 'shunt',
+          shuntTrackIndex: 1,
+          shuntHatsuJikoku: J(9),
+          shuntChakuJikoku: J(9, 5), // 着時刻が優先される
+          displayJikoku: false,
+        },
+        { kind: 'junction', syuutenJikoku: null, junctionType: 'unrelated' },
+      ];
+    }
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a);
+
+    const build = buildOccupancy(dia, ekiCont, OPTS);
+    const list = build.occupancy[2]?.[1] ?? [];
+    expect(list).toHaveLength(1);
+    expect(list[0]?.jikoku).toBe(J(9, 5));
+  });
+});
