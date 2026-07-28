@@ -19,6 +19,7 @@ import { useMemo, useState } from 'react';
 import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
+import { OperationSearchControls, operationSearchPlaceholder } from './OperationSearchControls.js';
 
 const SORT_LABEL: Readonly<Record<OperationSort, string>> = {
   operationNumber: '運用番号順',
@@ -76,9 +77,7 @@ export function AllOperationTableView(props: {
       </div>
     );
   }
-  if (dia === undefined || vm === null) {
-    return <div className="view-error">運用探索の結果がありません。</div>;
-  }
+  const placeholder = operationSearchPlaceholder(search, dia !== undefined && vm !== null);
 
   const openOperationTable = (operationNumber: string): void => {
     openView({ type: 'operationTable', diaIndex, operationNumber });
@@ -132,27 +131,19 @@ export function AllOperationTableView(props: {
         >
           {graphical ? '表で見る' : '図で見る'}
         </button>
-        <label>
-          <input
-            type="checkbox"
-            checked={paused}
-            onChange={(e) => {
-              setPaused(e.target.checked);
-            }}
-          />
-          運用更新を一時停止
-        </label>
-        <button
-          type="button"
-          onClick={() => {
+        <OperationSearchControls
+          search={search}
+          paused={paused}
+          onPausedChange={setPaused}
+          onRefresh={() => {
             setManualKey((k) => k + 1);
           }}
-        >
-          更新(F5)
-        </button>
+        />
         <button
           type="button"
+          disabled={dia === undefined || vm === null}
           onClick={() => {
+            if (dia === undefined || vm === null) return;
             downloadCsv(
               buildAllOperationTableCsv({
                 dia,
@@ -166,21 +157,21 @@ export function AllOperationTableView(props: {
         >
           CSV 出力
         </button>
-        {paused && <span className="stale-note">一時停止中</span>}
       </div>
-      {graphical ? (
-        <AllOperationGraph
-          rows={vm.rows}
-          kitenJikoku={data.rosen.kitenJikoku}
-          onOpen={openOperationTable}
-        />
-      ) : (
-        <AllOperationGrid
-          rows={vm.rows}
-          displayAllRessya={displayAllRessya}
-          onOpen={openOperationTable}
-        />
-      )}
+      {placeholder ??
+        (vm === null ? null : graphical ? (
+          <AllOperationGraph
+            rows={vm.rows}
+            kitenJikoku={data.rosen.kitenJikoku}
+            onOpen={openOperationTable}
+          />
+        ) : (
+          <AllOperationGrid
+            rows={vm.rows}
+            displayAllRessya={displayAllRessya}
+            onOpen={openOperationTable}
+          />
+        ))}
     </div>
   );
 }

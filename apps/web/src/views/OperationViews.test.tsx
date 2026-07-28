@@ -12,7 +12,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { RosenFileData } from '@oudia-web/format';
 import { parseNodeTree, readRosenFile } from '@oudia-web/format';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { RosenTree } from '../shell/RosenTree.js';
 import { useDocStore } from '../store/docStore.js';
@@ -78,18 +78,26 @@ describe('路線ツリーの運用系導線', () => {
 });
 
 describe('AllOperationTableView', () => {
-  it('運用が並び、並び順を切り替えられる', () => {
+  it('運用が並び、並び順を切り替えられる', async () => {
     render(<AllOperationTableView data={data} diaIndex={0} graphical={false} />);
-    // 見出しが出る = 表レンダラが動いている。
-    expect(screen.getByText('運用番号')).toBeTruthy();
+    // 探索は非同期(Worker / フォールバックとも Promise)なので結果を待つ。
+    expect(await screen.findByText('運用番号')).toBeTruthy();
     expect(screen.getByText('出区駅名')).toBeTruthy();
     const select = screen.getByLabelText<HTMLSelectElement>(/並び順/);
     fireEvent.change(select, { target: { value: 'outJikoku' } });
     expect(select.value).toBe('outJikoku');
   });
 
-  it('図に切り替えると別タブとして開く', () => {
+  it('探索完了前はツールバーだけ出して「運用探索中…」を表示する', () => {
     render(<AllOperationTableView data={data} diaIndex={0} graphical={false} />);
+    // 同期レンダー直後はまだ結果が無い。ツールバーは操作可能なままであること。
+    expect(screen.getByText('運用探索中…')).toBeTruthy();
+    expect(screen.getByLabelText(/並び順/)).toBeTruthy();
+  });
+
+  it('図に切り替えると別タブとして開く', async () => {
+    render(<AllOperationTableView data={data} diaIndex={0} graphical={false} />);
+    await screen.findByText('運用番号');
     fireEvent.click(screen.getByText('図で見る'));
     expect(useDocStore.getState().tabs.some((t) => t.key === 'allOperationTable:0:g')).toBe(true);
   });
@@ -102,8 +110,11 @@ describe('AllOperationTableView', () => {
 });
 
 describe('InOutLinkCodeListView', () => {
-  it('連携コードがなければ案内文を出す', () => {
+  it('連携コードがなければ案内文を出す', async () => {
     render(<InOutLinkCodeListView data={data} diaIndex={0} />);
+    await waitFor(() => {
+      expect(screen.queryByText('運用探索中…')).toBeNull();
+    });
     // sample2 に連携コードがなければ案内、あればヘッダが出る。どちらかであればよい。
     const empty = screen.queryByText(/入出区連携コードが設定された作業がありません/);
     if (empty === null) {

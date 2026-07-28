@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react';
 import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
+import { OperationSearchControls, operationSearchPlaceholder } from './OperationSearchControls.js';
 
 export function OperationTableView(props: {
   data: RosenFileData;
@@ -59,12 +60,7 @@ export function OperationTableView(props: {
       </div>
     );
   }
-  if (dia === undefined || vm === null) {
-    return <div className="view-error">運用探索の結果がありません。</div>;
-  }
-  if (vm.rows.length === 0) {
-    return <div className="view-error">運用番号「{operationNumber}」の運用がありません。</div>;
-  }
+  const placeholder = operationSearchPlaceholder(search, dia !== undefined && vm !== null);
 
   return (
     <div className="operation-table">
@@ -98,28 +94,19 @@ export function OperationTableView(props: {
         >
           運用一覧表へ
         </button>
-        <label>
-          <input
-            type="checkbox"
-            checked={paused}
-            onChange={(e) => {
-              setPaused(e.target.checked);
-            }}
-          />
-          運用更新を一時停止
-        </label>
-        <button
-          type="button"
-          onClick={() => {
+        <OperationSearchControls
+          search={search}
+          paused={paused}
+          onPausedChange={setPaused}
+          onRefresh={() => {
             setManualKey((k) => k + 1);
           }}
-        >
-          更新(F5)
-        </button>
+        />
         <button
           type="button"
+          disabled={search.result === null || dia === undefined}
           onClick={() => {
-            if (search.result === null) return;
+            if (search.result === null || dia === undefined) return;
             downloadCsv(
               buildOperationTableCsv({
                 rosen: data.rosen,
@@ -147,62 +134,68 @@ export function OperationTableView(props: {
           CSV 出力
         </button>
       </div>
-      <table className="operation-table-grid">
-        <thead>
-          <tr>
-            {vm.columns.map((c) => (
-              <th key={c}>{OPERATION_TABLE_HEADER[c]}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {vm.rows.map((row, i) => (
-            <tr
-              key={i}
-              onDoubleClick={() => {
-                openView({ type: 'timetable', diaIndex, houkou: row.houkou });
-              }}
-            >
-              {vm.columns.map((c) => {
-                switch (c) {
-                  case 'ressyabangou':
-                    return <td key={c}>{row.ressyabangou}</td>;
-                  case 'ressyasyubetsu':
-                    return <td key={c}>{row.syubetsumei}</td>;
-                  case 'ressyamei':
-                    return <td key={c}>{row.ressyamei}</td>;
-                  case 'originSideEkimei':
-                    return <td key={c}>{row.originSide.ekimei}</td>;
-                  case 'originSideEkiTrack':
-                    return <td key={c}>{row.originSide.track}</td>;
-                  case 'originSideEkijikoku':
-                    return (
-                      <td key={c} className="jikoku">
-                        {row.originSide.jikokuText}
-                      </td>
-                    );
-                  case 'ressyahoukou':
-                    return (
-                      <td key={c} className="arrow">
-                        {row.houkouArrow}
-                      </td>
-                    );
-                  case 'terminalSideEkimei':
-                    return <td key={c}>{row.terminalSide.ekimei}</td>;
-                  case 'terminalSideEkiTrack':
-                    return <td key={c}>{row.terminalSide.track}</td>;
-                  case 'terminalSideEkijikoku':
-                    return (
-                      <td key={c} className="jikoku">
-                        {row.terminalSide.jikokuText}
-                      </td>
-                    );
-                }
-              })}
+      {placeholder}
+      {placeholder === null && vm !== null && vm.rows.length === 0 && (
+        <div className="view-error">運用番号「{operationNumber}」の運用がありません。</div>
+      )}
+      {placeholder === null && vm !== null && vm.rows.length > 0 && (
+        <table className="operation-table-grid">
+          <thead>
+            <tr>
+              {vm.columns.map((c) => (
+                <th key={c}>{OPERATION_TABLE_HEADER[c]}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {vm.rows.map((row, i) => (
+              <tr
+                key={i}
+                onDoubleClick={() => {
+                  openView({ type: 'timetable', diaIndex, houkou: row.houkou });
+                }}
+              >
+                {vm.columns.map((c) => {
+                  switch (c) {
+                    case 'ressyabangou':
+                      return <td key={c}>{row.ressyabangou}</td>;
+                    case 'ressyasyubetsu':
+                      return <td key={c}>{row.syubetsumei}</td>;
+                    case 'ressyamei':
+                      return <td key={c}>{row.ressyamei}</td>;
+                    case 'originSideEkimei':
+                      return <td key={c}>{row.originSide.ekimei}</td>;
+                    case 'originSideEkiTrack':
+                      return <td key={c}>{row.originSide.track}</td>;
+                    case 'originSideEkijikoku':
+                      return (
+                        <td key={c} className="jikoku">
+                          {row.originSide.jikokuText}
+                        </td>
+                      );
+                    case 'ressyahoukou':
+                      return (
+                        <td key={c} className="arrow">
+                          {row.houkouArrow}
+                        </td>
+                      );
+                    case 'terminalSideEkimei':
+                      return <td key={c}>{row.terminalSide.ekimei}</td>;
+                    case 'terminalSideEkiTrack':
+                      return <td key={c}>{row.terminalSide.track}</td>;
+                    case 'terminalSideEkijikoku':
+                      return (
+                        <td key={c} className="jikoku">
+                          {row.terminalSide.jikokuText}
+                        </td>
+                      );
+                  }
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
     </div>
   );
 }

@@ -17,6 +17,7 @@ import type { RosenFileData } from '@oudia-web/format';
 import { useMemo, useState } from 'react';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
+import { OperationSearchControls, operationSearchPlaceholder } from './OperationSearchControls.js';
 
 export function InOutLinkCodeListView(props: {
   data: RosenFileData;
@@ -41,67 +42,57 @@ export function InOutLinkCodeListView(props: {
       </div>
     );
   }
-  if (dia === undefined || vm === null) {
-    return <div className="view-error">運用探索の結果がありません。</div>;
-  }
-  if (vm.rows.length === 0) {
-    return <div className="view-error">入出区連携コードが設定された作業がありません。</div>;
-  }
+  const placeholder = operationSearchPlaceholder(search, dia !== undefined && vm !== null);
 
   return (
     <div className="inout-link-code-list">
       <div className="view-toolbar">
-        <label>
-          <input
-            type="checkbox"
-            checked={paused}
-            onChange={(e) => {
-              setPaused(e.target.checked);
-            }}
-          />
-          運用更新を一時停止
-        </label>
-        <button
-          type="button"
-          onClick={() => {
+        <OperationSearchControls
+          search={search}
+          paused={paused}
+          onPausedChange={setPaused}
+          onRefresh={() => {
             setManualKey((k) => k + 1);
           }}
-        >
-          更新(F5)
-        </button>
+        />
       </div>
-      <table className="inout-link-grid">
-        <thead>
-          <tr>
-            {IN_OUT_LINK_CODE_LIST_COLUMNS.map((c) => (
-              <th key={c}>{IN_OUT_LINK_CODE_LIST_HEADER[c]}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {vm.rows.map((row, i) => (
-            <tr
-              key={i}
-              onDoubleClick={() => {
-                const target = row.inSide.ressya ?? row.outSide.ressya;
-                if (target !== null) {
-                  openView({ type: 'timetable', diaIndex, houkou: target.houkou });
-                }
-              }}
-            >
-              <td className="code">{row.code}</td>
-              <td>{row.inSide.houkouText}</td>
-              <td>{row.inSide.ressyabangou}</td>
-              <td>{row.inSide.syubetsumei}</td>
-              <td className="arrow">{row.arrow}</td>
-              <td>{row.outSide.houkouText}</td>
-              <td>{row.outSide.ressyabangou}</td>
-              <td>{row.outSide.syubetsumei}</td>
-              <td className="op-number">{row.operationNumber}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {placeholder ??
+        (vm === null || vm.rows.length === 0 ? (
+          <div className="view-error">入出区連携コードが設定された作業がありません。</div>
+        ) : (
+          <table className="inout-link-grid">
+            <thead>
+              <tr>
+                {IN_OUT_LINK_CODE_LIST_COLUMNS.map((c) => (
+                  <th key={c}>{IN_OUT_LINK_CODE_LIST_HEADER[c]}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {vm.rows.map((row, i) => (
+                <tr
+                  key={i}
+                  onDoubleClick={() => {
+                    const target = row.inSide.ressya ?? row.outSide.ressya;
+                    if (target !== null) {
+                      openView({ type: 'timetable', diaIndex, houkou: target.houkou });
+                    }
+                  }}
+                >
+                  <td className="code">{row.code}</td>
+                  <td>{row.inSide.houkouText}</td>
+                  <td>{row.inSide.ressyabangou}</td>
+                  <td>{row.inSide.syubetsumei}</td>
+                  <td className="arrow">{row.arrow}</td>
+                  <td>{row.outSide.houkouText}</td>
+                  <td>{row.outSide.ressyabangou}</td>
+                  <td>{row.outSide.syubetsumei}</td>
+                  <td className="op-number">{row.operationNumber}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ))}
     </div>
   );
 }

@@ -279,6 +279,12 @@ body {
   color: #9c2b2b;
 }
 
+/* 進行中の案内(運用探索中など)。エラーではないので抑えた色。 */
+.view-note {
+  padding: 24px;
+  color: #666;
+}
+
 /* ---- プロパティ編集ダイアログ(design §05 5.1)---- */
 .prop-dialog {
   border: 1px solid #888;
@@ -827,6 +833,9 @@ body {
 }
 .view-toolbar .stale-note {
   color: #b06000;
+}
+.view-toolbar .error-note {
+  color: #9c2b2b;
 }
 .view-toolbar .op-number-title {
   font-weight: bold;
