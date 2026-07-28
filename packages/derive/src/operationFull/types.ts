@@ -66,6 +66,8 @@ export interface FullState {
   readonly beforeJunctionSeeds: TreeNode[];
   /** 運用番号変更(反転を除く。原典 m_contNumberChange)。jikoku は運用表の挿入位置決め用。 */
   readonly numberChangeSeeds: { node: TreeNode; jikoku: Jikoku }[];
+  /** 入出区連携コード一覧(原典 CentDedDia::m_contInOutLinkCodeContent)。STEP1 で確定する。 */
+  readonly inOutLinks: Map<string, InOutLinkCodeEntry>;
   readonly chains: { kudari: CustomizeChainColumn[]; nobori: CustomizeChainColumn[] };
 }
 

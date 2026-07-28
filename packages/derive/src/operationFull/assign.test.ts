@@ -358,3 +358,89 @@ describe('deriveOperationFull(運用表 Map。M7c-2 PR-1)', () => {
     expect(eightyEight[0]?.syuuchakuEkiOrder).toBe(2);
   });
 });
+
+describe('deriveOperationFull(入出区連携コード。M7c-2 PR-2)', () => {
+  /** A: E0 出区(運番 5)→ E1 入区(連携コード X)。B: E1 出区(連携コード X・運番なし)→ E2 入区。 */
+  function makeLinkedDia(codeA: string, codeB: string): { dia: Dia; ekiCont: Eki[] } {
+    const ekiCont = makeEkiCont();
+    const a = createNullRessya(3, 0);
+    a.isNull = false;
+    const a0 = a.ekiJikokuCont[0];
+    const a1 = a.ekiJikokuCont[1];
+    const a2 = a.ekiJikokuCont[2];
+    if (a0) {
+      a0.ekiatsukai = 'teisya';
+      a0.hatsuJikoku = J(8);
+      a0.ressyaTrackIndex = 0;
+      a0.beforeOperationCont = [
+        { kind: 'out', outJikoku: J(7, 50), inOutLinkCode: '', operationNumbers: ['5'] },
+      ];
+    }
+    if (a1) {
+      a1.ekiatsukai = 'teisya';
+      a1.chakuJikoku = J(8, 30);
+      a1.ressyaTrackIndex = 0;
+      a1.afterOperationCont = [{ kind: 'in', inJikoku: J(8, 40), inOutLinkCode: codeA }];
+    }
+    if (a2) a2.ekiatsukai = 'none';
+
+    const b = createNullRessya(3, 0);
+    b.isNull = false;
+    const b0 = b.ekiJikokuCont[0];
+    const b1 = b.ekiJikokuCont[1];
+    const b2 = b.ekiJikokuCont[2];
+    if (b0) b0.ekiatsukai = 'none';
+    if (b1) {
+      b1.ekiatsukai = 'teisya';
+      b1.hatsuJikoku = J(9);
+      b1.ressyaTrackIndex = 1; // 別番線 = 次列車接続では繋がらない
+      b1.beforeOperationCont = [
+        { kind: 'out', outJikoku: J(8, 50), inOutLinkCode: codeB, operationNumbers: [] },
+      ];
+    }
+    if (b2) {
+      b2.ekiatsukai = 'teisya';
+      b2.chakuJikoku = J(9, 30);
+      b2.ressyaTrackIndex = 1;
+      b2.afterOperationCont = [{ kind: 'in', inJikoku: J(9, 40), inOutLinkCode: '' }];
+    }
+
+    const dia: Dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a, b);
+    return { dia, ekiCont };
+  }
+
+  it('コードが 1:1 で成立すると入区側の運番が出区側へ引き継がれる', () => {
+    const { dia, ekiCont } = makeLinkedDia('X', 'X');
+    const res = deriveOperationFull(dia, ekiCont, OPTS);
+
+    const link = res.inOutLinkCodes.get('X');
+    expect(link?.status).toBe(2);
+    expect(link?.operationNumbers).toEqual(['5']);
+
+    // B の出区に運番 5 が引き継がれる(#2 = AssignedByLinkCode)。
+    const bOutKey = opRefKey({
+      houkou: 0,
+      ressyaIndex: 1,
+      ekiOrder: 1,
+      opKind: 'before',
+      iLevel: [0],
+    });
+    expect(res.assignedNumbers.get(bOutKey)).toEqual(['5']);
+
+    // 運用表は A(E0→E1)と B(E1→E2)の 2 区間になる。
+    const list = res.operationTable.get('5') ?? [];
+    expect(list).toHaveLength(2);
+    expect(list[0]?.ressyaProperty.ressyaIndex).toBe(0);
+    expect(list[1]?.ressyaProperty.ressyaIndex).toBe(1);
+  });
+
+  it('コードが一致しなければ引き継がれない(status は 0/1 のまま)', () => {
+    const { dia, ekiCont } = makeLinkedDia('X', 'Y');
+    const res = deriveOperationFull(dia, ekiCont, OPTS);
+    expect(res.inOutLinkCodes.get('X')?.status).toBe(1); // 入区のみ
+    expect(res.inOutLinkCodes.get('Y')?.status).toBe(0); // 出区のみ
+    const list = res.operationTable.get('5') ?? [];
+    expect(list).toHaveLength(1);
+  });
+});

@@ -288,7 +288,8 @@ function handleTerminalOrJunction(
       const temp = [...operationNumber];
       addTable(ctx, ressyaProperty, temp, node.el.ekiOrder, afterOp, ref, 'outIn');
       slots.n1 = temp;
-      // 入出区連携コードによる出区側への引継ぎは M7c-2 PR-2(入出区連携)で扱う。
+      // 入出区連携コードが成立していれば出区側へ運番を引き継ぐ(原典 :6858-7035)。
+      hopByInOutLink(ctx, ressyaProperty, afterOp.inOutLinkCode, ref, temp);
       return;
     }
     if (afterOp.kind === 'outer') {
@@ -296,6 +297,8 @@ function handleTerminalOrJunction(
       const temp = [...operationNumber];
       addTable(ctx, ressyaProperty, temp, node.el.ekiOrder, afterOp, ref, 'outer');
       slots.n1 = temp;
+      // 入出区連携コード(原典 :7191-7385)。In と同じ処理。
+      hopByInOutLink(ctx, ressyaProperty, afterOp.inOutLinkCode, ref, temp);
       return;
     }
     if (afterOp.kind === 'junction') {
@@ -307,6 +310,58 @@ function handleTerminalOrJunction(
   // out / outer(前作業)/ 前列車接続(前作業)/ 入換は運番確定のみ(原典 :6674-6676 で
   // Before Junction の処理は前列車 After Junction 側へ移管済み)。
   slots.n1 = [...operationNumber];
+}
+
+/**
+ * 入出区連携コードによる出区側への運番引継ぎ(原典 In :6858-7035 / 路線外終着 :7191-7385)。
+ * iStatus==2(1:1 ペア成立)のときだけ働き、相手の出区・路線外始発から探索を続ける。
+ */
+function hopByInOutLink(
+  ctx: AssignContext,
+  ressyaProperty: RessyaPropertyRef,
+  code: string,
+  afterRef: OpRef,
+  numbers: string[],
+): void {
+  if (code === '') return;
+  const link = ctx.state.inOutLinks.get(code);
+  if (link === undefined || link.status !== 2) return;
+  const nextRef = link.beforeOperation;
+  const nextProp = link.outRessyaProperties[0];
+  if (nextRef === null || nextProp === undefined) return;
+
+  // 一覧表示用に引継ぎ運番を控える(原典 :6868 / :7201)。
+  link.operationNumbers = [...numbers];
+
+  const nextTree = treeOf(ctx, nextProp.houkou, nextProp.ressyaIndex);
+  if (nextTree === undefined) return;
+  const nextNode = nextTree.nodes.find((n) => opRefKey(n.el.op) === opRefKey(nextRef));
+  if (nextNode === undefined) return;
+
+  // 折返し反転(方向差 && size>1。原典 :6886-6891 / :7219-7224)。
+  const sameHoukou = ressyaProperty.houkou === nextProp.houkou;
+  let carried = reverseForRoute(numbers, ctx.operationNumberReverse, sameHoukou);
+
+  const nextSlots = slotsOf(ctx, nextRef);
+  // 空/空白のみなら出区側の元運番で置換(原典 :6896-6900 / :7229-7233)。
+  if (isEmptyOrBlank(carried) && !isEmptyOrBlank(nextSlots.n1)) carried = [...nextSlots.n1];
+
+  // setOperationNumberAssignedByLinkCode = #2(原典 :6903 / :7236)。
+  nextSlots.n2 = [...carried];
+
+  // 次エントリを開始する。検索キーに入区/路線外終着を渡して運用表の並びを定める(原典 :7020)。
+  const nextOp = resolveOperation(ctx.dia, nextRef) as BeforeOperation | undefined;
+  insertOperationTableContentToBuffer(
+    ctx.opTable,
+    nextProp,
+    carried,
+    nextNode.el.ekiOrder,
+    nextOp ?? null,
+    afterRef,
+    'outIn',
+  );
+
+  runJunctionRecursion(ctx, nextProp, nextTree, nextLevel(nextNode.treeLevel), carried);
 }
 
 /**

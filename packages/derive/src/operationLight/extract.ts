@@ -51,6 +51,11 @@ export interface ExpandResult {
    * jikoku は運用表の挿入位置決めに使う当駅時刻(原典 :4371/:4565/:4655/:4771 の暫定措置)。
    */
   numberChangeSeeds: { el: OperationElementLight; jikoku: Jikoku }[];
+  /**
+   * 入出区連携コードが入力された出区/路線外始発・入区/路線外終着(Full のみ)。
+   * jikoku は起点跨ぎ判定に使う出区/入区時刻(原典 :4127/:4149/:4890-4896)。
+   */
+  inOutLinkSeeds: { el: OperationElementLight; code: string; isOut: boolean; jikoku: Jikoku }[];
 }
 
 /** 展開の共通コンテキスト(列車・駅・占有アクセスの固定情報)。 */
@@ -88,6 +93,7 @@ function emptyResult(): ExpandResult {
     outOuterSeeds: [],
     beforeJunctionSeeds: [],
     numberChangeSeeds: [],
+    inOutLinkSeeds: [],
   };
 }
 
@@ -98,6 +104,7 @@ function merge(into: ExpandResult, from: ExpandResult): void {
   into.outOuterSeeds.push(...from.outOuterSeeds);
   into.beforeJunctionSeeds.push(...from.beforeJunctionSeeds);
   into.numberChangeSeeds.push(...from.numberChangeSeeds);
+  into.inOutLinkSeeds.push(...from.inOutLinkSeeds);
 }
 
 /** 子のパス組を作る。 */
@@ -157,6 +164,15 @@ export function searchBeforeOperationElementLight(
     const el = makeElement(ctx, 'before', childLevel(parent, 0, 0));
     result.elements.push(el);
     result.outOuterSeeds.push(el);
+    if ((ctx.collectNumberChange ?? false) && first.inOutLinkCode !== '') {
+      // 入出区連携コード(原典 :4135-4141 / :4157-4163 / :5672-5678 / :5692-5698)。
+      result.inOutLinkSeeds.push({
+        el,
+        code: first.inOutLinkCode,
+        isOut: true,
+        jikoku: first.kind === 'out' ? first.outJikoku : first.outerHatsuJikoku,
+      });
+    }
   } else if (first.kind === 'junction') {
     // 前列車接続: 起点時刻を導出して占有登録(次列車探索の受け側。seed にはしない)。
     let originJikoku: Jikoku = connectJikoku;
@@ -346,7 +362,17 @@ export function searchAfterOperationElementLight(
       result.existInserts.push({ ekiIndexOfExist: ctx.ekiIndexOfExist, trackIndex, el });
       result.junctionSeeds.push(el);
     } else if (last.kind === 'in' || last.kind === 'outer') {
-      result.elements.push(makeElement(ctx, 'after', level));
+      const el = makeElement(ctx, 'after', level);
+      result.elements.push(el);
+      if ((ctx.collectNumberChange ?? false) && last.inOutLinkCode !== '') {
+        // 入出区連携コード(原典 :4888-4902 / :6168-6183)。
+        result.inOutLinkSeeds.push({
+          el,
+          code: last.inOutLinkCode,
+          isOut: false,
+          jikoku: last.kind === 'in' ? last.inJikoku : last.outerChakuJikoku,
+        });
+      }
     }
   }
   return result;

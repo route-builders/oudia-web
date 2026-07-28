@@ -41,6 +41,7 @@ import type {
   RessyaElement,
 } from '../operationLight/types.js';
 import { opRefKey } from '../operationLight/types.js';
+import { insertInOutLinkCodeElement } from './inOutLink.js';
 import {
   type AssignContext,
   resolveOperation,
@@ -54,6 +55,7 @@ import type {
   ConnectWaitItem,
   DeriveOperationFullOptions,
   FullState,
+  InOutLinkCodeEntry,
   OperationFullResult,
   OperationNumberMap,
   RessyaOperationTree,
@@ -91,6 +93,7 @@ export function buildFullState(
   const outOuterSeeds: FullState['outOuterSeeds'] = [];
   const beforeJunctionSeeds: FullState['beforeJunctionSeeds'] = [];
   const numberChangeSeeds: FullState['numberChangeSeeds'] = [];
+  const inOutLinks = new Map<string, InOutLinkCodeEntry>();
 
   for (const houkouNum of [0, 1] as const) {
     const houkou: Houkou = houkouNum;
@@ -127,6 +130,20 @@ export function buildFullState(
         for (const ins of part.result.existInserts) {
           const trackList = occupancy[ins.ekiIndexOfExist]?.[ins.trackIndex];
           if (trackList !== undefined) insertRessyaElement(trackList, ins.el, opts.kitenJikoku);
+        }
+        // 入出区連携コードの登録(原典 :4135/:4157/:4888 ほか)。列車 index 昇順・下り→上り。
+        for (const link of part.result.inOutLinkSeeds) {
+          insertInOutLinkCodeElement(
+            inOutLinks,
+            link.code,
+            {
+              ref: link.el.op,
+              ressyaProperty: { houkou, ressyaIndex, jikoku: link.jikoku },
+              isOut: link.isOut,
+            },
+            opts.operationCrossKitenJikoku,
+            opts.kitenJikoku,
+          );
         }
         for (const seed of part.result.junctionSeeds) {
           const hit = part.result.existInserts.find((ins) => ins.el === seed);
@@ -165,6 +182,7 @@ export function buildFullState(
     outOuterSeeds,
     beforeJunctionSeeds,
     numberChangeSeeds,
+    inOutLinks,
     chains,
   };
 }
@@ -325,6 +343,10 @@ function assignFromOutOuter(ctx: AssignContext): void {
     const tree = ctx.state.trees[ref.houkou]?.[ref.ressyaIndex];
     if (tree === undefined) continue;
     const op = resolveOperation(ctx.dia, ref) as BeforeOperation | undefined;
+    // 入出区連携が成立(iStatus==2)している出区・路線外始発は、入区側から運番を引き継ぐので
+    // ここでは起点にしない(原典 :5076-5086)。
+    const code = op?.kind === 'out' || op?.kind === 'outer' ? op.inOutLinkCode : '';
+    if (code !== '' && ctx.state.inOutLinks.get(code)?.status === 2) continue;
     const original = originalNumberOf(ctx.dia, ref);
     const property: RessyaPropertyRef = {
       houkou: ref.houkou,
@@ -559,6 +581,6 @@ export function deriveOperationFull(
     customizeRessyaIndexChains: state.chains,
     operationTable: ctx.opTable.table,
     assignedNumbers: collectAssigned(dia, state, numbers),
-    inOutLinkCodes: new Map(),
+    inOutLinkCodes: state.inOutLinks,
   };
 }
