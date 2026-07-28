@@ -89,6 +89,21 @@ export { buildFullState, deriveOperationFull } from './operationFull/deriveOpera
 // ---- 入出区連携コードの状態機械(M7c-2)----
 export type { InOutLinkElement } from './operationFull/inOutLink.js';
 export { insertInOutLinkCodeElement, isLinkActive } from './operationFull/inOutLink.js';
+// ---- 運用の並べ替え(運用一覧表 / 一覧図 / CSV 共有。M7d)----
+export type {
+  OperationNumberChunk,
+  OperationSort,
+  OperationSortContext,
+  OperationSortKey,
+  OperationSortOptions,
+} from './operationFull/operationSort.js';
+export {
+  lessOperation,
+  lessOperationNumber,
+  operationSortKeyOf,
+  sortOperationNumbers,
+  splitOperationNumberParts,
+} from './operationFull/operationSort.js';
 // ---- 運用表エントリの生成・時刻順挿入(M7c-2)----
 export type { OperationTableContext } from './operationFull/operationTable.js';
 export {
@@ -162,5 +177,20 @@ export type {
   RessyaElement,
 } from './operationLight/types.js';
 export { opRefEquals, opRefKey } from './operationLight/types.js';
+// ---- 運用一覧表 / 運用一覧図の共通ビューモデル(M7d)----
+export type {
+  AllOperationTableColumn,
+  AllOperationTableOptions,
+  AllOperationTableRessyaCell,
+  AllOperationTableRow,
+  AllOperationTableViewModel,
+} from './operationView/allOperationTable.js';
+export {
+  ALL_OPERATION_TABLE_FIX_COLUMN_COUNT,
+  buildAllOperationTableColumns,
+  columnIndexOf,
+  countRessyaInOperation,
+  deriveAllOperationTable,
+} from './operationView/allOperationTable.js';
 export type { TransferSortInput } from './sort/transferSort.js';
 export { transferSortOrder } from './sort/transferSort.js';
