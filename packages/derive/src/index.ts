@@ -44,6 +44,19 @@ export {
   buildAllOperationTableCsv,
   buildOperationTableCsv,
 } from './csv/operationCsv.js';
+// ---- 運用表 CSV の抽出条件(M7e)----
+export type {
+  OperationCsvExportTarget,
+  OperationMatchMode,
+} from './csv/operationCsvFilter.js';
+export {
+  filterOperationTableForCsv,
+  matchOperationNumber,
+  matchOperationStation,
+  OPERATION_MATCH_LABEL,
+  OPERATION_MATCH_MODES,
+  satisfiesOperationCsvExportCondition,
+} from './csv/operationCsvFilter.js';
 export type {
   BuildTimetableCsvParams,
   BuildTimetableCsvResult,

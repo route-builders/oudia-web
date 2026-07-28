@@ -12,10 +12,18 @@
  */
 
 import type { AllOperationTableRow, OperationSort } from '@oudia-web/derive';
-import { buildAllOperationTableCsv, deriveAllOperationTable } from '@oudia-web/derive';
-import { deriveBrunchLoopMap } from '@oudia-web/domain';
+import {
+  buildAllOperationTableCsv,
+  buildOperationTableCsv,
+  deriveAllOperationTable,
+  filterOperationTableForCsv,
+  sortOperationNumbers,
+} from '@oudia-web/derive';
+import { deriveBrunchLoopMap, getEkiIndexBrunchLoop } from '@oudia-web/domain';
 import type { RosenFileData } from '@oudia-web/format';
 import { useMemo, useState } from 'react';
+import type { OperationTableCsvExportSettings } from '../dialog/OperationTableCsvExportDialog.js';
+import { OperationTableCsvExportDialog } from '../dialog/OperationTableCsvExportDialog.js';
 import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { useDocStore } from '../store/docStore.js';
@@ -45,6 +53,7 @@ export function AllOperationTableView(props: {
   const [displayAllRessya, setDisplayAllRessya] = useState(false);
   const [paused, setPaused] = useState(false);
   const [manualKey, setManualKey] = useState(0);
+  const [csvDialogOpen, setCsvDialogOpen] = useState(false);
 
   const search = useOperationSearch(data, diaIndex, paused, manualKey);
   const dia = data.rosen.diaCont[diaIndex];
@@ -85,6 +94,55 @@ export function AllOperationTableView(props: {
 
   const openOperationTable = (operationNumber: string): void => {
     openView({ type: 'operationTable', diaIndex, operationNumber });
+  };
+
+  /**
+   * 運用表 CSV エクスポート(抽出条件つき。原典 CDlgOperationTableCsvExport::OnOK)。
+   * 抽出 → 挿入ソート → CSV 生成 の順は原典と同じ。0 件でもエラーにせず
+   * 「ダイヤ名 1 行だけの CSV」を書く(原典 :212-300 が運番ループを 0 回まわす)。
+   */
+  const exportOperationTableCsv = (settings: OperationTableCsvExportSettings): void => {
+    setCsvDialogOpen(false);
+    if (dia === undefined || search.result === null) return;
+    const ekiIndexGroup =
+      settings.target.kind === 'station'
+        ? getEkiIndexBrunchLoop(data.rosen.ekiCont, settings.target.ekiIndex)
+        : [];
+    const filtered = filterOperationTableForCsv(search.result.operationTable, settings.target, {
+      ekiIndexGroup,
+      ekiCount: data.rosen.ekiCont.length,
+    });
+    const numbers = sortOperationNumbers(
+      filtered,
+      { sort: settings.sort, compareBottom, kitenJikoku: data.rosen.kitenJikoku },
+      {
+        ressyaCont: dia.ressyaCont,
+        ekiCount: data.rosen.ekiCont.length,
+        brunchLoop: deriveBrunchLoopMap(data.rosen.ekiCont),
+      },
+    );
+    downloadCsv(
+      buildOperationTableCsv({
+        rosen: data.rosen,
+        dia,
+        operationNumbers: numbers,
+        operationTable: filtered,
+        options: {
+          displayRessyamei: data.dispProp.displayRessyamei,
+          displayTrackName: settings.displayTrackName,
+          displayParentSyubetsu: false,
+          displayNoboriLeftToRight: settings.noboriLeftToRight,
+          conv: {
+            noColon: false,
+            outputSecond: false,
+            secondRoundChaku: data.dispProp.secondRoundChaku,
+            secondRoundHatsu: data.dispProp.secondRoundHatsu,
+            display2400: data.dispProp.display2400,
+          },
+        },
+      }),
+      `${dia.name}_運用表.csv`,
+    );
   };
 
   return (
@@ -164,7 +222,16 @@ export function AllOperationTableView(props: {
             );
           }}
         >
-          CSV 出力
+          運用一覧表 CSV
+        </button>
+        <button
+          type="button"
+          disabled={dia === undefined || search.result === null}
+          onClick={() => {
+            setCsvDialogOpen(true);
+          }}
+        >
+          運用表 CSV…
         </button>
       </div>
       {placeholder ??
@@ -181,6 +248,27 @@ export function AllOperationTableView(props: {
             onOpen={openOperationTable}
           />
         ))}
+      {csvDialogOpen && (
+        <OperationTableCsvExportDialog
+          ekiCont={data.rosen.ekiCont}
+          initial={{
+            // 原典 CWndDcdGridAllOperationTable.cpp:2946-2963 の既定値算出に相当。
+            // フォーカス運用の運番・始発駅を使うが、Web ではまず先頭行を採用する。
+            target: { kind: 'all' },
+            keyword: vm?.rows[0]?.operationNumber ?? '',
+            ekiIndex: 0,
+            sort,
+            boxDia: false,
+            noboriLeftToRight: false,
+            displayTsuukaEkiJikoku: false,
+            displayTrackName: false,
+          }}
+          onOk={exportOperationTableCsv}
+          onCancel={() => {
+            setCsvDialogOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

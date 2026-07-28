@@ -340,6 +340,31 @@ body {
   align-items: center;
   gap: 6px;
 }
+/* 運用表 CSV エクスポートの 3 択ラジオ(原典 IDD_OperationTable_CsvExport)。
+   1 行が「ラジオ + 入力 + コンボ + 文言」の横並びになる。 */
+.prop-dialog .dialog-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 8px;
+  margin: 0;
+}
+.prop-dialog .dialog-radio {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.prop-dialog .dialog-radio input[type="text"],
+.prop-dialog .dialog-radio select {
+  padding: 2px 4px;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  font-size: 13px;
+}
 .prop-dialog .dialog-error {
   color: #9c2b2b;
   font-size: 12px;

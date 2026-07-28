@@ -110,6 +110,26 @@ describe('AllOperationTableView', () => {
     });
   });
 
+  it('「運用表 CSV…」で抽出条件ダイアログが開く', async () => {
+    render(<AllOperationTableView data={data} diaIndex={0} graphical={false} />);
+    await screen.findByText('運用番号');
+    fireEvent.click(screen.getByText('運用表 CSV…'));
+    expect(screen.getByText('運用表CSVエクスポート')).toBeTruthy();
+    // 原典どおり OK ボタンのラベルは「エクスポート」。
+    expect(screen.getByText('エクスポート')).toBeTruthy();
+    // ラジオ 3 択 + 照合方法コンボ(原典ラベル)。
+    expect(screen.getByText('全運用を出力')).toBeTruthy();
+    const mode = screen.getByLabelText<HTMLSelectElement>('運用番号の照合方法');
+    expect([...mode.options].map((o) => o.textContent)).toEqual([
+      'と一致する',
+      'を含む',
+      'が前方一致する',
+      'が後方一致する',
+    ]);
+    fireEvent.click(screen.getByText('キャンセル'));
+    expect(screen.queryByText('運用表CSVエクスポート')).toBeNull();
+  });
+
   it('図に切り替えると別タブとして開く', async () => {
     render(<AllOperationTableView data={data} diaIndex={0} graphical={false} />);
     await screen.findByText('運用番号');

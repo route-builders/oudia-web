@@ -16,8 +16,10 @@ export function Dialog(props: {
   children: React.ReactNode;
   /** OK ボタンの活性(検証エラー時に無効化する場合)。既定 true。 */
   okEnabled?: boolean;
+  /** OK ボタンのラベル(原典が「エクスポート」等の場合に差し替える)。既定 "OK"。 */
+  okLabel?: string;
 }): React.ReactElement {
-  const { title, onOk, onCancel, children, okEnabled = true } = props;
+  const { title, onOk, onCancel, children, okEnabled = true, okLabel = 'OK' } = props;
   const ref = useRef<HTMLDialogElement>(null);
   // onCancel の identity 変化で効果が再実行されないよう ref 経由で参照する。
   const onCancelRef = useRef(onCancel);
@@ -67,7 +69,7 @@ export function Dialog(props: {
         <div className="dialog-body">{children}</div>
         <footer className="dialog-footer">
           <button type="button" className="dialog-ok" disabled={!okEnabled} onClick={onOk}>
-            OK
+            {okLabel}
           </button>
           <button type="button" className="dialog-cancel" onClick={onCancel}>
             キャンセル
