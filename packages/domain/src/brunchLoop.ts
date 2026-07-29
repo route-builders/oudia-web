@@ -319,3 +319,101 @@ export function getEkiIndexBrunchLoop(ekiCont: readonly Eki[], ekiIndex: number)
   }
   return out;
 }
+
+// ---- 駅Order / 列車方向で見た分岐環状グループ ----
+
+/** 駅Order 基準の分岐環状グループ(原典 getEkiOrderBrunchLoop の戻り値 + 3 deque)。 */
+export interface BrunchLoopGroupOrders {
+  /** グループ内での位置。単独駅は 'standalone'。 */
+  readonly position: BrunchLoopPosition;
+  /** 起点側の分岐派生駅(駅Order 昇順)。 */
+  readonly originSide: number[];
+  /** 環状チェーン(駅Order 昇順)。 */
+  readonly loop: number[];
+  /** 終点側の分岐派生駅(駅Order 昇順)。 */
+  readonly terminalSide: number[];
+}
+
+/**
+ * 駅Order + 列車方向で分岐環状グループを引く(原典 CentDedEkiCont::getEkiOrderBrunchLoop、
+ * CentDedEkiCont.cpp:1714-1775)。在線表の駅群展開はこれが唯一の入口。
+ *
+ * ★上りでは EkiIndex 版の結果をそのまま使えない:
+ * - **originSide と terminalSide が入れ替わる**(列車から見た起点/終点が逆になるため)
+ * - 3 配列とも push_front で積み直されるので、駅Order でも昇順になる
+ * - position も INT_MAX ↔ INT_MIN(= terminalSideBrunch ↔ originSideBrunch)を入れ替え、
+ *   数値位置は `loop.length - pos - 1` に補正する
+ */
+export function getEkiOrderBrunchLoop(
+  map: BrunchLoopMap,
+  ekiCount: number,
+  ekiOrder: number,
+  houkou: 0 | 1,
+): BrunchLoopGroupOrders {
+  const ekiIndex = houkou === 0 ? ekiOrder : ekiCount - 1 - ekiOrder;
+  const position = map.positions[ekiIndex] ?? 'standalone';
+  const originSide = map.ekiIndexBrunchOriginSide[ekiIndex] ?? [];
+  const loop = map.ekiIndexLoop[ekiIndex] ?? [];
+  const terminalSide = map.ekiIndexBrunchTerminalSide[ekiIndex] ?? [];
+  if (position === 'standalone') {
+    return { position, originSide: [], loop: [], terminalSide: [] };
+  }
+  if (houkou === 0) {
+    // 下りは 駅Index == 駅Order。
+    return {
+      position,
+      originSide: [...originSide],
+      loop: [...loop],
+      terminalSide: [...terminalSide],
+    };
+  }
+  // 上り: Index → Order に写して push_front(= 反転)。昇順のまま保たれる。
+  const toOrders = (list: readonly number[]): number[] =>
+    list.map((i) => ekiCount - 1 - i).reverse();
+  let pos: BrunchLoopPosition;
+  if (position === 'terminalSideBrunch') pos = 'originSideBrunch';
+  else if (position === 'originSideBrunch') pos = 'terminalSideBrunch';
+  else pos = loop.length - position - 1;
+  return {
+    position: pos,
+    // ★入れ替わる。
+    originSide: toOrders(terminalSide),
+    loop: toOrders(loop),
+    terminalSide: toOrders(originSide),
+  };
+}
+
+/**
+ * 2 駅が同じ分岐環状グループに属するか(原典 CentDedEkiCont::isSameBrunchLoopGroup、
+ * CentDedEkiCont.cpp:1968-2004)。経由なし区間を 1 本の在線として繋ぐかの判定に使う。
+ *
+ * 同一駅なら true。**どちらかが単独駅なら false**。それ以外は
+ * 「最も起点側の基幹駅(ekiIndexLoop[0])が一致するか」で判定する。
+ */
+export function isSameBrunchLoopGroup(
+  map: BrunchLoopMap,
+  ekiIndexA: number,
+  ekiIndexB: number,
+): boolean {
+  const n = map.positions.length;
+  if (ekiIndexA < 0 || ekiIndexA >= n) return false;
+  if (ekiIndexB < 0 || ekiIndexB >= n) return false;
+  if (ekiIndexA === ekiIndexB) return true;
+  if (map.positions[ekiIndexA] === 'standalone') return false;
+  if (map.positions[ekiIndexB] === 'standalone') return false;
+  const a = map.ekiIndexLoop[ekiIndexA]?.[0];
+  const b = map.ekiIndexLoop[ekiIndexB]?.[0];
+  return a !== undefined && a === b;
+}
+
+/** 駅Order 版(原典 CentDedEkiCont.cpp:2007-2015)。 */
+export function isSameBrunchLoopGroupByOrder(
+  map: BrunchLoopMap,
+  ekiCount: number,
+  ekiOrderA: number,
+  ekiOrderB: number,
+  houkou: 0 | 1,
+): boolean {
+  const toIndex = (o: number): number => (houkou === 0 ? o : ekiCount - 1 - o);
+  return isSameBrunchLoopGroup(map, toIndex(ekiOrderA), toIndex(ekiOrderB));
+}
