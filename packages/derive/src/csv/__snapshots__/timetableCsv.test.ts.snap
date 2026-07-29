@@ -1,7 +1,7 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`buildTimetableCsv(実ファイル sample2 スナップショット) > 上り・dia0(平日ダイヤ) 1`] = `
-"FileType,OuDiaSecond.JikokuhyouCsv.2
+"﻿FileType,OuDiaSecond.JikokuhyouCsv.2
 平日ダイヤ
 上り
 
@@ -92,7 +92,7 @@ exports[`buildTimetableCsv(実ファイル sample2 スナップショット) > �
 `;
 
 exports[`buildTimetableCsv(実ファイル sample2 スナップショット) > 下り・dia0(平日ダイヤ) 1`] = `
-"FileType,OuDiaSecond.JikokuhyouCsv.2
+"﻿FileType,OuDiaSecond.JikokuhyouCsv.2
 平日ダイヤ
 下り
 
@@ -181,7 +181,7 @@ exports[`buildTimetableCsv(実ファイル sample2 スナップショット) > �
 `;
 
 exports[`buildTimetableCsv(実ファイル sample2 スナップショット) > 下り・dia1(基準運転時分) 1`] = `
-"FileType,OuDiaSecond.JikokuhyouCsv.2
+"﻿FileType,OuDiaSecond.JikokuhyouCsv.2
 基準運転時分
 下り
 

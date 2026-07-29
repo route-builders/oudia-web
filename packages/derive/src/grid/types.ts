@@ -21,7 +21,9 @@ export type CellKind =
   | 'track' // 番線略称
   | 'text' // 列車番号・列車名・号数・備考・始終着駅名
   | 'empty' // 空セル(番線 None など)
-  | 'operationSpacer'; // 始発/終着駅作業の空きセル
+  | 'operationSpacer' // 始発/終着駅作業の空きセル
+  | 'operation' // 始発/終着駅作業の内容(作業名・時刻・運番・連携コード)
+  | 'operationNumber'; // 運用番号行
 
 /** マーク種(byte-verified シンボル。glyph は MARK_GLYPH で解決)。 */
 export type MarkKind =
@@ -52,6 +54,11 @@ export interface CellStyle {
   readonly backColor: Colorref | null;
   /** 縦書き(JikokuhyouVFont)。M1 は既定 false で固定(枠のみ)。 */
   readonly tategaki: boolean;
+  /**
+   * 灰色表示(原典 getCdDrawTextPropTsuuka = RGB(128,128,128))。
+   * 仮運用番号・時刻の代用表示に使う。既定 false。
+   */
+  readonly tsuuka?: boolean;
 }
 
 export interface CellSpec {

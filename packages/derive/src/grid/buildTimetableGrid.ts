@@ -12,23 +12,22 @@
 
 import {
   ekiIndexOfEkiOrder,
-  formatOperationLine,
   getEkiJikoku,
   getSihatsuEki,
   getSyuuchakuEki,
   getValidSihatsuEki,
   getValidSyuuchakuEki,
-  toFlatAfter,
-  toFlatBefore,
 } from '@oudia-web/domain';
 import type {
   Dia,
   Eki,
+  Jikoku,
   JikokuConvOptions,
   Ressya,
   Ressyahoukou,
   RosenFileData,
 } from '@oudia-web/format';
+import { encodeJikokuCsv } from '@oudia-web/format';
 import { getEkimeiJikokuhyouRyaku } from '../csv/ekiDisplay.js';
 import type { CellContext } from './cellSpec.js';
 import { chakuCell, hatsuCell, trackCell } from './cellSpec.js';
@@ -41,10 +40,21 @@ const NAME_CHAKU = '着';
 const NAME_HATSU = '発';
 const NAME_TRACK = '番線';
 const NAME_GOU = '号';
+const NAME_OPERATION_OUT = '出区';
+const NAME_OPERATION_IN = '入区';
+
+/** 次列車接続タイプの表示文字列(原典 IDS_WORD_JIKOKUHYOU_*、rc:3157-3159)。 */
+const JUNCTION_TYPE_TEXT: Readonly<Record<string, string>> = {
+  classChange: '種別変',
+  propertyChange: '列情変',
+  propertySame: '同一扱',
+  unrelated: '',
+};
 
 // 左ラベル(行見出し)。
 const ROW_LABEL: Record<string, string> = {
   ressyabangou: '列車番号',
+  operationNumber: '運用番号',
   ressyasyubetsu: '列車種別',
   ressyamei: '列車名',
   gousuu: '号数',
@@ -69,6 +79,10 @@ export interface BuildTimetableGridOptions {
    * 作業テキストを表示する(M7b)。0 は従来どおり空(operationSpacer)= 黄金テスト不変。
    */
   readonly enableOperation?: number;
+  /** DispProp.operationNumberRows(1..5)。運用番号行の段数。既定 1。 */
+  readonly operationNumberRows?: number;
+  /** DispProp.displayInOutLinkCode。作業ブロックの連携コード行の有無。既定 false。 */
+  readonly displayInOutLinkCode?: boolean;
   readonly conv: JikokuConvOptions;
 }
 
@@ -82,6 +96,8 @@ export function defaultTimetableGridOptions(
     displayRessyamei: data.dispProp.displayRessyamei,
     displayTsuukaEkiJikoku: true,
     enableOperation: data.rosen.enableOperation,
+    operationNumberRows: data.dispProp.operationNumberRows,
+    displayInOutLinkCode: data.dispProp.displayInOutLinkCode,
     conv: {
       noColon: true,
       outputSecond: false,
@@ -123,6 +139,9 @@ export function buildTimetableGrid(
   const rows = buildJikokuhyouRowSpec(ekiCont, houkou, {
     displayRessyamei: opts.displayRessyamei,
     displayAllEkiJikoku: opts.displayAllEkiJikoku ?? false,
+    enableOperation: opts.enableOperation ?? 0,
+    operationNumberRows: opts.operationNumberRows ?? 1,
+    displayInOutLinkCode: opts.displayInOutLinkCode ?? false,
   });
 
   const columns: GridColumn[] = [
@@ -164,7 +183,7 @@ export function buildTimetableGrid(
           ekiCount,
           houkou,
           opts.displayParentSyubetsu ?? false,
-          opts.enableOperation ?? 0,
+          Math.min(5, Math.max(1, opts.operationNumberRows ?? 1)),
         ),
       );
     });
@@ -229,7 +248,7 @@ function trainCell(
   ekiCount: number,
   houkou: Ressyahoukou,
   parentSubst: boolean,
-  enableOperation: number,
+  operationNumberRows: number,
 ): CellSpec {
   if (ressya.isNull) return { text: '', kind: 'empty', mark: null, style: plainStyle() };
 
@@ -260,17 +279,30 @@ function trainCell(
       return text(ekimeiRyaku(getValidSihatsuEki(ressya)));
     case 'shuchakuEkimei':
       return text(ekimeiRyaku(getValidSyuuchakuEki(ressya)));
+    case 'operationNumber': {
+      // 運用番号行(原典 update02_02_02_12、CCellBuilder.cpp:5890-5975)。
+      const cellText =
+        operationNumberBlock(operationNumbersOf(ressya), operationNumberRows)[row.operationIndex] ??
+        '';
+      return {
+        text: cellText,
+        kind: 'operationNumber',
+        mark: null,
+        style: plainStyle(),
+      };
+    }
     case 'operationShihatsu':
     case 'operationShuchaku': {
-      // enableOperation=0 は従来どおり空(黄金テスト不変)。継続行(2 行目)も空。
-      if (enableOperation < 1 || row.isContinuation) {
+      const cell = operationBlockCell(data, ressya, ekiCount, houkou, row.type, row.operationIndex);
+      if (cell === null) {
         return { text: '', kind: 'operationSpacer', mark: null, style: plainStyle() };
       }
-      const opText = operationRowText(data, ressya, ekiCount, houkou, row.type);
-      if (opText === '') {
-        return { text: '', kind: 'operationSpacer', mark: null, style: plainStyle() };
-      }
-      return text(opText);
+      return {
+        text: cell.text,
+        kind: 'operation',
+        mark: null,
+        style: { ...plainStyle(), tsuuka: cell.tsuuka },
+      };
     }
     case 'bikou':
       return text(ressya.bikou);
@@ -304,29 +336,154 @@ function trainCell(
 }
 
 /**
- * 始発駅作業/終着駅作業の表示テキスト(原典 CreateOperationString をスペース連結)。M7b。
- * 始発=有効始発スロットの前作業列、終着=有効終着スロットの後作業列。作業なしは空。
+ * 運用番号行の各段テキスト(原典 update02_02_02_12_setRessya_OperationNumber、
+ * CCellBuilder.cpp:5890-5975)。
+ *
+ * 先頭から 1 段 1 個ずつ取り、最下段で残り全部を `+` 連結する。2 段目以降は先頭に `+` を付ける。
+ * 例: rows=2, ['A','B','C'] → ['A', '+B+C'] / rows=1 → ['A+B+C']。
+ * 残りが空になった段は `+` も付かず空文字列。
  */
-function operationRowText(
+export function operationNumberBlock(numbers: readonly string[], rows: number): string[] {
+  const rest = [...numbers];
+  const out: string[] = [];
+  for (let idx = 0; idx < rows; idx++) {
+    if (rest.length === 0) {
+      out.push('');
+      continue;
+    }
+    const prefix = idx === 0 ? '' : '+';
+    if (idx === rows - 1) {
+      out.push(prefix + rest.join('+'));
+      rest.length = 0;
+    } else {
+      out.push(prefix + (rest.shift() ?? ''));
+    }
+  }
+  return out;
+}
+
+/**
+ * 列車の運用番号(原典 CentDedRessya::getOperationNumber(getValidSihatsuEki())、:1630-1691 の
+ * 有効始発駅時点)。運休列車は空。
+ *
+ * 探索前(#2/#3 未割付)でもユーザー入力の永続 #1 を表示できる。TS は運番を別 Map で持つため、
+ * ここでは #1(out/outer の operationNumbers・junction の kariOperationNumbers・
+ * numberChange の operationNumbers)のみを見る。
+ */
+export function operationNumbersOf(ressya: Ressya): string[] {
+  if (ressya.isCanceled) return [];
+  const sihatsu = getValidSihatsuEki(ressya);
+  if (sihatsu < 0) return [];
+  const slot = ressya.ekiJikokuCont[sihatsu];
+  const first = slot?.beforeOperationCont[0];
+  if (first === undefined) return [];
+  if (first.kind === 'out' || first.kind === 'outer') return [...first.operationNumbers];
+  if (first.kind === 'junction') return [...first.kariOperationNumbers];
+  return [];
+}
+
+/** 始発駅作業/終着駅作業 1 セルぶんの内容。null = 空セル。 */
+interface OperationBlockCell {
+  readonly text: string;
+  /** 灰色表示(仮運用番号・時刻の代用)。 */
+  readonly tsuuka: boolean;
+}
+
+/** 路線外発着駅の時刻表略称(原典 CentDedEki::getOuterTerminalJikokuRyaku(idx, true)、:399-413)。 */
+function outerTerminalJikokuRyaku(eki: Eki | undefined, index: number): string {
+  const t = eki?.outerTerminalCont[index];
+  if (t === undefined) return '';
+  return t.jikokuRyaku === '' ? t.ekimei : t.jikokuRyaku;
+}
+
+/**
+ * 始発駅作業 / 終着駅作業ブロックの 1 行ぶん(原典 CCellBuilder.cpp:6304-6528 / :6594-6788)。
+ *
+ * 始発(前作業先頭 = 出区/路線外始発/前列車接続):
+ *   1=作業名 / 2=時刻 / 3=運用番号(`;` 連結) / 4=入出区連携コード
+ * 終着(後作業末尾 = 入区/路線外終着/次列車接続):
+ *   1=作業名(次列車接続は接続タイプ) / 2=時刻 / 3=入出区連携コード  ※運番欄なし
+ */
+function operationBlockCell(
   data: RosenFileData,
   ressya: Ressya,
   ekiCount: number,
   houkou: Ressyahoukou,
   rowType: 'operationShihatsu' | 'operationShuchaku',
-): string {
+  index: number,
+): OperationBlockCell | null {
   const isShihatsu = rowType === 'operationShihatsu';
   const order = isShihatsu ? getValidSihatsuEki(ressya) : getValidSyuuchakuEki(ressya);
-  if (order === -1) return '';
+  if (order === -1) return null;
   const slot = getEkiJikoku(ressya, order);
   const eki = data.rosen.ekiCont[ekiIndexOfEkiOrder(order, ekiCount, houkou)];
-  const fmtCtx = {
-    tracks: eki?.ekiTrack2Cont ?? [],
-    outerTerminals: eki?.outerTerminalCont ?? [],
-  };
+  const enc = (j: Jikoku, isChaku: boolean): string =>
+    encodeJikokuCsv(j, isChaku, null, {
+      noColon: false,
+      outputSecond: false,
+      secondRoundChaku: data.dispProp.secondRoundChaku,
+      secondRoundHatsu: data.dispProp.secondRoundHatsu,
+      display2400: data.dispProp.display2400,
+    });
+  const cell = (text: string, tsuuka = false): OperationBlockCell | null =>
+    text === '' ? null : { text, tsuuka };
+
   if (isShihatsu) {
-    const flat = toFlatBefore(slot.beforeOperationCont);
-    return flat.map((op) => formatOperationLine(op, false, fmtCtx)).join(' ');
+    // 先頭が先端作業(出区/路線外始発/前列車接続)でなければブロックは空(原典 getFirstOperation)。
+    const first = slot.beforeOperationCont[0];
+    if (first === undefined) return null;
+    if (first.kind === 'out') {
+      if (index === 0) return cell(NAME_OPERATION_OUT);
+      if (index === 1) return cell(enc(first.outJikoku, true));
+      if (index === 2) return cell(first.operationNumbers.join(';'));
+      if (index === 3) return cell(first.inOutLinkCode);
+      return null;
+    }
+    if (first.kind === 'outer') {
+      if (index === 0) return cell(outerTerminalJikokuRyaku(eki, first.outerTerminalIndex));
+      if (index === 1) {
+        // 当駅着時刻。null なら当駅発時刻で代用し灰色にする(原典 :6380 付近)。
+        const j = first.chakuJikoku ?? slot.hatsuJikoku;
+        const t = enc(j, true);
+        return cell(t === '' ? '' : `${t}${NAME_CHAKU}`, first.chakuJikoku === null);
+      }
+      if (index === 2) return cell(first.operationNumbers.join(';'));
+      if (index === 3) return cell(first.inOutLinkCode);
+      return null;
+    }
+    if (first.kind === 'junction') {
+      if (index === 0) return null; // 作業名なし
+      if (index === 1) return cell(enc(first.kitenJikoku, true));
+      // 仮運用番号は灰色(原典 getCdDrawTextPropTsuuka)。
+      if (index === 2) return cell(first.kariOperationNumbers.join(';'), true);
+      return null;
+    }
+    return null;
   }
-  const flat = toFlatAfter(slot.afterOperationCont);
-  return flat.map((op) => formatOperationLine(op, true, fmtCtx)).join(' ');
+
+  const cont = slot.afterOperationCont;
+  const last = cont[cont.length - 1];
+  if (last === undefined) return null;
+  if (last.kind === 'in') {
+    if (index === 0) return cell(NAME_OPERATION_IN);
+    if (index === 1) return cell(enc(last.inJikoku, false));
+    if (index === 2) return cell(last.inOutLinkCode);
+    return null;
+  }
+  if (last.kind === 'outer') {
+    if (index === 0) return cell(outerTerminalJikokuRyaku(eki, last.outerTerminalIndex));
+    if (index === 1) {
+      const j = last.hatsuJikoku ?? slot.chakuJikoku;
+      const t = enc(j, false);
+      return cell(t === '' ? '' : `${t}${NAME_HATSU}`, last.hatsuJikoku === null);
+    }
+    if (index === 2) return cell(last.inOutLinkCode);
+    return null;
+  }
+  if (last.kind === 'junction') {
+    if (index === 0) return cell(JUNCTION_TYPE_TEXT[last.junctionType] ?? '');
+    if (index === 1) return cell(enc(last.syuutenJikoku, false));
+    return null;
+  }
+  return null;
 }

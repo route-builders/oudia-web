@@ -636,7 +636,18 @@ export function TimetableView(props: {
           }}
         />
       </div>
-      <div className="grid-root" ref={rootRef} tabIndex={0} onKeyDown={onKeyDown}>
+      <div
+        className="grid-root"
+        ref={rootRef}
+        tabIndex={0}
+        onKeyDown={onKeyDown}
+        // グリッドは Canvas 描画なので行の種類が DOM に出ない。E2E が行番号を
+        // ハードコードせずに済むよう、行構成だけを属性で公開する
+        // ("hatsu:0" のように 種類[:駅Order] を '|' 区切り)。
+        data-grid-rows={grid.rows
+          .map((r) => (r.ekiOrder === null ? r.type : `${r.type}:${String(r.ekiOrder)}`))
+          .join('|')}
+      >
         <canvas ref={canvasRef} className="grid-content" />
         {renzoku !== null && (
           <div className="renzoku-indicator" role="status" aria-live="polite">

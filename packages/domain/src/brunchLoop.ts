@@ -231,3 +231,91 @@ export function deriveBrunchLoopMap(ekiCont: readonly Eki[]): BrunchLoopMap {
 
   return { positions, ekiIndexBrunchOriginSide, ekiIndexLoop, ekiIndexBrunchTerminalSide };
 }
+
+/**
+ * ある駅と分岐・環状で連なる駅 index 群を平坦に列挙する(原典
+ * CentDedEkiCont::getEkiIndexBrunchLoop、CentDedEkiCont.cpp:1338-1496 の直訳)。
+ *
+ * `deriveBrunchLoopMap` が返す 3 分割(起点側分岐 / 環状チェーン / 終点側分岐)とは**別の関数**で、
+ * こちらは「自駅 + 関係する駅」を 1 本の列にして返す。用途は所属判定(原典も `find` するだけ)
+ * なので順序に意味はない。分岐設定の向き(基幹駅が自駅より上か下か)で 4 通りに場合分けする。
+ *
+ * 使い所: 運用表 CSV の出区/入区駅指定(原典 CDlgOperationTableCsvExport.cpp:763-768)、
+ * 交差支障の同一駅群など。
+ */
+export function getEkiIndexBrunchLoop(ekiCont: readonly Eki[], ekiIndex: number): number[] {
+  const n = ekiCont.length;
+  const out: number[] = [ekiIndex];
+  const self = ekiCont[ekiIndex];
+  if (self === undefined) return out;
+  const core = coreOf(ekiCont, ekiIndex);
+  const loopOrigin = loopOriginOf(ekiCont, ekiIndex);
+
+  /** 環状チェーンを下方向(index 増加)へ辿り、末端 index を返す(原典の do-while)。 */
+  const chainDownFrom = (start: number): number => {
+    let idxl = start;
+    for (;;) {
+      let found = -1;
+      for (let idxls = idxl + 1; idxls < n; idxls++) {
+        if (loopOriginOf(ekiCont, idxls) === idxl) {
+          found = idxls;
+          break;
+        }
+      }
+      if (found === -1) break;
+      out.push(found);
+      idxl = found;
+    }
+    return idxl;
+  };
+  /** 環状チェーンを上方向へ辿り、末端 index を返す。 */
+  const chainUpFrom = (start: number): number => {
+    let idxl = start;
+    for (;;) {
+      const origin = loopOriginOf(ekiCont, idxl);
+      if (origin < 0) break;
+      out.push(origin);
+      idxl = origin;
+    }
+    return idxl;
+  };
+  /** idxl を基幹駅とする派生駅を上方向に集める。 */
+  const derivedAbove = (idxl: number, skip = -1): void => {
+    for (let idxu = idxl - 1; idxu >= 0; idxu--) {
+      if (idxu !== skip && coreOf(ekiCont, idxu) === idxl) out.push(idxu);
+    }
+  };
+  /** idxl を基幹駅とする派生駅を下方向に集める。 */
+  const derivedBelow = (idxl: number, skip = -1): void => {
+    for (let idxd = idxl + 1; idxd < n; idxd++) {
+      if (idxd !== skip && coreOf(ekiCont, idxd) === idxl) out.push(idxd);
+    }
+  };
+
+  if (core >= 0 && core > ekiIndex) {
+    // 自駅が「下方への派生駅」= 基幹駅は自駅より下。基幹駅から下へ繋がりうる(:1345-1382)。
+    out.push(core);
+    derivedAbove(core, ekiIndex);
+    const idxl = chainDownFrom(core);
+    derivedBelow(idxl);
+  } else if (core >= 0 && core < ekiIndex) {
+    // 自駅が「上方への派生駅」。基幹駅から上へ繋がりうる(:1383-1410)。
+    out.push(core);
+    derivedBelow(core, ekiIndex);
+    const idxl = chainUpFrom(core);
+    derivedAbove(idxl);
+  } else if (loopOrigin >= 0) {
+    // 自駅が環状の終点駅(:1411-1455)。上方へ遡ってから、自駅から下方へも辿る。
+    out.push(loopOrigin);
+    const up = chainUpFrom(loopOrigin);
+    derivedAbove(up);
+    const down = chainDownFrom(ekiIndex);
+    derivedBelow(down);
+  } else {
+    // 分岐・環状の設定を持たない駅(基幹駅 or 環状起点でありうる。:1456-1494)。
+    derivedAbove(ekiIndex);
+    const idxl = chainDownFrom(ekiIndex);
+    derivedBelow(idxl);
+  }
+  return out;
+}

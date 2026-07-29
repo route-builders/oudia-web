@@ -4,6 +4,10 @@
 /**
  * 路線ツリー(ナビゲーション専用)。ダイヤごとに ダイヤグラム / 下り・上り時刻表 /
  * 各駅の駅時刻表 を開くリンクを並べる(architecture §4.5)。
+ *
+ * 運用系(運用一覧表 / 運用一覧図 / 入出区連携コード一覧)は原典では右クリック限定の
+ * 隠し導線だったが、設計 §2.2 の決定に従い**常設の子項目に昇格**する。表示条件は原典と同じく
+ * EnableOperation=2(通常モード)のときのみ(簡易モードでは運番が割り当たらないため)。
  */
 
 import type { RosenFileData } from '@oudia-web/format';
@@ -69,6 +73,37 @@ export function RosenTree(props: { data: RosenFileData }): React.ReactElement {
                 上り時刻表
               </button>
             </li>
+            {data.rosen.enableOperation === 2 && (
+              <>
+                <li>
+                  <button
+                    onClick={() => {
+                      openView({ type: 'allOperationTable', diaIndex, graphical: false });
+                    }}
+                  >
+                    運用一覧表
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      openView({ type: 'allOperationTable', diaIndex, graphical: true });
+                    }}
+                  >
+                    運用一覧図
+                  </button>
+                </li>
+                <li>
+                  <button
+                    onClick={() => {
+                      openView({ type: 'inOutLinkCodeList', diaIndex });
+                    }}
+                  >
+                    入出区連携コード一覧
+                  </button>
+                </li>
+              </>
+            )}
             <li>
               <button
                 onClick={() => {

@@ -13,15 +13,18 @@
  * - 列車の在線占有(Zaisen)= 番線色の太い横線(着 X 〜 発 X)
  * - 着発の縦コネクタ = 駅線から占有番線レーンへの縦線
  *
- * 出区○/入区△・転線(shunt)縦線・補助列車線は M7 / 分岐環状(後回し)のため描かない。
+ * 出区○/入区△/路線外斜線は**単独駅ぶんのみ**描く(M7e)。転線(shunt)縦線・
+ * 補助列車線(chaku/hatsuOperation の -2/-4)は分岐環状の在線表と同時に実装する。
  */
 
-import type { DiagramLayout, RessyaOccupancy } from '@oudia-web/derive';
+import type { DiagramLayout, OperationMarkInput, RessyaOccupancy } from '@oudia-web/derive';
+import { deriveOperationMarks } from '@oudia-web/derive';
 import { strokeLine } from '../core/primitives.js';
 import type { RenderContext2D } from '../core/RenderTarget.js';
 import { xDgrToView, yDgrToView } from '../core/ViewTransform.js';
 import { enumShiftSeconds } from './culling.js';
 import type { DiagramViewState } from './DiagramRenderer.js';
+import { drawOperationMarks, type OperationMarkTheme } from './OperationMarkRenderer.js';
 
 /** 在線表描画の入力(occupancy は deriveOccupancy の出力)。 */
 export interface OccupancyDrawInput {
@@ -59,6 +62,14 @@ export function drawOccupancy(
   occupancy: OccupancyDrawInput,
   syubetsuColor: (syubetsuIndex: number) => string,
   laneLineColor: string,
+  /** 運用記号(出区○/入区△/路線外斜線)を描くための追加情報。省略すると描かない。 */
+  marks?: {
+    /** D = DiagramDgrYZahyouKyoriDefault(既定 60 Dgr 秒)。 */
+    readonly dgrYSizeEkikanDefault: number;
+    /** 路線外発着駅名の引き当て(駅Index, outer index)。 */
+    readonly outerEkimei: (ekiIndex: number, outerIndex: number) => string;
+    readonly theme: Omit<OperationMarkTheme, 'senColor'>;
+  },
 ): void {
   const t = view.transform;
   const lanes = laneIndex(layout);
@@ -111,6 +122,49 @@ export function drawOccupancy(
             ctx.lineWidth = 1;
             strokeLine(ctx, xC, yStation, xC, yLane);
             strokeLine(ctx, xH, yLane, xH, yStation);
+
+            // 運用記号(出区○ / 入区△ / 路線外斜線)。基準 Y は在線表表示駅なのでレーン Y。
+            if (marks !== undefined) {
+              const input: OperationMarkInput = {
+                houkou: occ.houkou,
+                trackDisplay: true,
+                chakuOperation: line.chakuOperation,
+                hatsuOperation: line.hatsuOperation,
+                zaisen: [
+                  {
+                    trackIndex: z.trackIndex,
+                    dgrXChaku: z.dgrXChaku + shift,
+                    dgrXHatsu: z.dgrXHatsu + shift,
+                    operationNumber: line.operationNumber,
+                  },
+                ],
+                outerEkimeiSihatsu:
+                  line.outerEkiIndex === null
+                    ? ''
+                    : marks.outerEkimei(line.ekiIndex, line.outerEkiIndex),
+                outerEkimeiSyuuchaku:
+                  line.outerEkiIndex === null
+                    ? ''
+                    : marks.outerEkimei(line.ekiIndex, line.outerEkiIndex),
+                dgrYSizeEkikanDefault: marks.dgrYSizeEkikanDefault,
+              };
+              const list = deriveOperationMarks(input);
+              if (list.length > 0) {
+                drawOperationMarks(
+                  ctx,
+                  list,
+                  {
+                    xOf: (dgr) => xDgrToView(t, dgr),
+                    baseY: yLane,
+                    markSize: marks.dgrYSizeEkikanDefault * t.pxPerSecY,
+                  },
+                  { ...marks.theme, senColor: color },
+                );
+                // マーク描画で ctx の状態が変わるので在線線用に戻す。
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 1;
+              }
+            }
           }
         }
       }

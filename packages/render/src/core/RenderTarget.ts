@@ -36,6 +36,9 @@ export interface RenderContext2D {
   strokeRect(x: number, y: number, w: number, h: number): void;
   fillText(text: string, x: number, y: number): void;
   arc(x: number, y: number, r: number, start: number, end: number): void;
+  closePath(): void;
+  bezierCurveTo(cp1x: number, cp1y: number, cp2x: number, cp2y: number, x: number, y: number): void;
+  scale(x: number, y: number): void;
   rotate(angle: number): void;
   measureText(text: string): { width: number };
   setLineDash(segments: number[]): void;

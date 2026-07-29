@@ -279,6 +279,12 @@ body {
   color: #9c2b2b;
 }
 
+/* 進行中の案内(運用探索中など)。エラーではないので抑えた色。 */
+.view-note {
+  padding: 24px;
+  color: #666;
+}
+
 /* ---- プロパティ編集ダイアログ(design §05 5.1)---- */
 .prop-dialog {
   border: 1px solid #888;
@@ -333,6 +339,31 @@ body {
   flex-direction: row;
   align-items: center;
   gap: 6px;
+}
+/* 運用表 CSV エクスポートの 3 択ラジオ(原典 IDD_OperationTable_CsvExport)。
+   1 行が「ラジオ + 入力 + コンボ + 文言」の横並びになる。 */
+.prop-dialog .dialog-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  padding: 8px;
+  margin: 0;
+}
+.prop-dialog .dialog-radio {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.prop-dialog .dialog-radio input[type="text"],
+.prop-dialog .dialog-radio select {
+  padding: 2px 4px;
+  border: 1px solid #bbb;
+  border-radius: 3px;
+  font-size: 13px;
 }
 .prop-dialog .dialog-error {
   color: #9c2b2b;
@@ -807,4 +838,219 @@ body {
   font-size: 12px;
   color: #555;
   margin: 0 0 4px;
+}
+
+/* ---- 運用系ビュー(M7d)---- */
+.view-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 10px;
+  border-bottom: 1px solid #ccc;
+  background: #f6f6f6;
+  font-size: 12px;
+}
+.view-toolbar label {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+.view-toolbar .stale-note {
+  color: #b06000;
+}
+.view-toolbar .error-note {
+  color: #9c2b2b;
+}
+.view-toolbar .op-number-title {
+  font-weight: bold;
+}
+
+.all-operation-table,
+.operation-table,
+.inout-link-code-list {
+  overflow: auto;
+  height: 100%;
+}
+.all-operation-grid,
+.operation-table-grid,
+.inout-link-grid {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.all-operation-grid th,
+.all-operation-grid td,
+.operation-table-grid th,
+.operation-table-grid td,
+.inout-link-grid th,
+.inout-link-grid td {
+  border: 1px solid #ddd;
+  padding: 2px 6px;
+}
+.all-operation-grid th,
+.operation-table-grid th,
+.inout-link-grid th {
+  background: #eee;
+  position: sticky;
+  top: 0;
+}
+.all-operation-grid .jikoku,
+.operation-table-grid .jikoku {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.all-operation-grid .arrow,
+.operation-table-grid .arrow,
+.inout-link-grid .arrow {
+  text-align: center;
+}
+.all-operation-grid tbody tr:hover,
+.operation-table-grid tbody tr:hover,
+.inout-link-grid tbody tr:hover {
+  background: #f0f6ff;
+}
+.all-operation-grid .ressya-cell > span {
+  margin-right: 6px;
+}
+
+/* 運用一覧図 */
+.all-operation-graph {
+  position: relative;
+  font-size: 11px;
+}
+.all-operation-graph .graph-scale {
+  position: relative;
+  height: 18px;
+  border-bottom: 1px solid #ccc;
+}
+.all-operation-graph .graph-scale .hour {
+  position: absolute;
+  transform: translateX(-50%);
+  color: #666;
+}
+.all-operation-graph .graph-row {
+  position: relative;
+  height: 20px;
+  border-bottom: 1px solid #eee;
+}
+.all-operation-graph .graph-label {
+  position: absolute;
+  left: 0;
+  width: 60px;
+  font-weight: bold;
+}
+.all-operation-graph .graph-out {
+  position: absolute;
+  left: 60px;
+  width: 58px;
+  overflow: hidden;
+  color: #666;
+}
+.all-operation-graph .graph-band {
+  position: absolute;
+  top: 6px;
+  height: 8px;
+  background: #3b6ea5;
+  border-radius: 4px;
+}
+.all-operation-graph .graph-in {
+  position: absolute;
+  right: 0;
+  color: #666;
+}
+
+/* ---- 運用表 箱ダイヤ形式(原典 CWndDcdGridOperationTable の Extension 経路)---- */
+/* 1 列車 = 着行 / 線行(3px)/ 発行 の 3 段。着行・線行の下に横罫線を引かないことで
+   1 行が 1 つの「箱」に見える(原典 :1055-1090 の NULLPEN 化)。 */
+.box-operation-table {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.box-operation-table th,
+.box-operation-table td {
+  padding: 0 4px;
+  text-align: center;
+}
+.box-operation-table thead th {
+  border-bottom: 1px solid #999;
+  background: #f4f4f4;
+  font-weight: normal;
+}
+.box-operation-table tbody th {
+  border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+  font-weight: normal;
+  text-align: left;
+}
+/* 発行の下だけ細線。着行・線行の下は引かない(= 箱)。 */
+.box-operation-table .box-tr-hatsu td {
+  border-bottom: 1px solid #ccc;
+}
+.box-operation-table .box-chaku,
+.box-operation-table .box-hatsu {
+  position: relative;
+  height: 15px;
+  min-width: 40px;
+}
+/* 通過(運転停車)駅の時刻は灰色。括弧は付けない(原典 CdColorProp(128,128,128))。 */
+.box-operation-table .tsuuka {
+  color: #808080;
+}
+.box-operation-table .box-line-cell {
+  position: relative;
+  height: 3px;
+  padding: 0;
+}
+.box-operation-table .box-line {
+  position: absolute;
+  top: 0;
+  height: 3px;
+}
+/* 縦線は幅 3px でセル中央(原典 VerticalLine)。 */
+.box-operation-table .box-vline {
+  position: absolute;
+  left: calc(50% - 1px);
+  top: 0;
+  width: 3px;
+  height: 100%;
+}
+/* ○ / △ はセル高の 0.8 倍。○ は下端、△ は上端が線行に接する。 */
+.box-operation-table .box-mark {
+  position: absolute;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  transform: translateX(-50%);
+}
+.box-operation-table .box-mark-circle {
+  bottom: 0;
+}
+.box-operation-table .box-mark-triangle {
+  top: 0;
+}
+
+/* ---- 運用一覧図(Canvas。原典 ViewAllOperationTable2)---- */
+.all-operation-graph-root {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.all-operation-graph-root .graph-toolbar {
+  flex: none;
+}
+.all-operation-graph-root .graph-range {
+  color: #666;
+}
+.all-operation-graph-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.all-operation-graph-canvas canvas {
+  position: absolute;
+  inset: 0;
+  touch-action: none;
 }

@@ -81,7 +81,28 @@ export function DiagramView(props: { data: RosenFileData; diaIndex: number }): R
       };
       drawL1(ctx, result.layout, view, THEME);
       // L1.5: 在線表(スジの下に敷く)。
-      drawOccupancy(ctx, result.layout, view, occupancy, syubetsuLabelColor, 'rgb(200,200,200)');
+      drawOccupancy(
+        ctx,
+        result.layout,
+        view,
+        occupancy,
+        syubetsuLabelColor,
+        'rgb(200,200,200)',
+        // 運用記号(出区○ / 入区△ / 路線外斜線)。単独駅ぶんのみ(M7e)。
+        {
+          dgrYSizeEkikanDefault:
+            data.rosen.diagramDgrYZahyouKyoriDefault > 0
+              ? data.rosen.diagramDgrYZahyouKyoriDefault
+              : 60,
+          outerEkimei: (ekiIndex, outerIndex) =>
+            data.rosen.ekiCont[ekiIndex]?.outerTerminalCont[outerIndex]?.ekimei ?? '',
+          theme: {
+            mojiColor: 'rgb(0,0,0)',
+            outerLabelColor: 'rgb(0,0,0)',
+            font: '10px "Meiryo UI", Meiryo, sans-serif',
+          },
+        },
+      );
       drawL2(ctx, result.layout, view, syubetsuStyle);
       drawL3(ctx, result.layout, view, THEME, syubetsuLabelColor);
     },

@@ -22,3 +22,16 @@ export function downloadBytes(bytes: Uint8Array, fileName: string): void {
   // 次のタスクで解放(click ハンドラ完了後)。
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
+
+/** CSV 文字列を fileName としてダウンロードさせる(BOM は文字列側に含める)。 */
+export function downloadCsv(csv: string, fileName: string): void {
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}

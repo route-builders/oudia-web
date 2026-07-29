@@ -71,7 +71,7 @@ describe('buildTimetableGrid(sample2 スナップショット)', () => {
     });
   });
 
-  it('enableOperation=0 では作業行が空(黄金テスト不変の保証)', () => {
+  it('enableOperation=0 では運用番号行が出ず、作業行は 2 行だけ(原典 :213-275)', () => {
     const data = loadRel('current/sample2.oud2');
     const r = buildTimetableGrid(data, 0, {
       ...defaultTimetableGridOptions(data, RESSYAHOUKOU_KUDARI),
@@ -79,14 +79,30 @@ describe('buildTimetableGrid(sample2 スナップショット)', () => {
     });
     expect(r.ok).toBe(true);
     if (!r.ok) return;
-    // 始発駅作業/終着駅作業行のセルはすべて operationSpacer(空)。
-    r.grid.rows.forEach((row, ri) => {
-      if (row.type !== 'operationShihatsu' && row.type !== 'operationShuchaku') return;
-      for (let c = 2; c < r.grid.columns.length; c++) {
-        const cell = r.grid.cells[ri]?.[c];
-        expect(cell?.text).toBe('');
-      }
-    });
+    // 運用番号行は enableOperation > 1 のときだけ出る。
+    expect(r.grid.rows.filter((row) => row.type === 'operationNumber')).toHaveLength(0);
+    // 作業ブロックは 1=作業名 / 2=時刻 の 2 行のみ(運番・連携コード行は出ない)。
+    expect(r.grid.rows.filter((row) => row.type === 'operationShihatsu')).toHaveLength(2);
+    expect(r.grid.rows.filter((row) => row.type === 'operationShuchaku')).toHaveLength(2);
+    // 1/2 行目のテキストは原典どおり enableOperation に関係なく埋まる(CCellBuilder.cpp:6404-)。
+    const nameRow = r.grid.rows.findIndex((row) => row.type === 'operationShihatsu');
+    expect(r.grid.cells[nameRow]?.[2]?.text).toBe('出区');
+  });
+
+  it('enableOperation=2 では運用番号行が OperationNumberRows 段ぶん出る', () => {
+    const data = loadRel('current/sample2.oud2'); // EnableOperation=2 / OperationNumberRows=2
+    const r = buildTimetableGrid(data, 0, defaultTimetableGridOptions(data, RESSYAHOUKOU_KUDARI));
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    const opNumRows = r.grid.rows.filter((row) => row.type === 'operationNumber');
+    expect(opNumRows).toHaveLength(data.dispProp.operationNumberRows);
+    // 段は 0..rows-1、最下段だけ細線。
+    expect(opNumRows.map((row) => row.operationIndex)).toEqual([0, 1]);
+    expect(opNumRows.map((row) => row.bottomBorder)).toEqual(['none', 'narrow']);
+    // 1 列車目の運番 1;2 は 2 段に割れる("1" / "+2")。
+    const first = r.grid.rows.findIndex((row) => row.type === 'operationNumber');
+    expect(r.grid.cells[first]?.[2]?.text).toBe('1');
+    expect(r.grid.cells[first + 1]?.[2]?.text).toBe('+2');
   });
 
   it('enableOperation>=1 で作業行に作業テキストが出る(sample2 実データ)', () => {

@@ -34,6 +34,29 @@ export type {
   EkiTimetableCsvOptions,
 } from './csv/ekiTimetableCsv.js';
 export { buildEkiTimetableCsv } from './csv/ekiTimetableCsv.js';
+// ---- 運用表 CSV / 運用一覧表 CSV(M7d)----
+export type {
+  BuildAllOperationTableCsvParams,
+  BuildOperationTableCsvParams,
+} from './csv/operationCsv.js';
+export {
+  ALL_OPERATION_TABLE_CSV_FILETYPE,
+  buildAllOperationTableCsv,
+  buildOperationTableCsv,
+} from './csv/operationCsv.js';
+// ---- 運用表 CSV の抽出条件(M7e)----
+export type {
+  OperationCsvExportTarget,
+  OperationMatchMode,
+} from './csv/operationCsvFilter.js';
+export {
+  filterOperationTableForCsv,
+  matchOperationNumber,
+  matchOperationStation,
+  OPERATION_MATCH_LABEL,
+  OPERATION_MATCH_MODES,
+  satisfiesOperationCsvExportCondition,
+} from './csv/operationCsvFilter.js';
 export type {
   BuildTimetableCsvParams,
   BuildTimetableCsvResult,
@@ -74,6 +97,24 @@ export type {
 } from './layout/deriveOccupancy.js';
 export { deriveOccupancy } from './layout/deriveOccupancy.js';
 export { buildDiaLayoutFrame, findEkikanSaisyouSec } from './layout/ekiLayout.js';
+// ---- ダイヤグラムの運用記号(出区○/入区△/路線外斜線/前列車接続円弧。M7d)----
+export type {
+  ChakuOperationCode,
+  HatsuOperationCode,
+  OperationMark,
+  OperationMarkInput,
+  OperationNumberLabel,
+} from './layout/operationMark.js';
+export {
+  CHAKU_OP_OUT,
+  CHAKU_OP_OUTER,
+  CHAKU_OP_PREV_JUNCTION,
+  deriveOperationMarks,
+  deriveOperationNumberLabels,
+  HATSU_OP_IN,
+  HATSU_OP_NEXT_JUNCTION,
+  HATSU_OP_OUTER,
+} from './layout/operationMark.js';
 export type { EstimateSlot } from './layout/ressyaLayout.js';
 export { computeEstimateJikoku } from './layout/ressyaLayout.js';
 export type {
@@ -177,6 +218,21 @@ export type {
   RessyaElement,
 } from './operationLight/types.js';
 export { opRefEquals, opRefKey } from './operationLight/types.js';
+// ---- 運用一覧図(図本体の幾何。M7e)----
+export type {
+  AllOperationDiagramOptions,
+  OperationDiagramEkimeiLabel,
+  OperationDiagramMinuteLabel,
+  OperationDiagramRow,
+  OperationDiagramSegment,
+} from './operationView/allOperationDiagram.js';
+export {
+  DEFAULT_VLINE_MODE as DEFAULT_OPERATION_VLINE_MODE,
+  deriveAllOperationDiagram,
+  deriveOperationDiagramRow,
+  OPERATION_ROW_DGR_HEIGHT,
+  VLINE_PITCHES as OPERATION_VLINE_PITCHES,
+} from './operationView/allOperationDiagram.js';
 // ---- 運用一覧表 / 運用一覧図の共通ビューモデル(M7d)----
 export type {
   AllOperationTableColumn,
@@ -192,6 +248,22 @@ export {
   countRessyaInOperation,
   deriveAllOperationTable,
 } from './operationView/allOperationTable.js';
+// ---- 運用表の箱ダイヤ形式ビューモデル(M7e)----
+export type {
+  BoxCell,
+  BoxColumn,
+  BoxLineType,
+  BoxOperationTableOptions,
+  BoxOperationTableViewModel,
+  BoxRow,
+  BoxSymbol,
+  CombinedBoxRow,
+} from './operationView/boxOperationTable.js';
+export {
+  buildBoxOperationTableColumns,
+  combineBoxOperationTableRows,
+  deriveBoxOperationTableView,
+} from './operationView/boxOperationTable.js';
 // ---- 入出区連携コード一覧ビューモデル(M7d)----
 export type {
   InOutLinkCodeListColumn,
