@@ -222,3 +222,79 @@ describe('在線表表示モード(原典 CentDedDgrDia.cpp:236-262)', () => {
     expect(b.dgrYOrg).toBe(b.dgrYTer);
   });
 });
+
+describe('分岐環状の駅群展開(原典 CentDedDgrRessya.cpp:1788-2078)', () => {
+  /** A(在線表・分岐基幹)と B(A から分岐)の 2 駅。 */
+  function branchRosen(): RosenFileData {
+    const data = rosenOccupancy();
+    const a = data.rosen.ekiCont[0];
+    const b = data.rosen.ekiCont[1];
+    if (a === undefined || b === undefined) throw new Error('no eki');
+    // B を A から分岐させる(B は A より後ろ = 終点側派生駅)。
+    b.brunchCoreEkiIndex = 0;
+    b.ekikibo = 'syuyou';
+    b.diagramTrackDisplay = true;
+    b.ekijikokukeisiki = 'hatsuchaku';
+    b.ekiTrack2Cont = [
+      { trackName: '1番線', trackRyakusyou: '1', trackNoboriRyakusyou: '' },
+      { trackName: '2番線', trackRyakusyou: '2', trackNoboriRyakusyou: '' },
+    ];
+    b.diagramTrackOmit = [false, false];
+    return data;
+  }
+
+  function occOf(data: RosenFileData) {
+    const dia = data.rosen.diaCont[0];
+    const frame = buildDiaLayoutFrame(
+      data.rosen,
+      dia?.ressyaCont[0] ?? [],
+      dia?.ressyaCont[1] ?? [],
+    );
+    return deriveOccupancy(
+      data.rosen,
+      dia?.ressyaCont[0] ?? [],
+      dia?.ressyaCont[1] ?? [],
+      frame.ekiLayouts,
+    );
+  }
+
+  it('★同じ Zaisen が駅群の各駅へ複製され、別々の行になる', () => {
+    const data = branchRosen();
+    const occ = occOf(data);
+    const lines = occ.kudari[0]?.trackLines ?? [];
+    // 駅 A の在線が 駅 A と 駅 B の 2 行になる(同じ Zaisen 内容)。
+    const atA = lines.filter((l) => l.ekiIndex === 0);
+    const atB = lines.filter((l) => l.ekiIndex === 1);
+    expect(atA.length).toBeGreaterThan(0);
+    expect(atB.length).toBeGreaterThan(0);
+    expect(atB[0]?.zaisenCont[0]?.dgrXChaku).toBe(atA[0]?.zaisenCont[0]?.dgrXChaku);
+  });
+
+  it('★自駅は -1、他駅は反転フラグ比較で -2 / -4 になる', () => {
+    const data = branchRosen();
+    const occ = occOf(data);
+    const lines = occ.kudari[0]?.trackLines ?? [];
+    // 駅 A の在線を 駅 B へ複製した行。反転設定なし同士 → -2。
+    const copied = lines.find((l) => l.ekiIndex === 1 && l.ekiOrder === 1);
+    expect(copied).toBeDefined();
+    expect([-2, -4]).toContain(copied?.hatsuOperation);
+  });
+
+  it('★反転設定が食い違うと -4 になる', () => {
+    const data = branchRosen();
+    const b = data.rosen.ekiCont[1];
+    if (b === undefined) throw new Error('no eki');
+    b.brunchOpposite = true;
+    const occ = occOf(data);
+    const lines = occ.kudari[0]?.trackLines ?? [];
+    const copied = lines.find((l) => l.ekiIndex === 1 && l.ekiOrder === 1);
+    expect(copied?.hatsuOperation).toBe(-4);
+  });
+
+  it('単独駅のときは自駅ぶんだけ(複製しない)', () => {
+    const data = rosenOccupancy();
+    const occ = occOf(data);
+    const lines = occ.kudari[0]?.trackLines ?? [];
+    expect(lines.every((l) => l.ekiIndex === 0)).toBe(true);
+  });
+});

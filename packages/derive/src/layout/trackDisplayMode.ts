@@ -69,3 +69,55 @@ export function trackDisplayModeForHoukou(
   if (mode === 3) return 2;
   return mode;
 }
+
+/**
+ * ダイヤグラム層の loopOpposite を導出する(原典 CentDedDgrDia.cpp:290-315)。
+ *
+ * 生の Eki.loopOpposite をそのまま使うのではなく、駅時刻形式で作り替える:
+ * - 上り着駅: 終点方に「この駅を環状起点とする駅」があり、**その駅が発着型**なら
+ *   その駅の loopOpposite を引き継ぐ。下り着型なら false。
+ * - 下り着駅: 生の loopOpposite をそのまま使う。
+ * - それ以外: 常に false(発着駅で終点駅かつ loopOpposite=true でもここでは false)。
+ *
+ * ★brunchOpposite の方は加工されず生の値がそのまま Dgr 層へ渡る(:400)。
+ */
+export function deriveLoopOpposite(ekiCont: readonly Eki[], ekiIndex: number): boolean {
+  const eki = ekiCont[ekiIndex];
+  if (eki === undefined) return false;
+  if (eki.ekijikokukeisiki === 'noboriChaku') {
+    for (let idx = ekiIndex + 1; idx < ekiCont.length; idx++) {
+      const other = ekiCont[idx];
+      if (other?.loopOriginEkiIndex !== ekiIndex) continue;
+      return other.ekijikokukeisiki === 'hatsuchaku' ? other.loopOpposite : false;
+    }
+    return false;
+  }
+  if (eki.ekijikokukeisiki === 'kudariChaku') return eki.loopOpposite;
+  return false;
+}
+
+/**
+ * 分岐環状の在線行を複製するときの作業コード(原典 CentDedDgrRessya.cpp:1803-1813 /
+ * :1898-1909 / :1993-2003)。
+ *
+ * 時刻元駅と表示駅が同じなら -1。違えば
+ * 「(時刻元駅.brunchOpposite || 時刻元駅.loopOpposite) === 表示駅の反転フラグ」で
+ * -2(終点方)/ -4(起点方へ発車)を決める。
+ *
+ * ★表示駅側に使うフラグが配列で違う: 起点側/終点側の分岐派生駅は **brunchOpposite**、
+ * 環状チェーンは **loopOpposite**。この非対称は原典どおり。
+ */
+export function brunchOppositeOperationCode(
+  ekiCont: readonly Eki[],
+  srcEkiIndex: number,
+  dispEkiIndex: number,
+  kind: 'brunch' | 'loop',
+): -1 | -2 | -4 {
+  if (srcEkiIndex === dispEkiIndex) return -1;
+  const src = ekiCont[srcEkiIndex];
+  const disp = ekiCont[dispEkiIndex];
+  if (src === undefined || disp === undefined) return -1;
+  const s = src.brunchOpposite || deriveLoopOpposite(ekiCont, srcEkiIndex);
+  const d = kind === 'loop' ? deriveLoopOpposite(ekiCont, dispEkiIndex) : disp.brunchOpposite;
+  return s === d ? -2 : -4;
+}

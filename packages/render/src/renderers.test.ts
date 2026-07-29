@@ -18,6 +18,7 @@ import { describe, expect, it } from 'vitest';
 import { createViewTransform, viewTransformFromZone } from './core/ViewTransform.js';
 import type { DiagramTheme, DiagramViewState } from './diagram/DiagramRenderer.js';
 import { drawL1, drawL2, drawL3 } from './diagram/DiagramRenderer.js';
+import { drawOccupancy } from './diagram/OccupancyRenderer.js';
 import { drawOperationMarks } from './diagram/OperationMarkRenderer.js';
 import { GridGeometry } from './grid/GridGeometry.js';
 import { drawGrid } from './grid/GridRenderer.js';
@@ -201,5 +202,108 @@ describe('drawOperationMarks(運用記号)', () => {
     );
     expect(ops(ctx).filter((o) => o === 'lineTo')).toHaveLength(1);
     expect(texts(ctx)).toContain('車庫 5');
+  });
+});
+
+describe('drawOccupancy(補助列車線)', () => {
+  /** 最小の在線行 1 本を持つダミー layout。 */
+  function fakeLayout(dgrYOrg: number, dgrYTer: number, laneY: number) {
+    return {
+      frame: {
+        ekiLayouts: [
+          {
+            ekiIndex: 0,
+            ekimei: 'A',
+            isSyuyou: true,
+            dgrYOrg,
+            dgrYTer,
+            trackLanes: [{ trackIndex: 0, dgrY: laneY }],
+          },
+        ],
+        dgrXPosMin: 0,
+        dgrXSize: 86400,
+        dgrYSize: 2000,
+      },
+      ressyaLayouts: [[], []],
+    } as unknown as Parameters<typeof drawOccupancy>[1];
+  }
+
+  const view = {
+    // contentX=0 / contentY=0、X は 1000px で 10000 秒ぶん、Y は等倍。
+    transform: createViewTransform(0, 0, 0.1, 1),
+    viewW: 1000,
+    viewH: 800,
+    displayKudari: true,
+    displayNobori: true,
+    displayStopMark: false,
+  } as unknown as Parameters<typeof drawOccupancy>[2];
+
+  function line(over: Record<string, unknown>) {
+    return {
+      ekiIndex: 0,
+      ekiOrder: 0,
+      isTrackDisplay: true,
+      ekiatsukai: 'teisya' as const,
+      zaisenCont: [{ trackIndex: 0, dgrXChaku: 3600, dgrXHatsu: 3660 }],
+      chakuOperation: -1,
+      hatsuOperation: -1,
+      outerEkiIndex: null,
+      prevRessyahoukou: null,
+      operationNumber: '',
+      ...over,
+    };
+  }
+
+  function strokeCount(ctx: MockCtx): number {
+    return ctx.calls.filter((c) => c.op === 'stroke').length;
+  }
+
+  it('作業コードが -1 のときは補助列車線を描かない', () => {
+    const base = new MockCtx();
+    drawOccupancy(
+      base,
+      fakeLayout(100, 200, 150),
+      view,
+      { kudari: [{ houkou: 0, syubetsuIndex: 0, trackLines: [line({})] }], nobori: [] },
+      () => '#000',
+      '#ccc',
+    );
+    const aux = new MockCtx();
+    drawOccupancy(
+      aux,
+      fakeLayout(100, 200, 150),
+      view,
+      {
+        kudari: [{ houkou: 0, syubetsuIndex: 0, trackLines: [line({ hatsuOperation: -2 })] }],
+        nobori: [],
+      },
+      () => '#000',
+      '#ccc',
+    );
+    // -2 のぶんだけストロークが増える。
+    expect(strokeCount(aux)).toBeGreaterThan(strokeCount(base));
+  });
+
+  it('★在線表を持たない駅の行でも補助列車線だけは描く', () => {
+    const ctx = new MockCtx();
+    drawOccupancy(
+      ctx,
+      fakeLayout(100, 200, 150),
+      view,
+      {
+        kudari: [
+          {
+            houkou: 0,
+            syubetsuIndex: 0,
+            trackLines: [line({ isTrackDisplay: false, hatsuOperation: -4 })],
+          },
+        ],
+        nobori: [],
+      },
+      () => '#000',
+      '#ccc',
+    );
+    // 横線・コネクタは出ないが補助列車線は出る。
+    expect(strokeCount(ctx)).toBeGreaterThan(0);
   });
 });

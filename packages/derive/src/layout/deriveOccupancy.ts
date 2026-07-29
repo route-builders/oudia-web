@@ -18,13 +18,17 @@
  */
 
 import {
+  type BrunchLoopMap,
+  deriveBrunchLoopMap,
   ekiIndexOfEkiOrder,
   getEkiJikoku,
+  getEkiOrderBrunchLoop,
   getValidSihatsuEki,
   getValidSyuuchakuEki,
 } from '@oudia-web/domain';
 import type { Ressya, Rosen } from '@oudia-web/format';
 import type { ChakuOperationCode, HatsuOperationCode } from './operationMark.js';
+import { brunchOppositeOperationCode } from './trackDisplayMode.js';
 import type { EkiLayout } from './types.js';
 
 /** 在線表の 1 占有区間(1 番線を着 X から発 X まで占有)。原典 struct Zaisen。 */
@@ -41,6 +45,13 @@ export interface Zaisen {
 export interface RessyaTrackLine {
   /** 在線表駅の駅Index(下り基準)。 */
   readonly ekiIndex: number;
+  /** 在線表駅の駅Order(この列車の方向基準)。分岐環状の展開はこの空間で行う。 */
+  readonly ekiOrder: number;
+  /**
+   * この行が在線表(番線帯)を持つ駅のものか。false = 補助列車線・記号だけを描く行
+   * (原典 CentDedDgrRessyaTrackLine の bIsTrackDisplay)。
+   */
+  readonly isTrackDisplay: boolean;
   /** 駅扱(停車/通過)。原典 m_iTsuukaTeisya。 */
   readonly ekiatsukai: 'teisya' | 'tsuuka';
   /** 占有区間(単独駅・非運用では 1 個)。 */
@@ -94,34 +105,89 @@ function deriveRessyaTrackLines(
   occupancyIndices: ReadonlySet<number>,
   kitenJikoku: number,
   enableOperation: number,
+  brunchLoop: BrunchLoopMap,
 ): RessyaTrackLine[] {
   const ekiCount = rosen.ekiCont.length;
   const lines: RessyaTrackLine[] = [];
   const sihatsuOrder = getValidSihatsuEki(ressya);
   const syuuchakuOrder = getValidSyuuchakuEki(ressya);
   for (let ekiOrder = 0; ekiOrder < ekiCount; ekiOrder++) {
-    const ekiIndex = ekiIndexOfEkiOrder(ekiOrder, ekiCount, houkou);
-    if (!occupancyIndices.has(ekiIndex)) continue;
+    const selfIndex = ekiIndexOfEkiOrder(ekiOrder, ekiCount, houkou);
     const ej = getEkiJikoku(ressya, ekiOrder);
-    if (ej.ekiatsukai !== 'teisya' && ej.ekiatsukai !== 'tsuuka') continue;
+    const ekiatsukai = ej.ekiatsukai;
+    if (ekiatsukai !== 'teisya' && ekiatsukai !== 'tsuuka') continue;
     const track = ej.ressyaTrackIndex;
     if (track === null) continue; // 番線未設定は在線を描けない
     const chaku = ej.chakuJikoku ?? ej.hatsuJikoku;
     const hatsu = ej.hatsuJikoku ?? ej.chakuJikoku;
     if (chaku === null || hatsu === null) continue;
     const op = operationCodesOf(ressya, ekiOrder, sihatsuOrder, syuuchakuOrder, enableOperation);
-    lines.push({
-      ekiIndex,
-      ekiatsukai: ej.ekiatsukai,
-      zaisenCont: [
-        {
-          trackIndex: track,
-          dgrXChaku: toDgrX(chaku, kitenJikoku),
-          dgrXHatsu: toDgrX(hatsu, kitenJikoku),
-        },
-      ],
-      ...op,
-    });
+    const zaisenCont = [
+      {
+        trackIndex: track,
+        dgrXChaku: toDgrX(chaku, kitenJikoku),
+        dgrXHatsu: toDgrX(hatsu, kitenJikoku),
+      },
+    ];
+
+    // ---- 分岐環状の駅群へ複製する(原典 CentDedDgrRessya.cpp:1788-2078 ほか)----
+    // ★駅群で在線表を共有するのではなく、**同じ Zaisen を各駅へ複製して別々の行**を作る。
+    // 違うのは (駅Order, chakuOperation, hatsuOperation, isTrackDisplay) だけ。
+    const group = getEkiOrderBrunchLoop(brunchLoop, ekiCount, ekiOrder, houkou);
+    if (group.position === 'standalone') {
+      if (!occupancyIndices.has(selfIndex)) continue;
+      lines.push({
+        ekiIndex: selfIndex,
+        ekiOrder,
+        isTrackDisplay: true,
+        ekiatsukai,
+        zaisenCont,
+        ...op,
+      });
+      continue;
+    }
+
+    const emit = (orders: readonly number[], kind: 'brunch' | 'loop'): void => {
+      for (const dispOrder of orders) {
+        const dispIndex = ekiIndexOfEkiOrder(dispOrder, ekiCount, houkou);
+        // 自駅は元の作業コード。他駅は反転フラグ比較で -1 / -2 / -4。
+        const isSelf = dispOrder === ekiOrder;
+        const neg = isSelf
+          ? -1
+          : brunchOppositeOperationCode(rosen.ekiCont, selfIndex, dispIndex, kind);
+        // 始発駅の作業(出区等)は駅群の全駅に同じ値で載る。負値側だけ駅ごとに決まる。
+        const chakuOperation: ChakuOperationCode =
+          isSelf || op.chakuOperation >= 0 ? op.chakuOperation : neg;
+        const hatsuOperation: HatsuOperationCode =
+          isSelf || op.hatsuOperation >= 0 ? op.hatsuOperation : neg;
+        const display = occupancyIndices.has(dispIndex);
+        // 在線表非表示駅は「補助列車線を描くべきとき」だけ行を出す(原典 :1947 ほか)。
+        if (
+          !display &&
+          !(
+            chakuOperation === -2 ||
+            chakuOperation === -4 ||
+            hatsuOperation === -2 ||
+            hatsuOperation === -4
+          )
+        ) {
+          continue;
+        }
+        lines.push({
+          ekiIndex: dispIndex,
+          ekiOrder: dispOrder,
+          isTrackDisplay: display,
+          ekiatsukai,
+          zaisenCont,
+          ...op,
+          chakuOperation,
+          hatsuOperation,
+        });
+      }
+    };
+    emit(group.originSide, 'brunch');
+    emit(group.loop, 'loop');
+    emit(group.terminalSide, 'brunch');
   }
   return lines;
 }
@@ -143,8 +209,11 @@ export function deriveOccupancy(
   kudari: readonly Ressya[],
   nobori: readonly Ressya[],
   ekiLayouts: readonly EkiLayout[],
+  /** 分岐環状マップ(省略時は駅から導出)。 */
+  brunchLoop?: BrunchLoopMap,
 ): { kudari: RessyaOccupancy[]; nobori: RessyaOccupancy[] } {
   const occupancyIndices = occupancyEkiIndexSet(ekiLayouts);
+  const brunchLoopMap = brunchLoop ?? deriveBrunchLoopMap(rosen.ekiCont);
   const kitenJikoku = rosen.kitenJikoku ?? 0;
   if (occupancyIndices.size === 0) return { kudari: [], nobori: [] };
 
@@ -161,6 +230,7 @@ export function deriveOccupancy(
           occupancyIndices,
           kitenJikoku,
           rosen.enableOperation,
+          brunchLoopMap,
         ),
       }))
       .filter((o) => o.trackLines.length > 0);
