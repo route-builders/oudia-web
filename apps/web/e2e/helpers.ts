@@ -55,3 +55,29 @@ export async function openTimetableDown(page: Page): Promise<void> {
   await expect(page.locator('.grid-root')).toBeVisible();
   await page.locator('.grid-root').focus();
 }
+
+/**
+ * グリッドの行番号を「行の種類」から引く。
+ *
+ * グリッドは Canvas 描画で行の中身が DOM に出ないため、TimetableView が
+ * `.grid-root[data-grid-rows]` に行構成("hatsu:0|chaku:1|…")を公開している。
+ * 行番号をテストにハードコードすると、時刻表のヘッダ行が増減するたびに
+ * (例: M7d で運用番号行が 5 行増えた)全テストが一斉に壊れるので必ずこれを使う。
+ *
+ * @param key "ressyabangou" のような行種別、または "hatsu:0" のような 種別:駅Order
+ */
+export async function gridRowIndex(page: Page, key: string): Promise<number> {
+  const spec = await page.locator('.grid-root').getAttribute('data-grid-rows');
+  if (spec === null) throw new Error('data-grid-rows not found');
+  const index = spec.split('|').indexOf(key);
+  if (index === -1) throw new Error(`grid row not found: ${key} (rows=${spec})`);
+  return index;
+}
+
+/** 初期フォーカス(列車番号行)から目的の行まで ArrowDown で移動する。 */
+export async function navigateToRow(page: Page, key: string): Promise<void> {
+  const from = await gridRowIndex(page, 'ressyabangou');
+  const to = await gridRowIndex(page, key);
+  const grid = page.locator('.grid-root');
+  for (let i = 0; i < to - from; i++) await grid.press('ArrowDown');
+}

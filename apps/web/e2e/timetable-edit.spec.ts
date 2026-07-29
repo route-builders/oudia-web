@@ -11,7 +11,7 @@
  */
 
 import { expect, test } from '@playwright/test';
-import { dropFile, openTimetableDown } from './helpers.js';
+import { dropFile, navigateToRow, openTimetableDown } from './helpers.js';
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
@@ -102,8 +102,8 @@ test('Ctrl+F で列車番号検索バーが開き、Esc で閉じる', async ({ 
 test('駅時刻(発)行へ移動して Enter すると駅時刻ダイアログが開く', async ({ page }) => {
   await openTimetableDown(page);
   const grid = page.locator('.grid-root');
-  // 初期フォーカス(列車番号行)から下へ 9 行で発時刻行(駅 0)に入る(sample2 の行構成)。
-  for (let i = 0; i < 9; i++) await grid.press('ArrowDown');
+  // 発時刻行(駅 0)へ。行番号はグリッドの行構成から引く(ヘッダ行数の増減に追従する)。
+  await navigateToRow(page, 'hatsu:0');
   await grid.press('Enter');
   const dialog = page.locator('dialog.prop-dialog');
   await expect(dialog).toBeVisible();
@@ -121,7 +121,7 @@ test('BackSpace で駅時刻セルが運行なし化され、再度開くと運�
   await openTimetableDown(page);
   const grid = page.locator('.grid-root');
   // 発時刻行(駅 0)へ移動して BackSpace → 運行なし化。
-  for (let i = 0; i < 9; i++) await grid.press('ArrowDown');
+  await navigateToRow(page, 'hatsu:0');
   await grid.press('Backspace');
   // ダイアログは開かず、グリッドにフォーカスが残る。
   await expect(page.locator('dialog.prop-dialog')).toBeHidden();
@@ -202,7 +202,7 @@ test('駅時刻セルで数字キー入力を開始すると対象欄に入り�
   const grid = page.locator('.grid-root');
   // 発時刻行(駅 0)で数字キー → ダイアログの発時刻欄に '7' が入り続けて入力できる
   // (運行なしセルの停車昇格フローは happy-dom 統合テストで検証)。
-  for (let i = 0; i < 9; i++) await grid.press('ArrowDown');
+  await navigateToRow(page, 'hatsu:0');
   await grid.press('7');
   const dialog = page.locator('dialog.prop-dialog');
   await expect(dialog).toBeVisible();
