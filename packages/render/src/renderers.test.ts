@@ -7,6 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RessyaTrackLine } from '@oudia-web/derive';
 import {
   buildTimetableGrid,
   computeDiagramLayout,
@@ -238,7 +239,7 @@ describe('drawOccupancy(補助列車線)', () => {
     displayStopMark: false,
   } as unknown as Parameters<typeof drawOccupancy>[2];
 
-  function line(over: Record<string, unknown>) {
+  function line(over: Partial<RessyaTrackLine> = {}): RessyaTrackLine {
     return {
       ekiIndex: 0,
       ekiOrder: 0,
@@ -305,5 +306,62 @@ describe('drawOccupancy(補助列車線)', () => {
     );
     // 横線・コネクタは出ないが補助列車線は出る。
     expect(strokeCount(ctx)).toBeGreaterThan(0);
+  });
+
+  it('★着発コネクタは作業コードが負のときだけ引く(原典 :1253 / :1685)', () => {
+    // chaku=0(出区でも中間でもない)/ hatsu=0 → 縦線なし。
+    const none = new MockCtx();
+    drawOccupancy(
+      none,
+      fakeLayout(100, 200, 150),
+      view,
+      {
+        kudari: [
+          {
+            houkou: 0,
+            syubetsuIndex: 0,
+            trackLines: [line({ chakuOperation: 0, hatsuOperation: 0 })],
+          },
+        ],
+        nobori: [],
+      },
+      () => '#000',
+      '#ccc',
+    );
+    // chaku=-1 / hatsu=-1 → 縦線 2 本ぶん増える。
+    const both = new MockCtx();
+    drawOccupancy(
+      both,
+      fakeLayout(100, 200, 150),
+      view,
+      { kudari: [{ houkou: 0, syubetsuIndex: 0, trackLines: [line({})] }], nobori: [] },
+      () => '#000',
+      '#ccc',
+    );
+    expect(strokeCount(both)).toBe(strokeCount(none) + 2);
+  });
+
+  it('★次列車接続(hatsuOperation=5)の横線は描かない(次列車に委任)', () => {
+    const ctx = new MockCtx();
+    drawOccupancy(
+      ctx,
+      fakeLayout(100, 200, 150),
+      view,
+      {
+        kudari: [
+          {
+            houkou: 0,
+            syubetsuIndex: 0,
+            trackLines: [line({ chakuOperation: 0, hatsuOperation: 5 })],
+          },
+        ],
+        nobori: [],
+      },
+      () => '#000',
+      '#ccc',
+    );
+    // 唯一の Zaisen が最後でもあるので在線の横線も縦線も出ない
+    // (残る 1 本は番線レーンの下地罫線)。
+    expect(strokeCount(ctx)).toBe(1);
   });
 });

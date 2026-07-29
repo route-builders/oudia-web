@@ -121,9 +121,13 @@ export function drawOccupancy(
         // 在線表を持たない駅の行はここまで(横線・コネクタ・記号は描かない)。
         if (!line.isTrackDisplay || laneMap === undefined) continue;
 
-        for (const z of line.zaisenCont) {
+        for (const [zi, z] of line.zaisenCont.entries()) {
           const laneY = laneMap.get(z.trackIndex);
           if (laneY === undefined) continue; // 省略番線 → 描かない
+          const isFirst = zi === 0;
+          const isLast = zi === line.zaisenCont.length - 1;
+          // ★次列車接続(5)の番線の横線は**次列車に委任**して描かない(原典 :970-975)。
+          if (isLast && line.hatsuOperation === 5) continue;
           // dgrX の全体 Zone(この Zaisen 単体)。日跨ぎ繰り返しでビュー内へ。
           const zone: readonly [number, number] = [
             Math.min(z.dgrXChaku, z.dgrXHatsu),
@@ -139,10 +143,13 @@ export function drawOccupancy(
             ctx.strokeStyle = color;
             ctx.lineWidth = line.ekiatsukai === 'teisya' ? 3 : 1;
             strokeLine(ctx, xC, yLane, xH, yLane);
-            // 着コネクタ(駅線 → レーン)+ 発コネクタ(レーン → 駅線)。
+            // 着発の縦コネクタ(駅線 ↔ レーン)。
+            // ★**作業コードが負のとき(= 列車線がこの駅に接続するとき)だけ**引く
+            // (原典 CRessyaDraw.cpp:1253 `if (getChakuOperation() < 0)` / :1685)。
+            // 出区・入区・路線外・前後列車接続では列車線が来ないので縦線も出ない。
             ctx.lineWidth = 1;
-            strokeLine(ctx, xC, yChaku, xC, yLane);
-            strokeLine(ctx, xH, yLane, xH, yHatsu);
+            if (isFirst && line.chakuOperation < 0) strokeLine(ctx, xC, yChaku, xC, yLane);
+            if (isLast && line.hatsuOperation < 0) strokeLine(ctx, xH, yLane, xH, yHatsu);
 
             // 運用記号(出区○ / 入区△ / 路線外斜線)。基準 Y は在線表表示駅なのでレーン Y。
             if (marks !== undefined) {
