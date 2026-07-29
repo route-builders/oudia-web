@@ -25,6 +25,9 @@ function rosenOccupancy(): RosenFileData {
   const a = createDefaultEki(0, 'A');
   a.ekikibo = 'syuyou';
   a.diagramTrackDisplay = true;
+  // ★在線表が出るのは駅時刻形式が 発着 / 下り着 / 上り着 の駅だけ(原典
+  // CentDedDgrDia.cpp:236-262)。既定の「発時刻のみ」では在線表は出ない。
+  a.ekijikokukeisiki = 'hatsuchaku';
   a.ekiTrack2Cont = [
     { trackName: '1番線', trackRyakusyou: '1', trackNoboriRyakusyou: '' },
     { trackName: '2番線', trackRyakusyou: '2', trackNoboriRyakusyou: '' },
@@ -68,10 +71,12 @@ describe('EkiLayout の在線表レーン', () => {
     expect(a?.trackLanes?.map((l) => l.trackIndex)).toEqual([0, 2]);
     // B は在線表なし。
     expect(b?.trackLanes).toBeUndefined();
-    // レーン Y は駅線より下(値が大きい)。
-    const staY = a?.dgrYTer ?? 0;
+    // レーンは 2 本の駅線の**間**にある(Org < レーン < Ter)。
+    const yOrg = a?.dgrYOrg ?? 0;
+    const yTer = a?.dgrYTer ?? 0;
     for (const lane of a?.trackLanes ?? []) {
-      expect(lane.dgrY).toBeGreaterThan(staY);
+      expect(lane.dgrY).toBeGreaterThan(yOrg);
+      expect(lane.dgrY).toBeLessThan(yTer);
     }
   });
 
@@ -176,5 +181,44 @@ describe('作業コード(M7e・単独駅)', () => {
     );
     expect(occ.kudari[0]?.trackLines[0]?.chakuOperation).toBe(0);
     expect(occ.kudari[0]?.trackLines[0]?.operationNumber).toBe('');
+  });
+});
+
+describe('在線表表示モード(原典 CentDedDgrDia.cpp:236-262)', () => {
+  it('★駅時刻形式が「発時刻のみ」の駅は主要駅でも在線表を出さない', () => {
+    const data = rosenOccupancy();
+    const a = data.rosen.ekiCont[0];
+    if (a === undefined) throw new Error('no eki');
+    a.ekijikokukeisiki = 'hatsu';
+    const frame = buildDiaLayoutFrame(data.rosen, data.rosen.diaCont[0]?.ressyaCont[0] ?? [], []);
+    expect(frame.ekiLayouts[0]?.trackLanes).toBeUndefined();
+  });
+
+  it('★分岐環状グループに属する着時刻駅は在線表を出す(発着型へ昇格)', () => {
+    const data = rosenOccupancy();
+    const a = data.rosen.ekiCont[0];
+    const b = data.rosen.ekiCont[1];
+    if (a === undefined || b === undefined) throw new Error('no eki');
+    a.ekijikokukeisiki = 'kudariChaku';
+
+    // 単独駅のうちは mode 2(着時刻駅)。帯は出る。
+    const alone = buildDiaLayoutFrame(data.rosen, [], []);
+    expect(alone.ekiLayouts[0]?.trackLanes).toBeDefined();
+
+    // 駅 B を駅 A から分岐させると A は発着型(mode 1)へ昇格する。
+    b.brunchCoreEkiIndex = 0;
+    const grouped = buildDiaLayoutFrame(data.rosen, [], []);
+    expect(grouped.ekiLayouts[0]?.trackLanes).toBeDefined();
+  });
+
+  it('★在線表駅は駅線が 2 本になる(Org = 帯の上 / Ter = 帯の下)', () => {
+    const data = rosenOccupancy();
+    const frame = buildDiaLayoutFrame(data.rosen, [], []);
+    const a = frame.ekiLayouts[0];
+    const b = frame.ekiLayouts[1];
+    if (a === undefined || b === undefined) throw new Error('no layout');
+    expect(a.dgrYTer).toBeGreaterThan(a.dgrYOrg);
+    // 在線表なしの駅は Org === Ter。
+    expect(b.dgrYOrg).toBe(b.dgrYTer);
   });
 });

@@ -44,10 +44,16 @@ function laneIndex(layout: DiagramLayout): Map<number, Map<number, number>> {
   return m;
 }
 
-/** 駅Index → 駅線 Y(dgrYTer)。 */
-function stationYIndex(layout: DiagramLayout): Map<number, number> {
-  const m = new Map<number, number>();
-  for (const eki of layout.frame.ekiLayouts) m.set(eki.ekiIndex, eki.dgrYTer);
+/**
+ * 駅Index → 駅線 Y の組(Org = 帯の上 / Ter = 帯の下)。
+ * 着コネクタは Org 側、発コネクタは Ter 側から引く(原典 CRessyaDraw.cpp:1275-1288 /
+ * :1710-1724 の bIsOrigin。在線表なしの駅では両者が同値)。
+ */
+function stationYIndex(layout: DiagramLayout): Map<number, { org: number; ter: number }> {
+  const m = new Map<number, { org: number; ter: number }>();
+  for (const eki of layout.frame.ekiLayouts) {
+    m.set(eki.ekiIndex, { org: eki.dgrYOrg, ter: eki.dgrYTer });
+  }
   return m;
 }
 
@@ -101,6 +107,10 @@ export function drawOccupancy(
         const laneMap = lanes.get(line.ekiIndex);
         const staY = stationY.get(line.ekiIndex);
         if (laneMap === undefined || staY === undefined) continue;
+        // 着は起点側の駅線(Org)、発は終点側の駅線(Ter)から引く。
+        // 上り列車は Org/Ter の意味が入れ替わる(原典 YDgrToDcd の bIsOrigin)。
+        const yChakuStation = occ.houkou === 0 ? staY.org : staY.ter;
+        const yHatsuStation = occ.houkou === 0 ? staY.ter : staY.org;
         for (const z of line.zaisenCont) {
           const laneY = laneMap.get(z.trackIndex);
           if (laneY === undefined) continue; // 省略番線 → 描かない
@@ -113,15 +123,16 @@ export function drawOccupancy(
             const xC = xDgrToView(t, z.dgrXChaku + shift);
             const xH = xDgrToView(t, z.dgrXHatsu + shift);
             const yLane = yDgrToView(t, laneY);
-            const yStation = yDgrToView(t, staY);
+            const yChaku = yDgrToView(t, yChakuStation);
+            const yHatsu = yDgrToView(t, yHatsuStation);
             // 横太線(占有)。停車 = 太線、通過 = 細線(通過は在線時間ほぼ 0)。
             ctx.strokeStyle = color;
             ctx.lineWidth = line.ekiatsukai === 'teisya' ? 3 : 1;
             strokeLine(ctx, xC, yLane, xH, yLane);
             // 着コネクタ(駅線 → レーン)+ 発コネクタ(レーン → 駅線)。
             ctx.lineWidth = 1;
-            strokeLine(ctx, xC, yStation, xC, yLane);
-            strokeLine(ctx, xH, yLane, xH, yStation);
+            strokeLine(ctx, xC, yChaku, xC, yLane);
+            strokeLine(ctx, xH, yLane, xH, yHatsu);
 
             // 運用記号(出区○ / 入区△ / 路線外斜線)。基準 Y は在線表表示駅なのでレーン Y。
             if (marks !== undefined) {

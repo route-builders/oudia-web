@@ -79,12 +79,16 @@ export function drawL1(
   ctx.setLineDash([]);
 
   // 横罫線(駅)。主要駅 = 太線。
+  // ★在線表駅は駅線が 2 本になる(Org = 帯の上 / Ter = 帯の下。原典 CentDedDgrEkiCont.h:229-278
+  // 「発着時刻駅は駅横罫線を在線表の上下に 2 本」)。在線表なしの駅は Org === Ter で 1 本。
   for (const eki of layout.frame.ekiLayouts) {
-    const y = yDgrToView(t, eki.dgrYTer);
-    if (y < -2 || y > view.viewH + 2) continue;
     ctx.strokeStyle = theme.ekiLineColor;
     ctx.lineWidth = eki.isSyuyou ? 2 : 1;
-    strokeLine(ctx, 0, y, view.viewW, y);
+    for (const dgrY of eki.dgrYOrg === eki.dgrYTer ? [eki.dgrYOrg] : [eki.dgrYOrg, eki.dgrYTer]) {
+      const y = yDgrToView(t, dgrY);
+      if (y < -2 || y > view.viewH + 2) continue;
+      strokeLine(ctx, 0, y, view.viewW, y);
+    }
   }
 
   // 時ラベル(毎正時)。
@@ -180,11 +184,11 @@ function labelText(ressya: RessyaLayout): string {
   return parts.join(' ');
 }
 
-/** 駅Order の Y 座標(方向基準。上りは Index 反転)。 */
+/** 駅Order の Y 座標(方向基準。上りは Index 反転)。列車線と同じ Org 基準。 */
 function ekiYAtOrder(layout: DiagramLayout, ekiOrder: number, houkou: 0 | 1): number {
   const n = layout.frame.ekiLayouts.length;
   const idx = houkou === 0 ? ekiOrder : n - 1 - ekiOrder;
-  return layout.frame.ekiLayouts[idx]?.dgrYTer ?? 0;
+  return layout.frame.ekiLayouts[idx]?.dgrYOrg ?? 0;
 }
 
 /** COLORREF → CSS(theme 構築の補助)。 */

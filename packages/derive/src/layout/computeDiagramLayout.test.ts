@@ -16,7 +16,10 @@ describe('computeDiagramLayout(sample2 座標スナップショット)', () => {
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     // フレーム全体は大きいので Y 座標列と先頭 2 列車のスジのみスナップショット。
-    const frameY = r.layout.frame.ekiLayouts.map((e) => e.dgrYTer);
+    // ★在線表駅は駅線が 2 本(Org = 帯の上 / Ter = 帯の下)になるので両方を記録する。
+    const frameY = r.layout.frame.ekiLayouts.map((e) =>
+      e.dgrYOrg === e.dgrYTer ? e.dgrYOrg : [e.dgrYOrg, e.dgrYTer],
+    );
     const firstTrains = r.layout.ressyaLayouts[0].slice(0, 2).map((t) => ({
       ressyabangou: t.ressyabangou,
       dgrXZone: t.dgrXZone,

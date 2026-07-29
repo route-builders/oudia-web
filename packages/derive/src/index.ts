@@ -117,6 +117,13 @@ export {
 } from './layout/operationMark.js';
 export type { EstimateSlot } from './layout/ressyaLayout.js';
 export { computeEstimateJikoku } from './layout/ressyaLayout.js';
+// ---- 在線表の表示モード(0..3。M7f)----
+export type { DiagramTrackDisplayMode } from './layout/trackDisplayMode.js';
+export {
+  diagramTrackDisplayMode,
+  isStandaloneEki,
+  trackDisplayModeForHoukou,
+} from './layout/trackDisplayMode.js';
 export type {
   DiagramLayout,
   DiaLayoutFrame,
