@@ -68,6 +68,12 @@ export type {
   EkiJikokuhyouViewModel,
 } from './ekiJikokuhyou/deriveEkiJikokuhyou.js';
 export { deriveEkiJikokuhyou } from './ekiJikokuhyou/deriveEkiJikokuhyou.js';
+// ---- カスタマイズ時刻表のセル充填(follow-up #11)----
+export type {
+  CustomizeGridColumn,
+  CustomizeGridOptions,
+} from './grid/buildCustomizeGrid.js';
+export { buildCustomizeGrid, fillCustomizeColumn } from './grid/buildCustomizeGrid.js';
 export type {
   BuildTimetableGridOptions,
   BuildTimetableGridResult,
