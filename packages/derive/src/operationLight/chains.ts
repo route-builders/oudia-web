@@ -21,12 +21,13 @@
  */
 
 import type { CustomizeChainColumn } from './types.js';
+import { createCustomizeChainColumn } from './types.js';
 
 /** チェーン列を全列車 1 本ずつで初期化する(原典 :635-647)。 */
 export function initChains(ressyaCount: number): CustomizeChainColumn[] {
   const chains: CustomizeChainColumn[] = [];
   for (let idx = 0; idx < ressyaCount; idx++) {
-    chains.push({ ressyaIndexCont: [idx], connectEkiOrder: -1, releaseEkiOrder: -1 });
+    chains.push(createCustomizeChainColumn([idx]));
   }
   return chains;
 }

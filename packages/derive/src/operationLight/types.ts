@@ -17,7 +17,7 @@
  * Data2/Data3 スロットで、oud2 作業列書式 `5/...` には現れない)。よって黄金テスト非該当。
  */
 
-import type { Jikoku } from '@oudia-web/format';
+import type { Ekiatsukai, Jikoku } from '@oudia-web/format';
 
 /** 方向(0=下り / 1=上り)。 */
 export type Houkou = 0 | 1;
@@ -112,13 +112,115 @@ export interface JunctionResolution {
 }
 
 /**
- * カスタマイズ時刻表チェーン列(原典 CustomizeJikokuhyouContent の第一段、CentDedDia.h:347-423)。
- * 縦に積む列車 index 列と、増結/解結の描写駅Order。#11 チェーングリッドへ供給する。
+ * 「通常表示」を表す駅Order(原典 INT_MIN)。
+ * ★-1(環状)/ -2(環状線)は**意味のある値**なので null や -1 に潰してはいけない。
+ */
+export const CUSTOMIZE_EKI_ORDER_NORMAL = Number.MIN_SAFE_INTEGER;
+
+/**
+ * カスタマイズ時刻表の 1 列(原典 struct CustomizeJikokuhyouContent、CentDedDia.h:347-452)。
+ *
+ * vector の index がそのまま時刻表の X 列番号になる。列は「縦に積む列車 index 列」に加えて、
+ * 両端を路線外始発/終着**状**に見せるための表示メタを持つ(スイッチバック・環状運転・
+ * 増解結でチェーンが切れる箇所を、路線外発着と同じ見た目で表現するため)。
+ *
+ * ★`ressyaIndexCont` が**空の列も正当**で、「路線外始発/終着専用列」を意味する
+ * (CentDedDia.h:390-392)。そのとき列車情報は下の ressyabangou 等から、駅扱い・番線は
+ * releaseEkiOrder / connectEkiOrder 駅の描写に使う。
+ *
+ * ★時刻・路線外欄が埋まるのは **enableOperation === 2(Full)だけ**。
+ * Light は列の移動と併合しかせず、原典も completeCustomizeJikokuhyouContent を呼ばない。
+ *
+ * ★oud2 には永続化されない(読込時に運用探索で derive し直す)= 黄金テスト非該当。
  */
 export interface CustomizeChainColumn {
+  /** この列に縦に積む列車 index の並び。空 = 路線外始発/終着専用列。 */
   ressyaIndexCont: number[];
-  connectEkiOrder: number;
+
+  // ---- 起点側の表示メタ(原典 :351-368)----
+  /**
+   * 起点側を「路線外始発状」に見せるときの、実際の始発駅の駅Order。
+   * 既定 CUSTOMIZE_EKI_ORDER_NORMAL(= 通常表示)。**-1 = 環状 / -2 = 環状線**。
+   */
+  sihatsuEkiOrder: number;
+  /** その始発駅がさらに路線外始発のときの路線外始発駅 index。既定 -1。 */
+  outerSihatsuEkiIndex: number;
+  /** 路線外始発欄に出す発車時刻。 */
+  outerSihatsuJikoku: Jikoku | null;
+  /** この列の**最初に表示する列車の始発駅**の着時刻。 */
+  chakuJikoku: Jikoku | null;
+
+  // ---- 終点側の表示メタ(原典 :370-386。起点側と対称)----
+  syuuchakuEkiOrder: number;
+  outerSyuuchakuEkiIndex: number;
+  /** 路線外終着欄に出す到着時刻。 */
+  outerSyuuchakuJikoku: Jikoku | null;
+  /** この列の**最後に表示する列車の終着駅**の発時刻。 */
+  hatsuJikoku: Jikoku | null;
+
+  // ---- 分割 / 併合(原典 :387-389)----
+  /** この列が分割(解結)された駅Order。既定 -1。 */
   releaseEkiOrder: number;
+  /** この列が併合(増結)した駅Order。既定 -1。 */
+  connectEkiOrder: number;
+
+  // ---- 列車情報(ressyaIndexCont が空のときに使う)----
+  ressyasyubetsuIndex: number;
+  ressyabangou: string;
+  ressyamei: string;
+  gousuu: string;
+  /** ★1 列車に複数運番がありうるので配列。 */
+  operationNumber: string[];
+  ekiatsukai: Ekiatsukai;
+  ressyaTrackIndex: number;
+  afterType: BeforeAfterType;
+
+  // ---- Prev 系(併合される前 = 左側の列車情報)----
+  prevRessyasyubetsuIndex: number;
+  prevRessyabangou: string;
+  prevRessyamei: string;
+  prevGousuu: string;
+  prevOperationNumber: string[];
+  prevEkiatsukai: Ekiatsukai;
+  prevRessyaTrackIndex: number;
+  beforeType: BeforeAfterType;
+
+  /** パターンダイヤプレビューの秒シフト(元列車との差)。既定 0。 */
+  shiftSecond: number;
+}
+
+/** 原典 CustomizeJikokuhyouContent の既定値(CentDedDia.h:424-452)で 1 列を作る。 */
+export function createCustomizeChainColumn(ressyaIndexCont: number[] = []): CustomizeChainColumn {
+  return {
+    ressyaIndexCont,
+    sihatsuEkiOrder: CUSTOMIZE_EKI_ORDER_NORMAL,
+    outerSihatsuEkiIndex: -1,
+    outerSihatsuJikoku: null,
+    chakuJikoku: null,
+    syuuchakuEkiOrder: CUSTOMIZE_EKI_ORDER_NORMAL,
+    outerSyuuchakuEkiIndex: -1,
+    outerSyuuchakuJikoku: null,
+    hatsuJikoku: null,
+    releaseEkiOrder: -1,
+    connectEkiOrder: -1,
+    ressyasyubetsuIndex: -1,
+    ressyabangou: '',
+    ressyamei: '',
+    gousuu: '',
+    operationNumber: [],
+    ekiatsukai: 'teisya',
+    ressyaTrackIndex: 0,
+    afterType: 'unrelated',
+    prevRessyasyubetsuIndex: -1,
+    prevRessyabangou: '',
+    prevRessyamei: '',
+    prevGousuu: '',
+    prevOperationNumber: [],
+    prevEkiatsukai: 'teisya',
+    prevRessyaTrackIndex: 0,
+    beforeType: 'unrelated',
+    shiftSecond: 0,
+  };
 }
 
 /** deriveOperationLight の出力(すべて非永続=oud2 に書き出さない)。 */
