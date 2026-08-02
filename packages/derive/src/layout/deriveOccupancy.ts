@@ -27,6 +27,7 @@ import {
   getValidSyuuchakuEki,
 } from '@oudia-web/domain';
 import type { Ressya, Rosen } from '@oudia-web/format';
+import type { JunctionResolution } from '../operationLight/types.js';
 import type { ChakuOperationCode, HatsuOperationCode } from './operationMark.js';
 import { brunchOppositeOperationCode } from './trackDisplayMode.js';
 import type { EkiLayout } from './types.js';
@@ -71,8 +72,8 @@ export interface RessyaTrackLine {
   readonly prevRessyahoukou: number | null;
   /**
    * ○ / △ / 路線外斜線に添える運用番号。
-   * ★ここでは**永続運番 #1**(ユーザーが作業ダイアログで入れた値)を使う。原典は運用探索が
-   * 割り付けた #2/#3 を出すので、探索結果をダイヤグラムへ渡すまでは #1 で近似する。
+   * ★**探索が割り付けた #2/#3**(deriveOccupancy の operation 引数)を優先し、
+   * 渡されなければ永続運番 #1 で近似する(原典 getOperationNumber、:1640)。
    */
   readonly operationNumber: string;
 }
@@ -95,6 +96,60 @@ function occupancyEkiIndexSet(ekiLayouts: readonly EkiLayout[]): Set<number> {
 }
 
 /**
+ * 運用探索の結果を在線表へ渡す入力(M7j 追加)。
+ *
+ * ★ダイヤグラムの運用記号(○ / △ / 路線外斜線)に添える運番は、原典では
+ * `CentDedBeforeOperation::getOperationNumber()` = **探索が割り付けた #2/#3** を使う
+ * (CentDedDgrRessya.cpp:1640)。永続運番 #1 だけでは出区・入区の記号に何も出ないことがある。
+ * ★前列車接続の `prevRessyahoukou`(:1648)も探索結果でしか決まらない。面取り
+ * (CRessyaDraw.cpp:928)がこの値を読む。
+ *
+ * 渡されなければ従来どおり永続運番 #1 で近似する。
+ */
+export interface OccupancyOperationInput {
+  /** opRefKey → 割付運番。deriveOperationFull の assignedNumbers。 */
+  readonly assignedNumbers?: ReadonlyMap<string, readonly string[]>;
+  /** 次列車接続の解決結果。deriveOperationLight / Full の junctionResult。 */
+  readonly junctionResult?: ReadonlyMap<string, JunctionResolution>;
+}
+
+/** 在線表から見た探索結果の索引(列車の作業単位で引けるように前処理したもの)。 */
+interface OperationLookup {
+  /** その作業(方向・列車・駅Order・before/after・作業 index)へ割り付いた運番。 */
+  assigned(
+    houkou: 0 | 1,
+    ressyaIndex: number,
+    ekiOrder: number,
+    opKind: 'before' | 'after',
+    index: number,
+  ): string[];
+  /** その列車の**前列車接続**(始発の前作業)の解決結果。 */
+  junction(houkou: 0 | 1, ressyaIndex: number, ekiOrder: number): JunctionResolution | undefined;
+}
+
+/** 探索結果を在線表向けの索引にする。 */
+function buildOperationLookup(input: OccupancyOperationInput | undefined): OperationLookup {
+  const assignedMap = input?.assignedNumbers;
+  // ★junctionResult は**前列車の後作業**をキーに持つので、次列車の前作業側へ引き直す
+  // (原典は解決値を次列車の BeforeOperation へ複写する。CDedOperationConnecter.cpp:1661)。
+  const byNext = new Map<string, JunctionResolution>();
+  for (const res of input?.junctionResult?.values() ?? []) {
+    const n = res.nextTrain;
+    if (n === null) continue;
+    byNext.set(`${String(n.houkou)}:${String(n.ressyaIndex)}:${String(n.ekiOrder)}`, res);
+  }
+  return {
+    assigned(houkou, ressyaIndex, ekiOrder, opKind, index) {
+      const key = `${String(houkou)}:${String(ressyaIndex)}:${String(ekiOrder)}:${opKind}:${String(index)}`;
+      return [...(assignedMap?.get(key) ?? [])];
+    },
+    junction(houkou, ressyaIndex, ekiOrder) {
+      return byNext.get(`${String(houkou)}:${String(ressyaIndex)}:${String(ekiOrder)}`);
+    },
+  };
+}
+
+/**
  * 1 列車の在線行を導出する。在線表駅かつ当該列車が停車/通過している駅について、
  * その番線の着発 X から Zaisen を 1 個作る。着/発が片方 null なら他方で代用(0 幅)。
  */
@@ -106,6 +161,8 @@ function deriveRessyaTrackLines(
   kitenJikoku: number,
   enableOperation: number,
   brunchLoop: BrunchLoopMap,
+  lookup: OperationLookup,
+  ressyaIndex: number,
 ): RessyaTrackLine[] {
   const ekiCount = rosen.ekiCont.length;
   const lines: RessyaTrackLine[] = [];
@@ -121,7 +178,16 @@ function deriveRessyaTrackLines(
     const chaku = ej.chakuJikoku ?? ej.hatsuJikoku;
     const hatsu = ej.hatsuJikoku ?? ej.chakuJikoku;
     if (chaku === null || hatsu === null) continue;
-    const op = operationCodesOf(ressya, ekiOrder, sihatsuOrder, syuuchakuOrder, enableOperation);
+    const op = operationCodesOf(
+      ressya,
+      ekiOrder,
+      sihatsuOrder,
+      syuuchakuOrder,
+      enableOperation,
+      lookup,
+      houkou,
+      ressyaIndex,
+    );
     const zaisenCont = [
       {
         trackIndex: track,
@@ -211,16 +277,21 @@ export function deriveOccupancy(
   ekiLayouts: readonly EkiLayout[],
   /** 分岐環状マップ(省略時は駅から導出)。 */
   brunchLoop?: BrunchLoopMap,
+  /** 運用探索の結果(省略時は永続運番 #1 で近似)。 */
+  operation?: OccupancyOperationInput,
 ): { kudari: RessyaOccupancy[]; nobori: RessyaOccupancy[] } {
   const occupancyIndices = occupancyEkiIndexSet(ekiLayouts);
+  const lookup = buildOperationLookup(operation);
   const brunchLoopMap = brunchLoop ?? deriveBrunchLoopMap(rosen.ekiCont);
   const kitenJikoku = rosen.kitenJikoku ?? 0;
   if (occupancyIndices.size === 0) return { kudari: [], nobori: [] };
 
   const build = (list: readonly Ressya[], houkou: 0 | 1): RessyaOccupancy[] =>
     list
-      .filter((r) => !r.isNull)
-      .map((r) => ({
+      // ★列車 index は**元の配列の位置**。isNull を落とす前に控える(探索結果の索引キー)。
+      .map((r, ressyaIndex) => ({ r, ressyaIndex }))
+      .filter(({ r }) => !r.isNull)
+      .map(({ r, ressyaIndex }) => ({
         houkou,
         syubetsuIndex: r.syubetsuIndex,
         trackLines: deriveRessyaTrackLines(
@@ -231,6 +302,8 @@ export function deriveOccupancy(
           kitenJikoku,
           rosen.enableOperation,
           brunchLoopMap,
+          lookup,
+          ressyaIndex,
         ),
       }))
       .filter((o) => o.trackLines.length > 0);
@@ -256,6 +329,9 @@ function operationCodesOf(
   sihatsuOrder: number,
   syuuchakuOrder: number,
   enableOperation: number,
+  lookup: OperationLookup,
+  houkou: 0 | 1,
+  ressyaIndex: number,
 ): Pick<
   RessyaTrackLine,
   'chakuOperation' | 'hatsuOperation' | 'outerEkiIndex' | 'prevRessyahoukou' | 'operationNumber'
@@ -270,16 +346,20 @@ function operationCodesOf(
     const first = ressya.ekiJikokuCont[ekiOrder]?.beforeOperationCont[0];
     chakuOperation = 0;
     if (first !== undefined && enableOperation > 0) {
+      // ★探索が割り付けた運番があればそちらを使う(原典 getOperationNumber は #2/#3 を返す)。
+      const assigned = lookup.assigned(houkou, ressyaIndex, ekiOrder, 'before', 0);
       if (first.kind === 'out') {
         chakuOperation = 3;
-        operationNumber = first.operationNumbers.join('+');
+        operationNumber = (assigned.length > 0 ? assigned : first.operationNumbers).join('+');
       } else if (first.kind === 'outer') {
         chakuOperation = 4;
         outerEkiIndex = first.outerTerminalIndex;
-        operationNumber = first.operationNumbers.join('+');
+        operationNumber = (assigned.length > 0 ? assigned : first.operationNumbers).join('+');
       } else if (first.kind === 'junction') {
         chakuOperation = 5;
-        prevRessyahoukou = 0; // 前列車方向は探索結果が要る。未解決のうちは 0(=向き反転なし)。
+        // ★前列車方向は探索結果でしか決まらない。未解決なら 0(= 向き反転なし)。
+        prevRessyahoukou = lookup.junction(houkou, ressyaIndex, ekiOrder)?.prevRessyahoukou ?? 0;
+        if (assigned.length > 0) operationNumber = assigned.join('+');
       }
     }
   }
@@ -288,9 +368,10 @@ function operationCodesOf(
     const last = cont[cont.length - 1];
     hatsuOperation = 0;
     if (last !== undefined && enableOperation > 0) {
+      const assigned = lookup.assigned(houkou, ressyaIndex, ekiOrder, 'after', cont.length - 1);
+      if (assigned.length > 0) operationNumber = assigned.join('+');
       if (last.kind === 'in') {
         hatsuOperation = 3;
-        operationNumber = operationNumber === '' ? '' : operationNumber;
       } else if (last.kind === 'outer') {
         hatsuOperation = 4;
         outerEkiIndex = last.outerTerminalIndex;

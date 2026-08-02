@@ -19,6 +19,7 @@ import {
 } from '@oudia-web/render';
 import { useMemo, useRef, useState } from 'react';
 import { useCanvas2d } from '../hooks/useCanvas2d.js';
+import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import { dominantPinchAxis, pinchToStep, touchDistance } from '../input/pinch.js';
 
 const THEME: DiagramTheme = {
@@ -49,6 +50,10 @@ export function DiagramView(props: { data: RosenFileData; diaIndex: number }): R
 
   const result = useMemo(() => computeDiagramLayout(data, diaIndex), [data, diaIndex]);
 
+  // 運用探索(運用機能が有効なときだけ)。○ / △ の運番と前列車方向に使う。
+  // ★探索前でも在線表は描ける(永続運番 #1 で近似)。結果が来たら差し替わる。
+  const search = useOperationSearch(data, diaIndex, data.rosen.enableOperation === 0, 0);
+
   // 在線表(M6・単独駅)。在線表表示駅が無ければ空になり描画されない。
   const occupancy = useMemo(() => {
     if (!result.ok) return { kudari: [], nobori: [] };
@@ -59,8 +64,15 @@ export function DiagramView(props: { data: RosenFileData; diaIndex: number }): R
       dia.ressyaCont[0],
       dia.ressyaCont[1],
       result.layout.frame.ekiLayouts,
+      undefined,
+      search.result === null
+        ? undefined
+        : {
+            assignedNumbers: search.result.assignedNumbers,
+            junctionResult: search.result.junctionResult,
+          },
     );
-  }, [result, data, diaIndex]);
+  }, [result, data, diaIndex, search.result]);
 
   const canvasRef = useCanvas2d(
     (ctx, size) => {
