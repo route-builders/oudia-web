@@ -20,6 +20,8 @@
  * ここでは列の並び(ressyaIndexCont + connect/releaseEkiOrder)までを構築する。
  */
 
+import { getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia-web/domain';
+import type { Ressya, Ressyasyubetsu } from '@oudia-web/format';
 import type { CustomizeChainColumn } from './types.js';
 import { createCustomizeChainColumn } from './types.js';
 
@@ -154,4 +156,34 @@ export function applyReleaseMoveList(
       chains.splice(insertAt, 0, moved);
     }
   }
+}
+
+/**
+ * 運用機能が無効(enableOperation === 0)のときのチェーン列を作る(原典
+ * CentDedDia::omitInvalidRessyaFromCustomizeRessyaIndex、CentDedDia.cpp:412-482)。
+ *
+ * ★列の併合・分割・路線外相当表示は**一切行わない**。「1 列車 = 1 列」から
+ * 表示できない列車の列を落とすだけ。
+ * - `isNull` の列車は**残す**(空列としてレイアウトを保つ)
+ * - `isCanceled`(運休)は落とす
+ * - 隠し種別は `disableHiddenSyubetsu` が false のときだけ落とす
+ * - 有効始発 / 有効終着が取れない列車は落とす
+ */
+export function buildCustomizeChainsWithoutOperation(
+  ressyaList: readonly Ressya[],
+  syubetsuCont: readonly Ressyasyubetsu[],
+  disableHiddenSyubetsu: boolean,
+): CustomizeChainColumn[] {
+  const chains: CustomizeChainColumn[] = [];
+  for (const [idx, r] of ressyaList.entries()) {
+    if (r.isNull) {
+      chains.push(createCustomizeChainColumn([idx]));
+      continue;
+    }
+    if (r.isCanceled) continue;
+    if (!disableHiddenSyubetsu && syubetsuCont[r.syubetsuIndex]?.hidden === true) continue;
+    if (getValidSihatsuEki(r) < 0 || getValidSyuuchakuEki(r) < 0) continue;
+    chains.push(createCustomizeChainColumn([idx]));
+  }
+  return chains;
 }

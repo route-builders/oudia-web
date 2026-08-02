@@ -60,6 +60,16 @@ export interface InOutLinkCodeListDescriptor {
   readonly diaIndex: number;
 }
 
+/**
+ * カスタマイズ時刻表(1 ダイヤ × 1 方向)。follow-up #11。
+ * 通常時刻表と違い **1 列 = 1 チェーン**(縦に複数列車が積まれる冊子風レイアウト)。
+ */
+export interface CustomizeTimetableDescriptor {
+  readonly type: 'customizeTimetable';
+  readonly diaIndex: number;
+  readonly houkou: 0 | 1;
+}
+
 export type ViewDescriptor =
   | DiagramDescriptor
   | TimetableDescriptor
@@ -68,7 +78,8 @@ export type ViewDescriptor =
   | SyubetsuViewDescriptor
   | OperationTableDescriptor
   | AllOperationTableDescriptor
-  | InOutLinkCodeListDescriptor;
+  | InOutLinkCodeListDescriptor
+  | CustomizeTimetableDescriptor;
 
 /** 記述子の一意キー(dedup 用)。 */
 export function descriptorKey(d: ViewDescriptor): string {
@@ -89,6 +100,8 @@ export function descriptorKey(d: ViewDescriptor): string {
       return `allOperationTable:${String(d.diaIndex)}:${d.graphical ? 'g' : 't'}`;
     case 'inOutLinkCodeList':
       return `inOutLinkCodeList:${String(d.diaIndex)}`;
+    case 'customizeTimetable':
+      return `customizeTimetable:${String(d.diaIndex)}:${String(d.houkou)}`;
   }
 }
 
@@ -112,6 +125,8 @@ export function descriptorLabel(d: ViewDescriptor, diaName: string, ekimei?: str
       return `${diaName} ${d.graphical ? '運用一覧図' : '運用一覧表'}`;
     case 'inOutLinkCodeList':
       return `${diaName} 入出区連携コード一覧`;
+    case 'customizeTimetable':
+      return `${diaName} ${dir}カスタマイズ時刻表`;
   }
 }
 
@@ -132,6 +147,7 @@ export function isDescriptorValid(d: ViewDescriptor, diaCount: number, ekiCount:
     case 'operationTable':
     case 'allOperationTable':
     case 'inOutLinkCodeList':
+    case 'customizeTimetable':
       return d.diaIndex >= 0 && d.diaIndex < diaCount;
   }
 }

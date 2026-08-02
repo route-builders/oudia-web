@@ -16,6 +16,7 @@ import { TabBar } from './shell/TabBar.js';
 import { useDocStore } from './store/docStore.js';
 import type { ViewDescriptor } from './tabs/viewDescriptor.js';
 import { AllOperationTableView } from './views/AllOperationTableView.js';
+import { CustomizeTimetableView } from './views/CustomizeTimetableView.js';
 import { DiagramView } from './views/DiagramView.js';
 import { EkiJikokuhyouView } from './views/EkiJikokuhyouView.js';
 import { EkiView } from './views/EkiView.js';
@@ -266,5 +267,7 @@ function renderView(data: RosenFileData, d: ViewDescriptor): React.ReactElement 
       return <AllOperationTableView data={data} diaIndex={d.diaIndex} graphical={d.graphical} />;
     case 'inOutLinkCodeList':
       return <InOutLinkCodeListView data={data} diaIndex={d.diaIndex} />;
+    case 'customizeTimetable':
+      return <CustomizeTimetableView data={data} diaIndex={d.diaIndex} houkou={d.houkou} />;
   }
 }

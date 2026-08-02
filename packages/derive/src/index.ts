@@ -192,6 +192,7 @@ export {
   addMove,
   applyConnectMoveList,
   applyReleaseMoveList,
+  buildCustomizeChainsWithoutOperation,
   emptyMoveList,
   findChainIndex,
   initChains,
