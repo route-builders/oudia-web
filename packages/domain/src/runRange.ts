@@ -200,3 +200,51 @@ export function getVirtualHatsuJikoku(slot: EkiJikoku): Jikoku {
   }
   return slot.hatsuJikoku;
 }
+
+/**
+ * 指定駅Order 時点の運用番号(原典 CentDedRessya::getOperationNumber、
+ * CentDedRessya.cpp:1630-1691)。
+ *
+ * 有効始発より手前は空、有効終着以降は末尾作業の運番。それ以外は
+ * **その駅から有効始発へ向かって後作業 → 前作業の順に逆走査**し、最初に見つかった
+ * 増結 / 解結 / 運用番号変更 / 先端作業(出区・路線外始発・前列車接続)の運番を返す。
+ *
+ * ★増結・解結の運番は oud2 に**永続化されない**(運用探索が割り付ける #2/#3 スロット)。
+ * 本実装は永続値を持つ 運用番号変更 と 先端作業 だけを拾う。探索結果をここへ渡す
+ * 仕組みができるまでは、増解結を挟む運用で原典と差が出る(ダイヤグラムの運用記号と同じ制約)。
+ */
+export function getOperationNumberAt(ressya: Ressya, ekiOrder: number): string[] {
+  const sihatsu = getValidSihatsuEki(ressya);
+  const syuuchaku = getValidSyuuchakuEki(ressya);
+  if (sihatsu === -1 || syuuchaku === -1) return [];
+  if (ekiOrder < sihatsu) return [];
+  if (ekiOrder >= syuuchaku) return lastOperationNumbers(ressya, syuuchaku);
+
+  for (let idx = ekiOrder; idx >= sihatsu; idx--) {
+    const slot = ressya.ekiJikokuCont[idx];
+    if (slot === undefined) continue;
+    for (let a = slot.afterOperationCont.length - 1; a >= 0; a--) {
+      const op = slot.afterOperationCont[a];
+      if (op?.kind === 'numberChange') return [...op.operationNumbers];
+      // ★増結 / 解結の運番は非永続(探索が割り付ける)ため拾えない。
+    }
+    for (let b = slot.beforeOperationCont.length - 1; b >= 0; b--) {
+      const op = slot.beforeOperationCont[b];
+      if (op === undefined) continue;
+      if (op.kind === 'numberChange') return [...op.operationNumbers];
+      if (op.kind === 'out' || op.kind === 'outer') return [...op.operationNumbers];
+      if (op.kind === 'junction') return [...op.kariOperationNumbers];
+    }
+  }
+  return [];
+}
+
+/** 末尾作業(入区 / 路線外終着 / 次列車接続)の運番。 */
+function lastOperationNumbers(ressya: Ressya, syuuchakuOrder: number): string[] {
+  const cont = ressya.ekiJikokuCont[syuuchakuOrder]?.afterOperationCont ?? [];
+  const last = cont[cont.length - 1];
+  if (last === undefined) return [];
+  if (last.kind === 'numberChange') return [...last.operationNumbers];
+  // 入区 / 路線外終着 / 次列車接続 は永続の運番を持たない(探索が割り付ける)。
+  return [];
+}

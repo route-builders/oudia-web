@@ -194,4 +194,91 @@ describe('buildCustomizeGrid', () => {
     // 番線行は arrival 側なので前列車(1番線)。
     expect(at(rows, cells, 'track', 1)).toBe('1');
   });
+
+  it('★Eki*: 1 列車目の始発駅は Display が最大値でなければ「空文字」(「↓」ではない)', () => {
+    const { dia, rosen } = setup();
+    for (const e of rosen.ekiCont) {
+      e.jikokuhyouSyubetsuChangeDisplayKudari = {
+        ressyabangou: 1,
+        operationNumber: 1,
+        syubetsu: 1,
+        ressyamei: 1,
+        operationNumberRows: 1,
+      };
+    }
+    dia.ressyaCont[0].push(train('1M', 0, 3, 8));
+    const { rows, cells } = cellsOf(dia, rosen, [0]);
+    expect(at(rows, cells, 'ekiRessyabangou', 0)).toBe('');
+  });
+
+  it('★Eki*: Display=3(常に表示)なら始発・中間で列車番号が出る', () => {
+    const { dia, rosen } = setup();
+    for (const e of rosen.ekiCont) {
+      e.jikokuhyouSyubetsuChangeDisplayKudari = {
+        ressyabangou: 3,
+        operationNumber: 4,
+        syubetsu: 3,
+        ressyamei: 3,
+        operationNumberRows: 1,
+      };
+    }
+    dia.ressyaCont[0].push(train('1M', 0, 3, 8));
+    const { rows, cells } = cellsOf(dia, rosen, [0]);
+    expect(at(rows, cells, 'ekiRessyabangou', 0)).toBe('1M');
+    expect(at(rows, cells, 'ekiRessyabangou', 1)).toBe('1M');
+  });
+
+  it('★Eki*: Display が中間値なら中間駅は「↓」になる', () => {
+    const { dia, rosen } = setup();
+    for (const e of rosen.ekiCont) {
+      e.jikokuhyouSyubetsuChangeDisplayKudari = {
+        ressyabangou: 2,
+        operationNumber: 3,
+        syubetsu: 2,
+        ressyamei: 2,
+        operationNumberRows: 1,
+      };
+    }
+    dia.ressyaCont[0].push(train('1M', 0, 3, 8));
+    const { rows, cells } = cellsOf(dia, rosen, [0]);
+    expect(at(rows, cells, 'ekiRessyabangou', 1)).toBe('↓');
+  });
+
+  it('★Eki*: 種別欄は略称(原典 getRyakusyou)', () => {
+    const { dia, rosen } = setup();
+    const sy = rosen.ressyasyubetsuCont[0];
+    if (sy === undefined) throw new Error('no syubetsu');
+    sy.syubetsumei = '特別急行';
+    sy.ryakusyou = '特急';
+    for (const e of rosen.ekiCont) {
+      e.jikokuhyouSyubetsuChangeDisplayKudari = {
+        ressyabangou: 3,
+        operationNumber: 4,
+        syubetsu: 3,
+        ressyamei: 3,
+        operationNumberRows: 1,
+      };
+    }
+    dia.ressyaCont[0].push(train('1M', 0, 3, 8));
+    const { rows, cells } = cellsOf(dia, rosen, [0]);
+    expect(at(rows, cells, 'ekiRessyasyubetsu', 0)).toBe('特急');
+    // 列ヘッダの種別欄も略称。
+    expect(at(rows, cells, 'ressyasyubetsu', null)).toBe('特急');
+  });
+
+  it('★Eki*: 列車名は「↓」「||」を出さず空文字になる', () => {
+    const { dia, rosen } = setup();
+    for (const e of rosen.ekiCont) {
+      e.jikokuhyouSyubetsuChangeDisplayKudari = {
+        ressyabangou: 2,
+        operationNumber: 3,
+        syubetsu: 2,
+        ressyamei: 2,
+        operationNumberRows: 1,
+      };
+    }
+    dia.ressyaCont[0].push(train('1M', 0, 3, 8));
+    const { rows, cells } = cellsOf(dia, rosen, [0]);
+    expect(at(rows, cells, 'ekiRessyamei', 1)).toBe('');
+  });
 });
