@@ -16,9 +16,16 @@
  * 上下余白 = 既定駅間幅 ×1 の最小構成で計算する。
  */
 
-import { ekiOrderOfEkiIndex, getEkiJikoku, subJikoku } from '@oudia-web/domain';
+import {
+  type BrunchLoopMap,
+  deriveBrunchLoopMap,
+  ekiOrderOfEkiIndex,
+  getEkiJikoku,
+  subJikoku,
+} from '@oudia-web/domain';
 import type { Eki, Ressya, Rosen } from '@oudia-web/format';
 import { RESSYAHOUKOU_NOBORI } from '@oudia-web/format';
+import { diagramTrackDisplayMode, isStandaloneEki } from './trackDisplayMode.js';
 import type { DiaLayoutFrame, EkiLayout, TrackLane } from './types.js';
 
 /**
@@ -58,8 +65,11 @@ export function buildDiaLayoutFrame(
   rosen: Rosen,
   kudari: readonly Ressya[],
   nobori: readonly Ressya[],
+  /** 分岐環状マップ(省略時は駅から導出)。着時刻駅の在線表昇格判定に使う。 */
+  brunchLoop?: BrunchLoopMap,
 ): DiaLayoutFrame {
   const ekiCont = rosen.ekiCont;
+  const brunchLoopMap = brunchLoop ?? deriveBrunchLoopMap(ekiCont);
   const ekiCount = ekiCont.length;
   const defaultSize =
     rosen.diagramDgrYZahyouKyoriDefault > 0 ? rosen.diagramDgrYZahyouKyoriDefault : 60;
@@ -92,13 +102,19 @@ export function buildDiaLayoutFrame(
     // 在線表(M6): 主要駅かつ diagramTrackDisplay のとき、駅線の直後に番線レーン帯を置く。
     // 帯の高さは (表示番線数 + 1) × 既定幅。列車線(斜線)は従来どおり駅線(dgrYTer=y)で
     // 終端し、帯は次の駅間の内側に確保する(既存 L2/L3 の座標前提を壊さない加法設計)。
-    const lanes = eki !== undefined ? computeTrackLanes(eki, y, defaultSize) : undefined;
+    const lanes =
+      eki !== undefined
+        ? computeTrackLanes(eki, y, defaultSize, isStandaloneEki(brunchLoopMap, ekiIndex))
+        : undefined;
+    // ★在線表駅では駅線が 2 本になる(原典 getDgrYPosOfEkiOrg / getDgrYPosOfEkiTer、
+    // CentDedDgrDia.cpp:819-851)。Org = 帯の上、Ter = 帯の下。在線表なしなら同値。
+    const bandHeight = lanes?.bandHeight ?? 0;
     ekiLayouts.push({
       ekiIndex,
       ekimei: eki?.ekimei ?? '',
       isSyuyou: eki?.ekikibo === 'syuyou',
       dgrYOrg: y,
-      dgrYTer: y,
+      dgrYTer: y + bandHeight,
       ...(lanes !== undefined ? { trackLanes: lanes.lanes } : {}),
     });
     // 在線表帯ぶん Y を先に送る(駅線とレーンの間・レーンと次駅の間に既定幅の余白)。
@@ -118,9 +134,9 @@ export function buildDiaLayoutFrame(
 }
 
 /**
- * 在線表の番線レーンを計算する(原典 CentDedDgrEki の getDgrYPosOfEkiTrack + m_iDiagramTrackIndex。
- * M6・単独駅前提)。diagramTrackDisplay かつ主要駅のときのみレーンを返す。省略番線
- * (diagramTrackOmit)はレーンを持たない(表示 index の詰め合わせ)。
+ * 在線表の番線レーンを計算する(原典 CentDedDgrEki の getDgrYPosOfEkiTrack + m_iDiagramTrackIndex)。
+ * 在線表表示モードが 0 でないときだけレーンを返す。省略番線(diagramTrackOmit)は
+ * レーンを持たない(表示 index の詰め合わせ)。
  *
  * レーン Y = 駅線 Y(dgrYStation)+ (表示 index + 1) × 既定幅。
  * 帯全体の高さ = (最大表示 index + 2) × 既定幅(原典 m_iEkiTrackDisplaySpace)。
@@ -130,8 +146,11 @@ function computeTrackLanes(
   eki: Eki,
   dgrYStation: number,
   defaultSize: number,
+  standalone: boolean,
 ): { lanes: TrackLane[]; bandHeight: number } | undefined {
-  if (!eki.diagramTrackDisplay || eki.ekikibo !== 'syuyou') return undefined;
+  // ★表示可否は 0..3 のモードで決まる。分岐環状グループの着時刻駅は
+  // 発着型(mode 1)へ昇格して在線表を持つ(原典 CentDedDgrDia.cpp:240-260)。
+  if (diagramTrackDisplayMode(eki, standalone) === 0) return undefined;
   const lanes: TrackLane[] = [];
   let displayIndex = 0;
   for (let i = 0; i < eki.ekiTrack2Cont.length; i++) {

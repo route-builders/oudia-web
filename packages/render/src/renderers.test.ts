@@ -7,6 +7,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { RessyaTrackLine } from '@oudia-web/derive';
 import {
   buildTimetableGrid,
   computeDiagramLayout,
@@ -18,6 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { createViewTransform, viewTransformFromZone } from './core/ViewTransform.js';
 import type { DiagramTheme, DiagramViewState } from './diagram/DiagramRenderer.js';
 import { drawL1, drawL2, drawL3 } from './diagram/DiagramRenderer.js';
+import { drawOccupancy } from './diagram/OccupancyRenderer.js';
 import { drawOperationMarks } from './diagram/OperationMarkRenderer.js';
 import { GridGeometry } from './grid/GridGeometry.js';
 import { drawGrid } from './grid/GridRenderer.js';
@@ -201,5 +203,165 @@ describe('drawOperationMarks(運用記号)', () => {
     );
     expect(ops(ctx).filter((o) => o === 'lineTo')).toHaveLength(1);
     expect(texts(ctx)).toContain('車庫 5');
+  });
+});
+
+describe('drawOccupancy(補助列車線)', () => {
+  /** 最小の在線行 1 本を持つダミー layout。 */
+  function fakeLayout(dgrYOrg: number, dgrYTer: number, laneY: number) {
+    return {
+      frame: {
+        ekiLayouts: [
+          {
+            ekiIndex: 0,
+            ekimei: 'A',
+            isSyuyou: true,
+            dgrYOrg,
+            dgrYTer,
+            trackLanes: [{ trackIndex: 0, dgrY: laneY }],
+          },
+        ],
+        dgrXPosMin: 0,
+        dgrXSize: 86400,
+        dgrYSize: 2000,
+      },
+      ressyaLayouts: [[], []],
+    } as unknown as Parameters<typeof drawOccupancy>[1];
+  }
+
+  const view = {
+    // contentX=0 / contentY=0、X は 1000px で 10000 秒ぶん、Y は等倍。
+    transform: createViewTransform(0, 0, 0.1, 1),
+    viewW: 1000,
+    viewH: 800,
+    displayKudari: true,
+    displayNobori: true,
+    displayStopMark: false,
+  } as unknown as Parameters<typeof drawOccupancy>[2];
+
+  function line(over: Partial<RessyaTrackLine> = {}): RessyaTrackLine {
+    return {
+      ekiIndex: 0,
+      ekiOrder: 0,
+      isTrackDisplay: true,
+      ekiatsukai: 'teisya' as const,
+      zaisenCont: [{ trackIndex: 0, dgrXChaku: 3600, dgrXHatsu: 3660 }],
+      chakuOperation: -1,
+      hatsuOperation: -1,
+      outerEkiIndex: null,
+      prevRessyahoukou: null,
+      operationNumber: '',
+      ...over,
+    };
+  }
+
+  function strokeCount(ctx: MockCtx): number {
+    return ctx.calls.filter((c) => c.op === 'stroke').length;
+  }
+
+  it('作業コードが -1 のときは補助列車線を描かない', () => {
+    const base = new MockCtx();
+    drawOccupancy(
+      base,
+      fakeLayout(100, 200, 150),
+      view,
+      { kudari: [{ houkou: 0, syubetsuIndex: 0, trackLines: [line({})] }], nobori: [] },
+      () => '#000',
+      '#ccc',
+    );
+    const aux = new MockCtx();
+    drawOccupancy(
+      aux,
+      fakeLayout(100, 200, 150),
+      view,
+      {
+        kudari: [{ houkou: 0, syubetsuIndex: 0, trackLines: [line({ hatsuOperation: -2 })] }],
+        nobori: [],
+      },
+      () => '#000',
+      '#ccc',
+    );
+    // -2 のぶんだけストロークが増える。
+    expect(strokeCount(aux)).toBeGreaterThan(strokeCount(base));
+  });
+
+  it('★在線表を持たない駅の行でも補助列車線だけは描く', () => {
+    const ctx = new MockCtx();
+    drawOccupancy(
+      ctx,
+      fakeLayout(100, 200, 150),
+      view,
+      {
+        kudari: [
+          {
+            houkou: 0,
+            syubetsuIndex: 0,
+            trackLines: [line({ isTrackDisplay: false, hatsuOperation: -4 })],
+          },
+        ],
+        nobori: [],
+      },
+      () => '#000',
+      '#ccc',
+    );
+    // 横線・コネクタは出ないが補助列車線は出る。
+    expect(strokeCount(ctx)).toBeGreaterThan(0);
+  });
+
+  it('★着発コネクタは作業コードが負のときだけ引く(原典 :1253 / :1685)', () => {
+    // chaku=0(出区でも中間でもない)/ hatsu=0 → 縦線なし。
+    const none = new MockCtx();
+    drawOccupancy(
+      none,
+      fakeLayout(100, 200, 150),
+      view,
+      {
+        kudari: [
+          {
+            houkou: 0,
+            syubetsuIndex: 0,
+            trackLines: [line({ chakuOperation: 0, hatsuOperation: 0 })],
+          },
+        ],
+        nobori: [],
+      },
+      () => '#000',
+      '#ccc',
+    );
+    // chaku=-1 / hatsu=-1 → 縦線 2 本ぶん増える。
+    const both = new MockCtx();
+    drawOccupancy(
+      both,
+      fakeLayout(100, 200, 150),
+      view,
+      { kudari: [{ houkou: 0, syubetsuIndex: 0, trackLines: [line({})] }], nobori: [] },
+      () => '#000',
+      '#ccc',
+    );
+    expect(strokeCount(both)).toBe(strokeCount(none) + 2);
+  });
+
+  it('★次列車接続(hatsuOperation=5)の横線は描かない(次列車に委任)', () => {
+    const ctx = new MockCtx();
+    drawOccupancy(
+      ctx,
+      fakeLayout(100, 200, 150),
+      view,
+      {
+        kudari: [
+          {
+            houkou: 0,
+            syubetsuIndex: 0,
+            trackLines: [line({ chakuOperation: 0, hatsuOperation: 5 })],
+          },
+        ],
+        nobori: [],
+      },
+      () => '#000',
+      '#ccc',
+    );
+    // 唯一の Zaisen が最後でもあるので在線の横線も縦線も出ない
+    // (残る 1 本は番線レーンの下地罫線)。
+    expect(strokeCount(ctx)).toBe(1);
   });
 });

@@ -52,11 +52,18 @@ function shiftDgrXPos(input: number, base: number): number {
   return x;
 }
 
-/** 駅Order の Y 座標(dgrYTer 基準。駅Index へ変換)。 */
+/**
+ * 駅Order の Y 座標(駅Index へ変換)。
+ *
+ * ★在線表駅は駅線が Org / Ter の 2 本になるが、列車線(斜線)はここでは **Org 基準**で
+ * 通す。原典は在線表駅で列車線を打ち切って在線表へ引き継ぐ(reduceToTrackDisplay、
+ * CentDedDgrRessya.cpp:5116-5167)が、その打ち切りは未移植なので、打ち切りと一緒に
+ * Org/Ter の使い分けを入れる(follow-up)。
+ */
 function yOf(frame: DiaLayoutFrame, houkou: Ressyahoukou, order: number): number {
   const ekiCount = frame.ekiLayouts.length;
   const e = frame.ekiLayouts[ekiIndexOfEkiOrder(order, ekiCount, houkou)];
-  return e?.dgrYTer ?? 0;
+  return e?.dgrYOrg ?? 0;
 }
 
 /** 駅間 [begin, end] の累積 Y 距離(原典 calcDgrYEkikanSize)。 */

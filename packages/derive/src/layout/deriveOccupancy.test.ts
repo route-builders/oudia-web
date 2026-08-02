@@ -25,6 +25,9 @@ function rosenOccupancy(): RosenFileData {
   const a = createDefaultEki(0, 'A');
   a.ekikibo = 'syuyou';
   a.diagramTrackDisplay = true;
+  // ★在線表が出るのは駅時刻形式が 発着 / 下り着 / 上り着 の駅だけ(原典
+  // CentDedDgrDia.cpp:236-262)。既定の「発時刻のみ」では在線表は出ない。
+  a.ekijikokukeisiki = 'hatsuchaku';
   a.ekiTrack2Cont = [
     { trackName: '1番線', trackRyakusyou: '1', trackNoboriRyakusyou: '' },
     { trackName: '2番線', trackRyakusyou: '2', trackNoboriRyakusyou: '' },
@@ -68,10 +71,12 @@ describe('EkiLayout の在線表レーン', () => {
     expect(a?.trackLanes?.map((l) => l.trackIndex)).toEqual([0, 2]);
     // B は在線表なし。
     expect(b?.trackLanes).toBeUndefined();
-    // レーン Y は駅線より下(値が大きい)。
-    const staY = a?.dgrYTer ?? 0;
+    // レーンは 2 本の駅線の**間**にある(Org < レーン < Ter)。
+    const yOrg = a?.dgrYOrg ?? 0;
+    const yTer = a?.dgrYTer ?? 0;
     for (const lane of a?.trackLanes ?? []) {
-      expect(lane.dgrY).toBeGreaterThan(staY);
+      expect(lane.dgrY).toBeGreaterThan(yOrg);
+      expect(lane.dgrY).toBeLessThan(yTer);
     }
   });
 
@@ -176,5 +181,120 @@ describe('作業コード(M7e・単独駅)', () => {
     );
     expect(occ.kudari[0]?.trackLines[0]?.chakuOperation).toBe(0);
     expect(occ.kudari[0]?.trackLines[0]?.operationNumber).toBe('');
+  });
+});
+
+describe('在線表表示モード(原典 CentDedDgrDia.cpp:236-262)', () => {
+  it('★駅時刻形式が「発時刻のみ」の駅は主要駅でも在線表を出さない', () => {
+    const data = rosenOccupancy();
+    const a = data.rosen.ekiCont[0];
+    if (a === undefined) throw new Error('no eki');
+    a.ekijikokukeisiki = 'hatsu';
+    const frame = buildDiaLayoutFrame(data.rosen, data.rosen.diaCont[0]?.ressyaCont[0] ?? [], []);
+    expect(frame.ekiLayouts[0]?.trackLanes).toBeUndefined();
+  });
+
+  it('★分岐環状グループに属する着時刻駅は在線表を出す(発着型へ昇格)', () => {
+    const data = rosenOccupancy();
+    const a = data.rosen.ekiCont[0];
+    const b = data.rosen.ekiCont[1];
+    if (a === undefined || b === undefined) throw new Error('no eki');
+    a.ekijikokukeisiki = 'kudariChaku';
+
+    // 単独駅のうちは mode 2(着時刻駅)。帯は出る。
+    const alone = buildDiaLayoutFrame(data.rosen, [], []);
+    expect(alone.ekiLayouts[0]?.trackLanes).toBeDefined();
+
+    // 駅 B を駅 A から分岐させると A は発着型(mode 1)へ昇格する。
+    b.brunchCoreEkiIndex = 0;
+    const grouped = buildDiaLayoutFrame(data.rosen, [], []);
+    expect(grouped.ekiLayouts[0]?.trackLanes).toBeDefined();
+  });
+
+  it('★在線表駅は駅線が 2 本になる(Org = 帯の上 / Ter = 帯の下)', () => {
+    const data = rosenOccupancy();
+    const frame = buildDiaLayoutFrame(data.rosen, [], []);
+    const a = frame.ekiLayouts[0];
+    const b = frame.ekiLayouts[1];
+    if (a === undefined || b === undefined) throw new Error('no layout');
+    expect(a.dgrYTer).toBeGreaterThan(a.dgrYOrg);
+    // 在線表なしの駅は Org === Ter。
+    expect(b.dgrYOrg).toBe(b.dgrYTer);
+  });
+});
+
+describe('分岐環状の駅群展開(原典 CentDedDgrRessya.cpp:1788-2078)', () => {
+  /** A(在線表・分岐基幹)と B(A から分岐)の 2 駅。 */
+  function branchRosen(): RosenFileData {
+    const data = rosenOccupancy();
+    const a = data.rosen.ekiCont[0];
+    const b = data.rosen.ekiCont[1];
+    if (a === undefined || b === undefined) throw new Error('no eki');
+    // B を A から分岐させる(B は A より後ろ = 終点側派生駅)。
+    b.brunchCoreEkiIndex = 0;
+    b.ekikibo = 'syuyou';
+    b.diagramTrackDisplay = true;
+    b.ekijikokukeisiki = 'hatsuchaku';
+    b.ekiTrack2Cont = [
+      { trackName: '1番線', trackRyakusyou: '1', trackNoboriRyakusyou: '' },
+      { trackName: '2番線', trackRyakusyou: '2', trackNoboriRyakusyou: '' },
+    ];
+    b.diagramTrackOmit = [false, false];
+    return data;
+  }
+
+  function occOf(data: RosenFileData) {
+    const dia = data.rosen.diaCont[0];
+    const frame = buildDiaLayoutFrame(
+      data.rosen,
+      dia?.ressyaCont[0] ?? [],
+      dia?.ressyaCont[1] ?? [],
+    );
+    return deriveOccupancy(
+      data.rosen,
+      dia?.ressyaCont[0] ?? [],
+      dia?.ressyaCont[1] ?? [],
+      frame.ekiLayouts,
+    );
+  }
+
+  it('★同じ Zaisen が駅群の各駅へ複製され、別々の行になる', () => {
+    const data = branchRosen();
+    const occ = occOf(data);
+    const lines = occ.kudari[0]?.trackLines ?? [];
+    // 駅 A の在線が 駅 A と 駅 B の 2 行になる(同じ Zaisen 内容)。
+    const atA = lines.filter((l) => l.ekiIndex === 0);
+    const atB = lines.filter((l) => l.ekiIndex === 1);
+    expect(atA.length).toBeGreaterThan(0);
+    expect(atB.length).toBeGreaterThan(0);
+    expect(atB[0]?.zaisenCont[0]?.dgrXChaku).toBe(atA[0]?.zaisenCont[0]?.dgrXChaku);
+  });
+
+  it('★自駅は -1、他駅は反転フラグ比較で -2 / -4 になる', () => {
+    const data = branchRosen();
+    const occ = occOf(data);
+    const lines = occ.kudari[0]?.trackLines ?? [];
+    // 駅 A の在線を 駅 B へ複製した行。反転設定なし同士 → -2。
+    const copied = lines.find((l) => l.ekiIndex === 1 && l.ekiOrder === 1);
+    expect(copied).toBeDefined();
+    expect([-2, -4]).toContain(copied?.hatsuOperation);
+  });
+
+  it('★反転設定が食い違うと -4 になる', () => {
+    const data = branchRosen();
+    const b = data.rosen.ekiCont[1];
+    if (b === undefined) throw new Error('no eki');
+    b.brunchOpposite = true;
+    const occ = occOf(data);
+    const lines = occ.kudari[0]?.trackLines ?? [];
+    const copied = lines.find((l) => l.ekiIndex === 1 && l.ekiOrder === 1);
+    expect(copied?.hatsuOperation).toBe(-4);
+  });
+
+  it('単独駅のときは自駅ぶんだけ(複製しない)', () => {
+    const data = rosenOccupancy();
+    const occ = occOf(data);
+    const lines = occ.kudari[0]?.trackLines ?? [];
+    expect(lines.every((l) => l.ekiIndex === 0)).toBe(true);
   });
 });
