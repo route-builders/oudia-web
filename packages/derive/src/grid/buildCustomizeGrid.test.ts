@@ -534,3 +534,192 @@ describe('buildCustomizeGrid — EkiPrev*(前列車情報欄)', () => {
     expect(at(rows, parent[0]?.cells ?? [], 'ekiPrevRessyasyubetsu', 0)).toBe('快');
   });
 });
+
+describe('buildCustomizeGrid — EkiOuter*(路線外始発 / 終着欄)', () => {
+  /** 路線外欄を出す駅を指定する。 */
+  function enableOuter(rosen: Rosen, at: number, origin: boolean, terminal: boolean): void {
+    const e = rosen.ekiCont[at];
+    if (e === undefined) throw new Error('no eki');
+    e.jikokuhyouOuterDisplayKudari = { origin, terminal };
+  }
+
+  const OUTER_OPTS: CustomizeRowOptions = {
+    displayRessyamei: false,
+    enableOperation: 2,
+    operationNumberRows: 1,
+    displayShihatsuShuchakuEkimei: false,
+  };
+
+  it('★列車 NULL の疑似列でも路線外始発欄に駅名と時刻が出る(分割・併合の本体)', () => {
+    const { dia, rosen } = setup();
+    enableOuter(rosen, 1, true, false);
+    const e0 = rosen.ekiCont[0];
+    if (e0 === undefined) throw new Error('no eki');
+    e0.outerTerminalCont = [{ ekimei: '車庫', jikokuRyaku: '', diaRyaku: '' }];
+    const { rows, cells } = prevCellsOf(
+      dia,
+      rosen,
+      [],
+      {
+        connectEkiOrder: 2,
+        sihatsuEkiOrder: 0,
+        outerSihatsuEkiIndex: 0,
+        outerSihatsuJikoku: J(7, 30),
+      },
+      OUTER_OPTS,
+    );
+    expect(at(rows, cells, 'ekiOuterShihatsu1', 1)).toBe('車庫');
+    expect(at(rows, cells, 'ekiOuterShihatsu2', 1)).toBe(' 7:30');
+  });
+
+  it('★環状(始発駅Order < 0)は駅名セルが「環状」', () => {
+    const { dia, rosen } = setup();
+    enableOuter(rosen, 1, true, false);
+    const { rows, cells } = prevCellsOf(
+      dia,
+      rosen,
+      [],
+      { connectEkiOrder: 2, sihatsuEkiOrder: -1, outerSihatsuJikoku: null },
+      OUTER_OPTS,
+    );
+    expect(at(rows, cells, 'ekiOuterShihatsu1', 1)).toBe('環状');
+    // ★時刻が null のセルは空(encode がそのまま空文字を返す)。
+    expect(at(rows, cells, 'ekiOuterShihatsu2', 1)).toBe('');
+  });
+
+  it('列車の路線外始発作業(outer)からも駅名・時刻が出る', () => {
+    const { dia, rosen } = setup();
+    enableOuter(rosen, 0, true, false);
+    const e0 = rosen.ekiCont[0];
+    if (e0 === undefined) throw new Error('no eki');
+    e0.outerTerminalCont = [{ ekimei: '甲', jikokuRyaku: '甲駅', diaRyaku: '' }];
+    const r = train('1M', 0, 3, 8);
+    const s0 = r.ekiJikokuCont[0];
+    if (s0 === undefined) throw new Error('no slot');
+    s0.beforeOperationCont = [
+      {
+        kind: 'outer',
+        outerTerminalIndex: 0,
+        outerHatsuJikoku: J(7, 15),
+        chakuJikoku: null,
+        inOutLinkCode: '',
+        operationNumbers: [],
+      },
+    ];
+    dia.ressyaCont[0].push(r);
+    const { rows, cells } = prevCellsOf(dia, rosen, [0], {}, OUTER_OPTS);
+    // ★略称が空でなければ略称。
+    expect(at(rows, cells, 'ekiOuterShihatsu1', 0)).toBe('甲駅');
+    expect(at(rows, cells, 'ekiOuterShihatsu2', 0)).toBe(' 7:15');
+  });
+
+  it('★終着欄の時刻は着時刻扱い、始発欄は発時刻扱い(2400 表記の可否が変わる)', () => {
+    const { dia, rosen } = setup();
+    enableOuter(rosen, 3, false, true);
+    const r = train('1M', 0, 3, 8);
+    const s3 = r.ekiJikokuCont[3];
+    if (s3 === undefined) throw new Error('no slot');
+    s3.afterOperationCont = [
+      {
+        kind: 'outer',
+        outerTerminalIndex: 0,
+        hatsuJikoku: J(8, 32),
+        outerChakuJikoku: J(24, 0),
+        inOutLinkCode: '',
+      },
+    ];
+    const e3 = rosen.ekiCont[3];
+    if (e3 === undefined) throw new Error('no eki');
+    e3.outerTerminalCont = [{ ekimei: '乙', jikokuRyaku: '', diaRyaku: '' }];
+    dia.ressyaCont[0].push(r);
+    const rowsSpec = buildCustomizeRowSpec(rosen.ekiCont, 0, OUTER_OPTS);
+    const cols = buildCustomizeGrid(dia, rosen, 0, [createCustomizeChainColumn([0])], rowsSpec, {
+      conv: { ...CONV, display2400: true },
+    });
+    const cells = cols[0]?.cells ?? [];
+    expect(at(rowsSpec, cells, 'ekiOuterShuchaku1', 3)).toBe('乙');
+    // 着時刻なので 24:00 表記が有効。
+    expect(at(rowsSpec, cells, 'ekiOuterShuchaku2', 3)).toBe('24:00');
+  });
+
+  it('★運行なし区間の「||」は始発欄が e-1・終着欄が e(片側だけ -1)', () => {
+    // 5 駅。駅2 が経由なし = 駅1→2 と 駅2→3 が運行なし。
+    const rosen = createNewRosen().rosen;
+    rosen.ekiCont = [0, 1, 2, 3, 4].map((i) => {
+      const e = createDefaultEki(i, `E${String(i)}`);
+      e.jikokuhyouJikokuDisplayKudari = { chaku: true, hatsu: true };
+      e.jikokuhyouOuterDisplayKudari = { origin: true, terminal: true };
+      return e;
+    });
+    const dia = createDefaultDia('D');
+    rosen.diaCont = [dia];
+    const r = createNullRessya(5, 0);
+    r.isNull = false;
+    r.ressyabangou = '1M';
+    for (let o = 0; o < 5; o++) {
+      const s = r.ekiJikokuCont[o];
+      if (s === undefined) continue;
+      s.ekiatsukai = o === 2 ? 'none' : 'teisya';
+      s.chakuJikoku = J(8, o * 10);
+      s.hatsuJikoku = J(8, o * 10 + 2);
+    }
+    dia.ressyaCont[0].push(r);
+    const { rows, cells } = prevCellsOf(dia, rosen, [0], {}, OUTER_OPTS);
+    // 始発欄(着の上): 駅2 は 駅1→2 が運行なし → 「||」。
+    expect(at(rows, cells, 'ekiOuterShihatsu1', 2)).toBe('||');
+    expect(at(rows, cells, 'ekiOuterShihatsu1', 1)).toBe('');
+    // 終着欄(発の下): 駅1 は 駅1→2 が運行なし → 「||」。
+    expect(at(rows, cells, 'ekiOuterShuchaku1', 1)).toBe('||');
+    expect(at(rows, cells, 'ekiOuterShuchaku1', 2)).toBe('||');
+  });
+
+  it('★路線外欄の 2 行目では列車切替 reducer を進めない', () => {
+    const { dia, rosen } = setup();
+    for (const e of rosen.ekiCont) {
+      e.jikokuhyouOuterDisplayKudari = { origin: true, terminal: true };
+    }
+    const e1 = rosen.ekiCont[1];
+    if (e1 === undefined) throw new Error('no eki');
+    e1.outerTerminalCont = [{ ekimei: '乙', jikokuRyaku: '', diaRyaku: '' }];
+    // 駅1 で終わる列車を 3 本続け、4 本目が駅1→3。発側(>=)は 発行 → 終着欄1 と
+    // 進むので、終着欄2 でも進むと 1 本ぶん先の列車になってしまう。
+    const a = train('1M', 0, 1, 8);
+    const b = train('3M', 0, 1, 9);
+    const c = train('7M', 0, 1, 9);
+    const s1 = c.ekiJikokuCont[1];
+    if (s1 === undefined) throw new Error('no slot');
+    s1.afterOperationCont = [
+      {
+        kind: 'outer',
+        outerTerminalIndex: 0,
+        hatsuJikoku: null,
+        outerChakuJikoku: J(9, 40),
+        inOutLinkCode: '',
+      },
+    ];
+    dia.ressyaCont[0].push(a, b, c, train('5M', 1, 3, 10));
+    const rowsSpec = buildCustomizeRowSpec(rosen.ekiCont, 0, OUTER_OPTS);
+    const cols = buildCustomizeGrid(
+      dia,
+      rosen,
+      0,
+      [createCustomizeChainColumn([0, 1, 2, 3])],
+      rowsSpec,
+      { conv: CONV },
+    );
+    const cells = cols[0]?.cells ?? [];
+    // 駅1 の終着欄は 7M の路線外終着。2 行目でもう一度進むと 5M になり時刻が消える。
+    expect(at(rowsSpec, cells, 'ekiOuterShuchaku1', 1)).toBe('乙');
+    expect(at(rowsSpec, cells, 'ekiOuterShuchaku2', 1)).toBe(' 9:40');
+  });
+
+  it('★どの分岐にも当たらなければ空文字(プレースホルダにしない)', () => {
+    const { dia, rosen } = setup();
+    enableOuter(rosen, 3, true, true);
+    dia.ressyaCont[0].push(train('1M', 0, 1, 8));
+    const { rows, cells } = prevCellsOf(dia, rosen, [0], {}, OUTER_OPTS);
+    // 駅3 は終着(1)より後だが路線外終着作業も content も無い。
+    expect(at(rows, cells, 'ekiOuterShihatsu1', 3)).toBe('');
+    expect(at(rows, cells, 'ekiOuterShuchaku1', 3)).toBe('');
+  });
+});

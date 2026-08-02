@@ -51,7 +51,7 @@ import type {
   Rosen,
 } from '@oudia-web/format';
 import { encodeJikokuCsv } from '@oudia-web/format';
-import { getTrackRyakusyou } from '../csv/ekiDisplay.js';
+import { getEkimeiJikokuhyouRyaku, getTrackRyakusyou } from '../csv/ekiDisplay.js';
 import type { CustomizeChainColumn } from '../operationLight/types.js';
 import { getKyoukaisen } from './cellSpec.js';
 import type { CustomizeRowSpec } from './customizeColSpec.js';
@@ -123,6 +123,21 @@ export function buildOuterDisplayIndex(
   }
   return { origin, terminal };
 }
+
+/**
+ * 列車切替 reducer を**回さない**行(原典に switch case が無い行)。
+ * ★路線外欄の *2 行は *1 の case が `iYColumnNumber += 1` で飛ばす(:4265/:4671)。
+ * ★号数・号は列車名のハンドラが隣のセルへ直接書くだけで case が無い(:6595-6600 / :10272)。
+ * ここを外すと切替駅で 1 列車ぶんずれる。
+ */
+const NO_ADVANCE: ReadonlySet<CustomizeRowSpec['type']> = new Set([
+  'ekiOuterShihatsu2',
+  'ekiOuterShuchaku2',
+  'ekiPrevGousuu',
+  'ekiPrevGou',
+  'ekiGousuu',
+  'ekiGou',
+]);
 
 export interface CustomizeGridColumn {
   /** この列に積まれる列車 index(先頭列車の情報をヘッダに出す)。 */
@@ -269,7 +284,12 @@ export function fillCustomizeColumn(
   const cells: CellSpec[] = [];
   for (const [y, row] of rows.entries()) {
     // ★列車切替。着側は `>`、発側は `>=`(原典の非対称)。
-    if (row.side !== null && row.ekiOrder !== null && column.ressyaIndexCont.length > 0) {
+    if (
+      row.side !== null &&
+      row.ekiOrder !== null &&
+      !NO_ADVANCE.has(row.type) &&
+      column.ressyaIndexCont.length > 0
+    ) {
       const e = row.ekiOrder;
       const advance =
         idx < column.ressyaIndexCont.length - 1 &&
@@ -401,6 +421,14 @@ function fillRow(row: CustomizeRowSpec, ctx: FillCtx): CellSpec {
     case 'ekiPrevGousuu':
     case 'ekiPrevGou':
       return ekiPrevCell(row, ctx, e, eki);
+    case 'ekiOuterShihatsu1':
+      return outerPairCell(ctx, e, true, false);
+    case 'ekiOuterShihatsu2':
+      return outerPairCell(ctx, e, true, true);
+    case 'ekiOuterShuchaku1':
+      return outerPairCell(ctx, e, false, false);
+    case 'ekiOuterShuchaku2':
+      return outerPairCell(ctx, e, false, true);
     default:
       break;
   }
@@ -438,6 +466,200 @@ function fillRow(row: CustomizeRowSpec, ctx: FillCtx): CellSpec {
       // EkiPrev* / EkiOuter* / 入線 は後続。
       return EMPTY_CELL;
   }
+}
+
+/** 路線外駅名の時刻表用略称(原典 getOuterTerminalJikokuRyaku(idx, true))。空なら駅名。 */
+function outerTerminalRyaku(eki: Eki | undefined, index: number): string {
+  const t = eki?.outerTerminalCont[index];
+  if (t === undefined) return '';
+  return t.jikokuRyaku === '' ? t.ekimei : t.jikokuRyaku;
+}
+
+/**
+ * 路線外始発欄 / 路線外終着欄の 2 セル(原典 :6865-7130 / :11960-12210)。
+ *
+ * ★**1 行目(駅名)と 2 行目(時刻)は 1 つの分岐で同時に決まる**。原典は *1 の case で
+ * だけ列車切替 reducer を回し、直後 `iYColumnNumber += 1` で *2 を飛ばす(:4265/:4671)。
+ * ここでも *2 行では reducer を進めない(fillCustomizeColumn の NO_ADVANCE)。
+ *
+ * ★**既定は空文字**。着発行と違い「・・」「----」のプレースホルダは一切出さない。
+ * ★**列車 NULL(ressyaIndexCont が空)の列こそが本体**(分割/併合の路線外欄だけの列)。
+ * ★**逆側の索引を引く分岐がある**(始発欄なのに終着側索引、終着欄なのに始発側索引)。
+ * ★**isRunBetweenNextEki の引数が片側だけ -1**。始発欄は e-1(着より上の行)、
+ *   終着欄は e(発より下の行)。
+ * ★**駅域の境界の帰属が逆**。始発欄は `e<=sh / sh<e<=sy / sy<e`、
+ *   終着欄は `e<sh / sh<=e<sy / sy<=e`。
+ * ★**content 由来と列車自身の作業由来の優先順が側で入れ替わる**。実テキストを描く側は
+ *   content が先、「||」を描く反対側は列車の Outer 作業が先。
+ */
+function outerPairCell(ctx: FillCtx, e: number, isShihatsu: boolean, isSecond: boolean): CellSpec {
+  const { rosen, houkou, ressya, prevTerm, column, outerIndex, opts } = ctx;
+  const shiAt = (o: number): number => (o < 0 ? -1 : (outerIndex.origin[o] ?? -1));
+  const shuAt = (o: number): number => (o < 0 ? -1 : (outerIndex.terminal[o] ?? -1));
+  const defaultSyubetsu =
+    ressya?.syubetsuIndex ??
+    (column.connectEkiOrder >= 0 ? column.prevRessyasyubetsuIndex : column.ressyasyubetsuIndex);
+
+  const pick = (name: CellSpec, time: CellSpec): CellSpec => (isSecond ? time : name);
+  const empty = (): CellSpec => EMPTY_CELL;
+  const bar = (sIdx: number): CellSpec => markCell('keiyunasi', sIdx);
+  /** 駅名セル + 時刻セル。ekiOrder < 0 は環状(原典 IDS_WORD_EkiJikokuhyou_Loop)。 */
+  const named = (ekiOrder: number, outerIdx: number, jikoku: Jikoku, sIdx: number): CellSpec => {
+    if (isSecond) {
+      return textCell(encodeJikokuCsv(jikoku, !isShihatsu, null, opts.conv), 'jikoku', sIdx);
+    }
+    if (ekiOrder < 0) return textCell('環状', 'text', sIdx);
+    const eki = ekiAtOrder(rosen, houkou, ekiOrder);
+    const text =
+      outerIdx >= 0
+        ? outerTerminalRyaku(eki, outerIdx)
+        : eki === undefined
+          ? ''
+          : getEkimeiJikokuhyouRyaku(eki);
+    return textCell(text, 'text', sIdx);
+  };
+
+  // ---- (A) 列車 NULL の疑似列(原典 :6954-6994 / :12038-12078)----
+  if (ressya === undefined) {
+    if (isShihatsu) {
+      // ★content の路線外始発を、連結駅の「始発欄表示駅」に描く。ガードは無い。
+      if (column.connectEkiOrder >= 0 && e === shiAt(column.connectEkiOrder)) {
+        return named(
+          column.sihatsuEkiOrder,
+          column.outerSihatsuEkiIndex,
+          column.outerSihatsuJikoku,
+          defaultSyubetsu,
+        );
+      }
+      // ★始発欄なのに**終着側**索引を引く(:6987)。
+      if (
+        column.releaseEkiOrder >= 0 &&
+        e > column.releaseEkiOrder &&
+        e <= shuAt(column.releaseEkiOrder)
+      ) {
+        return bar(defaultSyubetsu);
+      }
+      return empty();
+    }
+    if (column.releaseEkiOrder >= 0 && e === shuAt(column.releaseEkiOrder)) {
+      return named(
+        column.syuuchakuEkiOrder,
+        column.outerSyuuchakuEkiIndex,
+        column.outerSyuuchakuJikoku,
+        defaultSyubetsu,
+      );
+    }
+    // ★終着欄なのに**始発側**索引を引く(:12072)。
+    if (
+      column.connectEkiOrder >= 0 &&
+      e < column.connectEkiOrder &&
+      e >= shiAt(column.connectEkiOrder)
+    ) {
+      return bar(defaultSyubetsu);
+    }
+    return empty();
+  }
+
+  const sh = getValidSihatsuEki(ressya);
+  const sy = getValidSyuuchakuEki(ressya);
+  if (sh < 0 || sy < 0) return empty(); // ★プレースホルダではなく空
+
+  const firstOp = ressya.ekiJikokuCont[sh]?.beforeOperationCont[0];
+  const afterCont = ressya.ekiJikokuCont[sy]?.afterOperationCont ?? [];
+  const lastOp = afterCont[afterCont.length - 1];
+
+  if (isShihatsu) {
+    // ---- (B-1) 始発駅以上(★境界 sh を含む)----
+    if (e <= sh) {
+      if (prevTerm >= 0) return bar(defaultSyubetsu);
+      // ★content 優先。書式は前列車の種別で作り直す(Ver2.06.21)。
+      if (column.sihatsuEkiOrder >= -2 && e === shiAt(sh)) {
+        return named(
+          column.sihatsuEkiOrder,
+          column.outerSihatsuEkiIndex,
+          column.outerSihatsuJikoku,
+          column.prevRessyasyubetsuIndex,
+        );
+      }
+      if (firstOp?.kind === 'outer' && e === shiAt(sh)) {
+        // ★時刻が null なら encode を呼ばず空のまま(原典は明示的に isNull を見る)。
+        return pick(
+          textCell(
+            outerTerminalRyaku(ekiAtOrder(rosen, houkou, sh), firstOp.outerTerminalIndex),
+            'text',
+            defaultSyubetsu,
+          ),
+          firstOp.outerHatsuJikoku === null
+            ? EMPTY_CELL
+            : textCell(
+                encodeJikokuCsv(firstOp.outerHatsuJikoku, false, null, opts.conv),
+                'jikoku',
+                defaultSyubetsu,
+              ),
+        );
+      }
+      if (column.releaseEkiOrder >= 0 && column.releaseEkiOrder < e) return bar(defaultSyubetsu);
+      return empty();
+    }
+    // ---- (B-2) 運行区間内(★引数は e-1)----
+    if (e <= sy) {
+      return isRunBetweenNextEki(ressya, e - 1) ? empty() : bar(defaultSyubetsu);
+    }
+    // ---- (B-3) 終着より後。★列車自身の Outer が先 ----
+    const shu = shuAt(sy);
+    if (lastOp?.kind === 'outer' && shu >= 0 && shu >= e) return bar(defaultSyubetsu);
+    if (column.syuuchakuEkiOrder >= -2 && shu >= 0 && shu >= e) {
+      return bar(column.ressyasyubetsuIndex); // ★次列車の種別で描く
+    }
+    if (column.connectEkiOrder >= 0 && column.connectEkiOrder > e) return bar(defaultSyubetsu);
+    return empty();
+  }
+
+  // ---- 終着欄。駅域の境界の帰属が始発欄と逆 ----
+  if (e < sh) {
+    if (prevTerm >= 0) return bar(defaultSyubetsu);
+    // ★こちら側は**列車自身の Outer が先**(content は後)。
+    const shi = shiAt(sh);
+    if (firstOp?.kind === 'outer' && shi >= 0 && shi <= e) return bar(defaultSyubetsu);
+    if (column.sihatsuEkiOrder >= -2 && shi >= 0 && shi <= e) {
+      // ★原典は cell2 だけ書式を作り直す(:12118)。書き漏らしに見えるがそのまま写す。
+      return bar(isSecond ? column.prevRessyasyubetsuIndex : defaultSyubetsu);
+    }
+    if (column.releaseEkiOrder >= 0 && column.releaseEkiOrder < e) return bar(defaultSyubetsu);
+    return empty();
+  }
+  // ---- 運行区間内(★引数は e。-1 しない)----
+  if (e < sy) {
+    return isRunBetweenNextEki(ressya, e) ? empty() : bar(defaultSyubetsu);
+  }
+  // ---- 終着駅以降。★content が先 ----
+  const shu = shuAt(sy);
+  if (column.syuuchakuEkiOrder >= -2 && e === shu) {
+    return named(
+      column.syuuchakuEkiOrder,
+      column.outerSyuuchakuEkiIndex,
+      column.outerSyuuchakuJikoku,
+      column.ressyasyubetsuIndex,
+    );
+  }
+  if (lastOp?.kind === 'outer' && shu >= 0 && shu >= e) {
+    return pick(
+      textCell(
+        outerTerminalRyaku(ekiAtOrder(rosen, houkou, sy), lastOp.outerTerminalIndex),
+        'text',
+        defaultSyubetsu,
+      ),
+      lastOp.outerChakuJikoku === null
+        ? EMPTY_CELL
+        : textCell(
+            encodeJikokuCsv(lastOp.outerChakuJikoku, true, null, opts.conv),
+            'jikoku',
+            defaultSyubetsu,
+          ),
+    );
+  }
+  if (column.connectEkiOrder >= 0 && column.connectEkiOrder > e) return bar(defaultSyubetsu);
+  return empty();
 }
 
 /** 駅の「前列車情報欄」の表示設定(原典 getJikokuhyouPrev*Display)。 */
