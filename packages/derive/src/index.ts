@@ -79,7 +79,11 @@ export type {
   CustomizeGridColumn,
   CustomizeGridOptions,
 } from './grid/buildCustomizeGrid.js';
-export { buildCustomizeGrid, fillCustomizeColumn } from './grid/buildCustomizeGrid.js';
+export {
+  buildCustomizeGrid,
+  buildNyuusenJikokuIndex,
+  fillCustomizeColumn,
+} from './grid/buildCustomizeGrid.js';
 export type {
   BuildTimetableGridOptions,
   BuildTimetableGridResult,

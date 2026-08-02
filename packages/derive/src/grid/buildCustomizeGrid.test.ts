@@ -17,7 +17,7 @@ import { asSeconds } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import type { CustomizeChainColumn } from '../operationLight/types.js';
 import { createCustomizeChainColumn } from '../operationLight/types.js';
-import { buildCustomizeGrid } from './buildCustomizeGrid.js';
+import { buildCustomizeGrid, buildNyuusenJikokuIndex } from './buildCustomizeGrid.js';
 import type { CustomizeRowOptions } from './customizeColSpec.js';
 import { buildCustomizeRowSpec } from './customizeColSpec.js';
 
@@ -721,5 +721,157 @@ describe('buildCustomizeGrid — EkiOuter*(路線外始発 / 終着欄)', () => 
     // 駅3 は終着(1)より後だが路線外終着作業も content も無い。
     expect(at(rows, cells, 'ekiOuterShihatsu1', 3)).toBe('');
     expect(at(rows, cells, 'ekiOuterShuchaku1', 3)).toBe('');
+  });
+});
+
+describe('buildCustomizeGrid — 入線時刻', () => {
+  const NYUUSEN_OPTS: CustomizeRowOptions = {
+    displayRessyamei: false,
+    enableOperation: 1,
+    operationNumberRows: 1,
+    displayShihatsuShuchakuEkimei: false,
+  };
+
+  /** 全駅の入線時刻行を出す。 */
+  function enableNyuusen(rosen: Rosen): void {
+    for (const e of rosen.ekiCont) {
+      e.jikokuhyouNyuusenJikokuDisplayKudari = true;
+    }
+  }
+
+  it('★実時刻が出るのは有効始発駅だけ(出区時刻)', () => {
+    const { dia, rosen } = setup();
+    enableNyuusen(rosen);
+    const r = train('1M', 0, 3, 8);
+    const s0 = r.ekiJikokuCont[0];
+    if (s0 === undefined) throw new Error('no slot');
+    s0.beforeOperationCont = [
+      { kind: 'out', outJikoku: J(7, 45), inOutLinkCode: '', operationNumbers: [] },
+    ];
+    dia.ressyaCont[0].push(r);
+    const { rows, cells } = prevCellsOf(dia, rosen, [0], {}, NYUUSEN_OPTS);
+    expect(at(rows, cells, 'nyuusen', 0)).toBe(' 7:45');
+    // 中間駅・終着駅には絶対に出ない。
+    expect(at(rows, cells, 'nyuusen', 1)).toBe('');
+    expect(at(rows, cells, 'nyuusen', 3)).toBe('');
+  });
+
+  it('★入換は番線が同じなら値を取らず走査を続ける(break しない)', () => {
+    const { dia, rosen } = setup();
+    enableNyuusen(rosen);
+    const r = train('1M', 0, 3, 8);
+    const s0 = r.ekiJikokuCont[0];
+    if (s0 === undefined) throw new Error('no slot');
+    s0.ressyaTrackIndex = 0;
+    // 末尾→先頭に走査する。末尾の入換は番線が同じなので飛ばし、その前の出区を拾う。
+    s0.beforeOperationCont = [
+      { kind: 'out', outJikoku: J(7, 45), inOutLinkCode: '', operationNumbers: [] },
+      {
+        kind: 'shunt',
+        shuntTrackIndex: 0,
+        shuntHatsuJikoku: J(7, 50),
+        shuntChakuJikoku: J(7, 55),
+        displayJikoku: false,
+      },
+    ];
+    dia.ressyaCont[0].push(r);
+    const { rows, cells } = prevCellsOf(dia, rosen, [0], {}, NYUUSEN_OPTS);
+    expect(at(rows, cells, 'nyuusen', 0)).toBe(' 7:45');
+  });
+
+  it('入換の番線が違えば入換着時刻(null なら入換発)を使う', () => {
+    const { dia, rosen } = setup();
+    enableNyuusen(rosen);
+    const r = train('1M', 0, 3, 8);
+    const s0 = r.ekiJikokuCont[0];
+    if (s0 === undefined) throw new Error('no slot');
+    s0.ressyaTrackIndex = 0;
+    s0.beforeOperationCont = [
+      {
+        kind: 'shunt',
+        shuntTrackIndex: 1,
+        shuntHatsuJikoku: J(7, 50),
+        shuntChakuJikoku: null,
+        displayJikoku: false,
+      },
+    ];
+    dia.ressyaCont[0].push(r);
+    const { rows, cells } = prevCellsOf(dia, rosen, [0], {}, NYUUSEN_OPTS);
+    expect(at(rows, cells, 'nyuusen', 0)).toBe(' 7:50');
+  });
+
+  it('★チェーン 2 列車目以降は自分の始発駅でも実時刻を出さない(「||」)', () => {
+    const { dia, rosen } = setup();
+    enableNyuusen(rosen);
+    const a = train('1M', 0, 1, 8);
+    const b = train('3M', 1, 3, 9);
+    const s1 = b.ekiJikokuCont[1];
+    if (s1 === undefined) throw new Error('no slot');
+    s1.beforeOperationCont = [
+      { kind: 'out', outJikoku: J(8, 55), inOutLinkCode: '', operationNumbers: [] },
+    ];
+    dia.ressyaCont[0].push(a, b);
+    const { rows, cells } = prevCellsOf(dia, rosen, [0, 1], {}, NYUUSEN_OPTS);
+    // 駅1 は 3M の始発だが prevTerm(=1M の終着 1)があるので「||」ではなく空。
+    // (prevTerm < e が成り立たないため。原典 :8298-8306)
+    expect(at(rows, cells, 'nyuusen', 1)).toBe('');
+  });
+
+  it('★次列車接続の入線時刻は探索結果の索引から引く(oud2 非永続)', () => {
+    const { dia, rosen } = setup();
+    enableNyuusen(rosen);
+    const r = train('1M', 0, 3, 8);
+    const s0 = r.ekiJikokuCont[0];
+    if (s0 === undefined) throw new Error('no slot');
+    s0.beforeOperationCont = [{ kind: 'junction', kitenJikoku: J(7, 0), kariOperationNumbers: [] }];
+    dia.ressyaCont[0].push(r);
+    const rowsSpec = buildCustomizeRowSpec(rosen.ekiCont, 0, NYUUSEN_OPTS);
+    // 索引が無ければ空。
+    const bare = buildCustomizeGrid(dia, rosen, 0, [createCustomizeChainColumn([0])], rowsSpec, {
+      conv: CONV,
+    });
+    expect(at(rowsSpec, bare[0]?.cells ?? [], 'nyuusen', 0)).toBe('');
+    // 探索結果(前列車の後作業キー → nextTrain)から索引を作って渡す。
+    const index = buildNyuusenJikokuIndex(
+      new Map([
+        [
+          'x',
+          {
+            junctionSucceed: true,
+            beforeAfterType: 'unrelated' as const,
+            nextTrain: {
+              houkou: 0 as const,
+              ressyaIndex: 0,
+              ekiOrder: 0,
+              opKind: 'before' as const,
+              iLevel: [0],
+            },
+            junctionJikoku: J(7, 20),
+            prevRessyahoukou: 0,
+            ressyajouhouOmit: false,
+          },
+        ],
+      ]),
+    );
+    const withIndex = buildCustomizeGrid(
+      dia,
+      rosen,
+      0,
+      [createCustomizeChainColumn([0])],
+      rowsSpec,
+      { conv: CONV, nyuusenJikoku: index },
+    );
+    expect(at(rowsSpec, withIndex[0]?.cells ?? [], 'nyuusen', 0)).toBe(' 7:20');
+  });
+
+  it('★列車 NULL の疑似列で e === releaseEkiOrder は空(着欄と非対称)', () => {
+    const { dia, rosen } = setup();
+    enableNyuusen(rosen);
+    const e2 = rosen.ekiCont[2];
+    if (e2 === undefined) throw new Error('no eki');
+    e2.jikokuhyouOuterDisplayKudari = { origin: false, terminal: true };
+    const { rows, cells } = prevCellsOf(dia, rosen, [], { releaseEkiOrder: 0 }, NYUUSEN_OPTS);
+    expect(at(rows, cells, 'nyuusen', 0)).toBe('');
+    expect(at(rows, cells, 'nyuusen', 1)).toBe('||');
   });
 });

@@ -21,6 +21,7 @@ import {
   buildCustomizeGrid,
   buildCustomizeRowSpec,
   buildCustomizeTimetableCsv,
+  buildNyuusenJikokuIndex,
 } from '@oudia-web/derive';
 import type { RosenFileData } from '@oudia-web/format';
 import { useMemo, useState } from 'react';
@@ -126,8 +127,10 @@ export function CustomizeTimetableView(props: {
       },
       displayTsuukaEkiJikoku: displayToggles.displayTsuukaEkiJikoku,
       displayParentSyubetsu: displayToggles.displayParentSyubetsu,
+      // ★入線時刻のうち次列車接続ぶんは探索が決める非永続値(oud2 には無い)。
+      nyuusenJikoku: buildNyuusenJikokuIndex(search.result?.junctionResult ?? new Map()),
     }),
-    [data.dispProp, displayToggles],
+    [data.dispProp, displayToggles, search.result],
   );
 
   const columns = useMemo(() => {
