@@ -20,11 +20,7 @@
 
 import { getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia-web/domain';
 import type { BeforeOperation, Dia, Eki, Jikoku } from '@oudia-web/format';
-import {
-  applyConnectMoveList,
-  applyReleaseMoveList,
-  emptyMoveList,
-} from '../operationLight/chains.js';
+import { applyConnectMoveAt, applyReleaseMoveAt, emptyMoveList } from '../operationLight/chains.js';
 import { buildInitialChains, computeHidden } from '../operationLight/deriveOperationLight.js';
 import { walkTrainOperations } from '../operationLight/extract.js';
 import {
@@ -40,6 +36,15 @@ import type {
   RessyaElement,
 } from '../operationLight/types.js';
 import { opRefKey } from '../operationLight/types.js';
+import {
+  addOuterInsert,
+  applyOuterConnectInsertsAt,
+  applyOuterReleaseInsertsAt,
+  createOuterConnectColumn,
+  createOuterInsertList,
+  isConnectValid,
+  outerInsertsAt,
+} from './customizeInserts.js';
 import { insertInOutLinkCodeElement } from './inOutLink.js';
 import {
   type AssignContext,
@@ -235,6 +240,28 @@ function assignFromOutOuter(ctx: AssignContext): void {
       ressyaIndex: ref.ressyaIndex,
       jikoku: seedJikokuOf(op),
     };
+    // ☆1: 路線外始発かつ元運番が空でない増結編成なら、列車の左側に
+    // 路線外始発相当 + ↳ の疑似列を足す(原典 :5136-5200)。
+    // ★元運番が**空のときは発火しない**(原典は空側の分岐に ☆1 を持たない)。
+    if (
+      op?.kind === 'outer' &&
+      op.operationNumbers.length > 0 &&
+      isConnectValid(ctx.dia, tree, seed.treeLevel)
+    ) {
+      const ressya = ctx.dia.ressyaCont[ref.houkou][ref.ressyaIndex];
+      if (ressya !== undefined) {
+        addOuterInsert(ctx.outerConnectInserts, ref.houkou, seed.el.ekiOrder, {
+          ressyaIndex: ref.ressyaIndex,
+          column: createOuterConnectColumn(
+            ressya,
+            seed.el.ekiOrder,
+            op,
+            ressya.ekiJikokuCont[seed.el.ekiOrder],
+            original,
+          ),
+        });
+      }
+    }
     // seed 自身(出区/路線外始発)の運番を #1 に確定する(原典 setOperationNumber、cpp:5257 付近)。
     setSeedNumber(ctx.numbers, ref, original);
     // 運用表エントリの開始側を積む(空運番は内部で読み飛ばされる)。
@@ -440,6 +467,9 @@ export function deriveOperationFull(
   const connectMoves = { kudari: emptyMoveList(), nobori: emptyMoveList() };
   const releaseMoves = { kudari: emptyMoveList(), nobori: emptyMoveList() };
   const junctionResult = new Map<string, JunctionResolution>();
+  // ☆1〜☆4 で作る「路線外始発/終着だけの疑似列」の差し込み待ち。
+  const outerConnectInserts = createOuterInsertList();
+  const outerReleaseInserts = createOuterInsertList();
   const ctx: AssignContext = {
     dia,
     state,
@@ -457,6 +487,8 @@ export function deriveOperationFull(
     chains: state.chains,
     connectMoves,
     releaseMoves,
+    outerConnectInserts,
+    outerReleaseInserts,
     guard: { count: 0, limit: 100000 },
   };
 
@@ -465,12 +497,25 @@ export function deriveOperationFull(
   assignOrphanJunctions(ctx); // STEP3b
   resolveConnectWaitList(ctx); // WaitList retry
 
-  // 表示チェーンの並べ替えを適用(原典 completeCustomizeJikokuhyouContent :8417-8560。
-  // 増結 = 駅Order 降順 / 解結 = 昇順)。
-  applyConnectMoveList(state.chains.kudari, connectMoves.kudari, ekiCont.length);
-  applyReleaseMoveList(state.chains.kudari, releaseMoves.kudari, ekiCont.length);
-  applyConnectMoveList(state.chains.nobori, connectMoves.nobori, ekiCont.length);
-  applyReleaseMoveList(state.chains.nobori, releaseMoves.nobori, ekiCont.length);
+  // 表示チェーンの並べ替えと疑似列の差し込み
+  // (原典 completeCustomizeJikokuhyouContent :8379-9475)。
+  // ★方向ごとに「駅Order **降順**で (1)→(3) を回し切ってから、**昇順**で (4)→(6)」の
+  // 2 パス。1 駅ごとに交互に呼ぶ((1) と (3) は同じ駅で連続する)。
+  for (const houkou of [0, 1] as const) {
+    const chains = houkou === 0 ? state.chains.kudari : state.chains.nobori;
+    const connect = houkou === 0 ? connectMoves.kudari : connectMoves.nobori;
+    const release = houkou === 0 ? releaseMoves.kudari : releaseMoves.nobori;
+    for (let ekiOrder = ekiCont.length - 1; ekiOrder >= 0; ekiOrder--) {
+      applyConnectMoveAt(chains, ekiOrder, connect.get(ekiOrder) ?? []); // (1)
+      // (2) BeforeContinueList は未実装(後続)。
+      applyOuterConnectInsertsAt(chains, outerInsertsAt(outerConnectInserts, houkou, ekiOrder)); // (3)
+    }
+    for (let ekiOrder = 0; ekiOrder < ekiCont.length; ekiOrder++) {
+      applyReleaseMoveAt(chains, ekiOrder, release.get(ekiOrder) ?? []); // (4)
+      // (5) AfterContinueList は未実装(後続)。
+      applyOuterReleaseInsertsAt(chains, outerInsertsAt(outerReleaseInserts, houkou, ekiOrder)); // (6)
+    }
+  }
 
   return {
     junctionResult,
