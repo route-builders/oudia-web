@@ -9,8 +9,9 @@ name: CI
 on:
   push:
     branches: [master]
+  # ★base を絞らない。スタック PR(機能ブランチ上に積む PR)でも必ずゲートを通すため。
+  # base: master に絞っていると、積んだ PR に対して CI が 1 本も走らない。
   pull_request:
-    branches: [master]
 
 # 同一 PR/ブランチの古い実行はキャンセルして最新のみ走らせる。
 concurrency:
