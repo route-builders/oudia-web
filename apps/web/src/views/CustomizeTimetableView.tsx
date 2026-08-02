@@ -20,9 +20,11 @@ import {
   buildCustomizeChainsWithoutOperation,
   buildCustomizeGrid,
   buildCustomizeRowSpec,
+  buildCustomizeTimetableCsv,
 } from '@oudia-web/derive';
 import type { RosenFileData } from '@oudia-web/format';
 import { useMemo, useState } from 'react';
+import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
 import {
   OperationSearchControls,
@@ -108,9 +110,8 @@ export function CustomizeTimetableView(props: {
     [data.rosen.ekiCont, houkou, data.dispProp, enableOperation, displayEkimei],
   );
 
-  const columns = useMemo(() => {
-    if (dia === undefined || chains === null) return null;
-    return buildCustomizeGrid(dia, data.rosen, houkou, chains, rows, {
+  const gridOptions = useMemo(
+    () => ({
       conv: {
         noColon: false,
         outputSecond: false,
@@ -118,8 +119,14 @@ export function CustomizeTimetableView(props: {
         secondRoundHatsu: data.dispProp.secondRoundHatsu,
         display2400: data.dispProp.display2400,
       },
-    });
-  }, [dia, data.rosen, data.dispProp, houkou, chains, rows]);
+    }),
+    [data.dispProp],
+  );
+
+  const columns = useMemo(() => {
+    if (dia === undefined || chains === null) return null;
+    return buildCustomizeGrid(dia, data.rosen, houkou, chains, rows, gridOptions);
+  }, [dia, data.rosen, houkou, chains, rows, gridOptions]);
 
   // 運用機能が無効なら探索は不要なので placeholder も出さない。
   const ready = dia !== undefined && columns !== null;
@@ -166,6 +173,31 @@ export function CustomizeTimetableView(props: {
             }}
           />
         )}
+        <button
+          type="button"
+          disabled={dia === undefined || chains === null}
+          onClick={() => {
+            if (dia === undefined || chains === null) return;
+            downloadCsv(
+              buildCustomizeTimetableCsv({
+                rosen: data.rosen,
+                dia,
+                houkou,
+                chains,
+                rowOptions: {
+                  displayRessyamei: data.dispProp.displayRessyamei,
+                  enableOperation,
+                  operationNumberRows: data.dispProp.operationNumberRows,
+                  displayShihatsuShuchakuEkimei: displayEkimei,
+                },
+                gridOptions,
+              }),
+              `${dia.name}_${houkou === 0 ? '下り' : '上り'}カスタマイズ時刻表.csv`,
+            );
+          }}
+        >
+          CSV 出力
+        </button>
         <span className="stale-note">{chains === null ? '' : `${String(chains.length)} 列`}</span>
       </div>
       {placeholder ??

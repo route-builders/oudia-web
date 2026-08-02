@@ -20,6 +20,12 @@ export {
 } from '@oudia-web/domain';
 export type { CsvColumnSpec, CsvColumnType } from './csv/colSpec.js';
 export { buildColSpec } from './csv/colSpec.js';
+// ---- カスタマイズ時刻表 CSV(follow-up #11 / ADR-0002)----
+export type { BuildCustomizeTimetableCsvParams } from './csv/customizeTimetableCsv.js';
+export {
+  buildCustomizeTimetableCsv,
+  CUSTOMIZE_TIMETABLE_CSV_FILETYPE,
+} from './csv/customizeTimetableCsv.js';
 export {
   getChakujikokuHyouji,
   getEkimeiJikokuhyouRyaku,
