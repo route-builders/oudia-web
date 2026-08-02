@@ -73,6 +73,24 @@ export function RosenTree(props: { data: RosenFileData }): React.ReactElement {
                 上り時刻表
               </button>
             </li>
+            <li>
+              <button
+                onClick={() => {
+                  openView({ type: 'customizeTimetable', diaIndex, houkou: 0 });
+                }}
+              >
+                下りカスタマイズ時刻表
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => {
+                  openView({ type: 'customizeTimetable', diaIndex, houkou: 1 });
+                }}
+              >
+                上りカスタマイズ時刻表
+              </button>
+            </li>
             {data.rosen.enableOperation === 2 && (
               <>
                 <li>

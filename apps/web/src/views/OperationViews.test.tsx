@@ -144,6 +144,32 @@ describe('AllOperationTableView', () => {
   });
 });
 
+describe('CustomizeTimetableView', () => {
+  it('路線ツリーから開けてタブが立つ(運用機能の有無に関係なく常設)', () => {
+    render(<RosenTree data={data} />);
+    expect(screen.getAllByText('下りカスタマイズ時刻表').length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByText('下りカスタマイズ時刻表')[0]!);
+    expect(useDocStore.getState().tabs.some((t) => t.key === 'customizeTimetable:0:0')).toBe(true);
+  });
+
+  it('運用機能が無効なら探索を待たずに 1 列車 1 列で描く', async () => {
+    const { CustomizeTimetableView } = await import('./CustomizeTimetableView.js');
+    const off: RosenFileData = { ...data, rosen: { ...data.rosen, enableOperation: 0 } };
+    render(<CustomizeTimetableView data={off} diaIndex={0} houkou={0} />);
+    // 探索中プレースホルダは出ず、行見出しが即出る。
+    expect(screen.queryByText('運用探索中…')).toBeNull();
+    expect(screen.getByText('列車番号')).toBeTruthy();
+  });
+
+  it('運用機能が通常なら探索結果のチェーン列で描く', async () => {
+    const { CustomizeTimetableView } = await import('./CustomizeTimetableView.js');
+    render(<CustomizeTimetableView data={data} diaIndex={0} houkou={0} />);
+    expect(await screen.findByText('列車番号')).toBeTruthy();
+    // 列数の表示が出る(チェーン数)。
+    expect(screen.getByText(/\d+ 列/)).toBeTruthy();
+  });
+});
+
 describe('OperationTableView(箱ダイヤ形式)', () => {
   it('[箱ダイヤ形式で表示] で駅=列・列車=行の表に切り替わる', async () => {
     const { OperationTableView } = await import('./OperationTableView.js');

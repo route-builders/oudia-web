@@ -1054,3 +1054,53 @@ body {
   inset: 0;
   touch-action: none;
 }
+
+/* ---- カスタマイズ時刻表(冊子風。1 列 = 1 チェーン)---- */
+.customize-timetable {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  outline: none;
+}
+.customize-scroller {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.customize-grid {
+  border-collapse: collapse;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.customize-grid th,
+.customize-grid td {
+  border: 1px solid #ddd;
+  padding: 1px 4px;
+  text-align: center;
+  font-weight: normal;
+}
+/* 左 2 列(駅名 + 項目名)は固定。 */
+.customize-grid .row-ekimei,
+.customize-grid .row-sub {
+  position: sticky;
+  background: #f4f4f4;
+  text-align: left;
+  z-index: 1;
+}
+.customize-grid .row-ekimei {
+  left: 0;
+  min-width: 84px;
+}
+.customize-grid .row-sub {
+  left: 84px;
+  min-width: 68px;
+  color: #666;
+}
+/* ヘッダ行(列車番号・種別など)は薄く区切る。 */
+.customize-grid .header-row td {
+  background: #fcfcfc;
+}
+.customize-grid .cell-mark {
+  color: #888;
+}

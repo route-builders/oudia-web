@@ -20,6 +20,8 @@
  * ここでは列の並び(ressyaIndexCont + connect/releaseEkiOrder)までを構築する。
  */
 
+import { getValidSihatsuEki, getValidSyuuchakuEki } from '@oudia-web/domain';
+import type { Ressya, Ressyasyubetsu } from '@oudia-web/format';
 import type { CustomizeChainColumn } from './types.js';
 import { createCustomizeChainColumn } from './types.js';
 
@@ -45,6 +47,26 @@ export function findChainIndex(
     if (col.ressyaIndexCont.includes(ressyaIndex)) return idx;
   }
   return -1;
+}
+
+/**
+ * 列車 index を含む列を探す(★**最後の一致**を返す)。
+ *
+ * 原典 :8436-8451 / :8969-8984 の探索は break せず全列・全要素を舐めて index を上書きし続ける。
+ * 同じ列車が複数の列に現れうる(併合編成)ため、先頭一致とは結果が変わる。
+ * move-list の適用((1)(4))はこちらを使う。
+ */
+export function findChainIndexLast(
+  chains: readonly CustomizeChainColumn[],
+  ressyaIndex: number,
+): number {
+  let found = -1;
+  for (let idx = 0; idx < chains.length; idx++) {
+    const col = chains[idx];
+    if (col === undefined) continue;
+    if (col.ressyaIndexCont.includes(ressyaIndex)) found = idx;
+  }
+  return found;
 }
 
 /**
@@ -115,12 +137,16 @@ export function applyConnectMoveList(
     const entries = moveList.get(ekiOrder);
     if (entries === undefined) continue;
     for (const [first, second] of entries) {
-      const idxMove = findChainIndex(chains, second); // 移動する側(前列車)
-      const idxTarget = findChainIndex(chains, first); // 併合先(次列車)
-      if (idxMove === -1 || idxTarget === -1 || idxMove === idxTarget) continue;
+      const idxMove = findChainIndexLast(chains, second); // 移動する側(前列車)
+      const idxTarget = findChainIndexLast(chains, first); // 併合先(次列車)
+      if (idxMove === -1 || idxTarget === -1) continue;
       const moved = chains[idxMove];
       if (moved === undefined) continue;
+      // ★connectEkiOrder は**両方見つかれば必ず書く**(原典 :8455)。同じ列に居る
+      // (= 既に併合済み)ときは移動だけしない。ここを continue にすると
+      // 併合駅の「↳」「路線外始発相当」が出なくなる。
       moved.connectEkiOrder = ekiOrder;
+      if (idxMove === idxTarget) continue;
       // moved を idxTarget の位置(左)へ移す。
       chains.splice(idxMove, 1);
       const insertAt = idxMove < idxTarget ? idxTarget - 1 : idxTarget;
@@ -142,16 +168,48 @@ export function applyReleaseMoveList(
     const entries = moveList.get(ekiOrder);
     if (entries === undefined) continue;
     for (const [first, second] of entries) {
-      const idxTarget = findChainIndex(chains, first); // 分割元(前列車)
-      const idxMove = findChainIndex(chains, second); // 分割列車(移動する側)
-      if (idxMove === -1 || idxTarget === -1 || idxMove === idxTarget) continue;
+      const idxTarget = findChainIndexLast(chains, first); // 分割元(前列車)
+      const idxMove = findChainIndexLast(chains, second); // 分割列車(移動する側)
+      if (idxMove === -1 || idxTarget === -1) continue;
       const moved = chains[idxMove];
       if (moved === undefined) continue;
+      // ★releaseEkiOrder も両方見つかれば必ず書く(原典 :8990)。
       moved.releaseEkiOrder = ekiOrder;
+      if (idxMove === idxTarget) continue;
       // moved を分割元の直後(idxTarget+1)へ移す。
       chains.splice(idxMove, 1);
       const insertAt = idxMove < idxTarget ? idxTarget : idxTarget + 1;
       chains.splice(insertAt, 0, moved);
     }
   }
+}
+
+/**
+ * 運用機能が無効(enableOperation === 0)のときのチェーン列を作る(原典
+ * CentDedDia::omitInvalidRessyaFromCustomizeRessyaIndex、CentDedDia.cpp:412-482)。
+ *
+ * ★列の併合・分割・路線外相当表示は**一切行わない**。「1 列車 = 1 列」から
+ * 表示できない列車の列を落とすだけ。
+ * - `isNull` の列車は**残す**(空列としてレイアウトを保つ)
+ * - `isCanceled`(運休)は落とす
+ * - 隠し種別は `disableHiddenSyubetsu` が false のときだけ落とす
+ * - 有効始発 / 有効終着が取れない列車は落とす
+ */
+export function buildCustomizeChainsWithoutOperation(
+  ressyaList: readonly Ressya[],
+  syubetsuCont: readonly Ressyasyubetsu[],
+  disableHiddenSyubetsu: boolean,
+): CustomizeChainColumn[] {
+  const chains: CustomizeChainColumn[] = [];
+  for (const [idx, r] of ressyaList.entries()) {
+    if (r.isNull) {
+      chains.push(createCustomizeChainColumn([idx]));
+      continue;
+    }
+    if (r.isCanceled) continue;
+    if (!disableHiddenSyubetsu && syubetsuCont[r.syubetsuIndex]?.hidden === true) continue;
+    if (getValidSihatsuEki(r) < 0 || getValidSyuuchakuEki(r) < 0) continue;
+    chains.push(createCustomizeChainColumn([idx]));
+  }
+  return chains;
 }

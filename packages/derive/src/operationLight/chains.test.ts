@@ -10,10 +10,12 @@ import {
   applyReleaseMoveList,
   emptyMoveList,
   findChainIndex,
+  findChainIndexLast,
   initChains,
   mergeChains,
   removeChainOf,
 } from './chains.js';
+import { createCustomizeChainColumn } from './types.js';
 
 describe('initChains', () => {
   it('列車数ぶんの 1 要素チェーンを作る', () => {
@@ -91,5 +93,42 @@ describe('move-list 適用', () => {
     // 2 を 0 の直後へ → [0,2,1]。
     expect(chains.map((c) => c.ressyaIndexCont)).toEqual([[0], [2], [1]]);
     expect(chains[1]?.releaseEkiOrder).toBe(1);
+  });
+});
+
+describe('move-list の原典忠実性(完了条件)', () => {
+  it('★同じ列に居ても connectEkiOrder は書く(移動だけしない。原典 :8455)', () => {
+    // 併合済みで 2 列車が同じ列に積まれている状態。
+    const chains = [createCustomizeChainColumn([0, 1])];
+    const moves = emptyMoveList();
+    addMove(moves, 3, [1, 0]); // first=併合先(次列車 1) / second=移動側(前列車 0)
+    applyConnectMoveList(chains, moves, 5);
+    expect(chains).toHaveLength(1);
+    expect(chains[0]?.connectEkiOrder).toBe(3);
+  });
+
+  it('★同じ列に居ても releaseEkiOrder は書く(原典 :8990)', () => {
+    const chains = [createCustomizeChainColumn([0, 1])];
+    const moves = emptyMoveList();
+    addMove(moves, 2, [0, 1]); // first=分割元(0) / second=分割列車(1)
+    applyReleaseMoveList(chains, moves, 5);
+    expect(chains).toHaveLength(1);
+    expect(chains[0]?.releaseEkiOrder).toBe(2);
+  });
+
+  it('★列の探索は最後の一致(原典は break せず上書きし続ける)', () => {
+    // 列車 0 が 2 つの列に現れる(併合編成)。移動対象は**後ろ**の列。
+    const chains = [
+      createCustomizeChainColumn([0]),
+      createCustomizeChainColumn([9]),
+      createCustomizeChainColumn([0, 5]),
+    ];
+    expect(findChainIndexLast(chains, 0)).toBe(2);
+    const moves = emptyMoveList();
+    addMove(moves, 1, [9, 0]); // 併合先=列車 9(index 1)/ 移動=列車 0(最後の一致 = index 2)
+    applyConnectMoveList(chains, moves, 5);
+    // index 2 の列が index 1 の左へ移る。
+    expect(chains.map((c) => [...c.ressyaIndexCont])).toEqual([[0], [0, 5], [9]]);
+    expect(chains[1]?.connectEkiOrder).toBe(1);
   });
 });
