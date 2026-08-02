@@ -17,7 +17,12 @@
  * 補助列車線(chaku/hatsuOperation の -2/-4)は分岐環状の在線表と同時に実装する。
  */
 
-import type { DiagramLayout, OperationMarkInput, RessyaOccupancy } from '@oudia-web/derive';
+import type {
+  DiagramLayout,
+  OperationMarkInput,
+  RessyaOccupancy,
+  RessyaTrackLine,
+} from '@oudia-web/derive';
 import { deriveOperationMarks } from '@oudia-web/derive';
 import { strokeLine } from '../core/primitives.js';
 import type { RenderContext2D } from '../core/RenderTarget.js';
@@ -140,9 +145,21 @@ export function drawOccupancy(
             const yChaku = yDgrToView(t, yChakuStation);
             const yHatsu = yDgrToView(t, yHatsuStation);
             // 横太線(占有)。停車 = 太線、通過 = 細線(通過は在線時間ほぼ 0)。
+            // ★原典は線ではなく**四角形の塗り**で、両端が作業・隣の番線に応じて
+            // 面取りされる(CRessyaDraw.cpp:3118-3167)。
+            const w = line.ekiatsukai === 'teisya' ? 3 : 1;
+            ctx.fillStyle = color;
             ctx.strokeStyle = color;
-            ctx.lineWidth = line.ekiatsukai === 'teisya' ? 3 : 1;
-            strokeLine(ctx, xC, yLane, xH, yLane);
+            fillZaisenBar(
+              ctx,
+              Math.min(xC, xH),
+              Math.max(xC, xH),
+              yLane,
+              w,
+              chamferLeft(line, zi),
+              chamferRight(line, zi),
+              occ.houkou,
+            );
             // 着発の縦コネクタ(駅線 ↔ レーン)。
             // ★**作業コードが負のとき(= 列車線がこの駅に接続するとき)だけ**引く
             // (原典 CRessyaDraw.cpp:1253 `if (getChakuOperation() < 0)` / :1685)。
@@ -202,6 +219,88 @@ export function drawOccupancy(
   drawDir(occupancy.kudari, view.displayKudari);
   drawDir(occupancy.nobori, view.displayNobori);
   ctx.lineWidth = 1;
+}
+
+/**
+ * 在線横線の左端の面取り(原典 CRessyaDraw.cpp:906-945)。
+ *
+ * ★先頭の在線は**着側作業コード**で決まる。-1/-2/-3/4 は -1、-4/-5 は +1、
+ * 0/2/3 は 0、5 は**前列車の方向**。1 はどの枝にも当たらず初期値 0。
+ * ★2 個目以降は**隣の在線との番線の前後関係**で決まる(下りと上りで符号が逆)。
+ */
+export function chamferLeft(line: RessyaTrackLine, zi: number): number {
+  if (zi === 0) {
+    const c = line.chakuOperation;
+    if (c === -1 || c === -2 || c === -3 || c === 4) return -1;
+    if (c === -4 || c === -5) return 1;
+    if (c === 5) return line.prevRessyahoukou ?? 0;
+    return 0; // 0 / 2 / 3、および分岐に無い 1
+  }
+  return neighborChamfer(line, zi, zi - 1);
+}
+
+/**
+ * 在線横線の右端の面取り(原典 :946-1005)。
+ * ★-1/-2/-3/4 は **+1**(左端と符号が逆)、-4/-5 は -1、0/1/3 は 0。
+ * 5(次列車接続)は横線自体を描かないので呼ばれない。2 は初期値 0。
+ */
+export function chamferRight(line: RessyaTrackLine, zi: number): number {
+  if (zi === line.zaisenCont.length - 1) {
+    const h = line.hatsuOperation;
+    if (h === -1 || h === -2 || h === -3 || h === 4) return 1;
+    if (h === -4 || h === -5) return -1;
+    return 0; // 0 / 1 / 3、および分岐に無い 2
+  }
+  return -neighborChamfer(line, zi, zi + 1);
+}
+
+/** 隣の在線との番線比較(原典 :951-963 / :994-1005)。 */
+function neighborChamfer(line: RessyaTrackLine, zi: number, other: number): number {
+  const cur = line.zaisenCont[zi];
+  const nb = line.zaisenCont[other];
+  if (cur === undefined || nb === undefined) return 0;
+  // 下りは「番線が増える向き」で -1、上りは逆。
+  return cur.trackIndex > nb.trackIndex ? -1 : 1;
+}
+
+/**
+ * 在線横線を四角形で塗る(原典 RessyaTrackHorizontalLineDraw :3104-3180)。
+ *
+ * ★原典は高さ 2 Dcd(±1)・面取り 2 Dcd の 45 度。ここでは線幅 w に対して
+ * 半分 w/2・面取り w とし、同じ 45 度になるようにする。
+ * ★面取りの向きは**列車方向で反転**する(:3128-3131 / :3150-3153)。
+ * ★左右の X が同じ(在線時間 0 = 通過)ときは縦の短い線を引く(:3104-3115)。
+ */
+function fillZaisenBar(
+  ctx: RenderContext2D,
+  xLeft: number,
+  xRight: number,
+  y: number,
+  w: number,
+  chLeft: number,
+  chRight: number,
+  houkou: 0 | 1,
+): void {
+  const half = w / 2;
+  if (xLeft === xRight) {
+    ctx.lineWidth = 1;
+    strokeLine(ctx, xLeft, y - w, xLeft, y + w);
+    return;
+  }
+  // 面取りの向き: 正 × 下り、または 負 × 上りで「上側を内側へ」。
+  const leftTopIn = (chLeft > 0 && houkou === 0) || (chLeft < 0 && houkou === 1);
+  const rightTopIn = (chRight > 0 && houkou === 0) || (chRight < 0 && houkou === 1);
+  const x0 = chLeft === 0 ? xLeft : leftTopIn ? xLeft + w : xLeft; // 左上
+  const x1 = chLeft === 0 ? xLeft : leftTopIn ? xLeft : xLeft + w; // 左下
+  const x2 = chRight === 0 ? xRight : rightTopIn ? xRight : xRight - w; // 右下
+  const x3 = chRight === 0 ? xRight : rightTopIn ? xRight - w : xRight; // 右上
+  ctx.beginPath();
+  ctx.moveTo(x0, y - half);
+  ctx.lineTo(x1, y + half);
+  ctx.lineTo(x2, y + half);
+  ctx.lineTo(x3, y - half);
+  ctx.closePath();
+  ctx.fill();
 }
 
 /** 補助列車線の長さ(原典 30 Dgr 秒 + m_iYDcd30SecondLength = 30 * DcdPerDgrY)。 */
