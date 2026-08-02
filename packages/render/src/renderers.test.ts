@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest';
 import { createViewTransform, viewTransformFromZone } from './core/ViewTransform.js';
 import type { DiagramTheme, DiagramViewState } from './diagram/DiagramRenderer.js';
 import { drawL1, drawL2, drawL3 } from './diagram/DiagramRenderer.js';
-import { drawOccupancy } from './diagram/OccupancyRenderer.js';
+import { chamferLeft, chamferRight, drawOccupancy } from './diagram/OccupancyRenderer.js';
 import { drawOperationMarks } from './diagram/OperationMarkRenderer.js';
 import { GridGeometry } from './grid/GridGeometry.js';
 import { drawGrid } from './grid/GridRenderer.js';
@@ -258,6 +258,48 @@ describe('drawOccupancy(補助列車線)', () => {
   function strokeCount(ctx: MockCtx): number {
     return ctx.calls.filter((c) => c.op === 'stroke').length;
   }
+
+  it('★在線横線の面取り: 左端は着作業コード、右端は発作業コードで決まる(符号が逆)', () => {
+    // -1/-2/-3/4 → 左 -1 / 右 +1、-4/-5 → 左 +1 / 右 -1、0/3 → 0。
+    for (const c of [-1, -2, -3, 4] as const) {
+      expect(chamferLeft(line({ chakuOperation: c }), 0)).toBe(-1);
+    }
+    for (const c of [-4, -5] as const) {
+      expect(chamferLeft(line({ chakuOperation: c }), 0)).toBe(1);
+    }
+    for (const c of [0, 2, 3] as const) {
+      expect(chamferLeft(line({ chakuOperation: c }), 0)).toBe(0);
+    }
+    for (const h of [-1, -2, -3, 4] as const) {
+      expect(chamferRight(line({ hatsuOperation: h }), 0)).toBe(1);
+    }
+    for (const h of [-4, -5] as const) {
+      expect(chamferRight(line({ hatsuOperation: h }), 0)).toBe(-1);
+    }
+    for (const h of [0, 1, 3] as const) {
+      expect(chamferRight(line({ hatsuOperation: h }), 0)).toBe(0);
+    }
+  });
+
+  it('★着作業コード 5(前列車接続)の左端面取りは前列車の方向', () => {
+    expect(chamferLeft(line({ chakuOperation: 5, prevRessyahoukou: -1 }), 0)).toBe(-1);
+    expect(chamferLeft(line({ chakuOperation: 5, prevRessyahoukou: 1 }), 0)).toBe(1);
+    // 未解決(探索前)は 0。
+    expect(chamferLeft(line({ chakuOperation: 5, prevRessyahoukou: null }), 0)).toBe(0);
+  });
+
+  it('★2 個目以降の在線は隣の番線との前後で面取りが決まる', () => {
+    const l = line({
+      zaisenCont: [
+        { trackIndex: 0, dgrXChaku: 3600, dgrXHatsu: 3620 },
+        { trackIndex: 2, dgrXChaku: 3620, dgrXHatsu: 3660 },
+      ],
+    });
+    // 2 個目の左端: 自分(2)> 前(0)→ -1。
+    expect(chamferLeft(l, 1)).toBe(-1);
+    // 1 個目の右端: 次(2)の方が大きい → neighborChamfer は +1、右端はその符号反転で -1。
+    expect(chamferRight(l, 0)).toBe(-1);
+  });
 
   it('作業コードが -1 のときは補助列車線を描かない', () => {
     const base = new MockCtx();

@@ -298,3 +298,148 @@ describe('分岐環状の駅群展開(原典 CentDedDgrRessya.cpp:1788-2078)', (
     expect(lines.every((l) => l.ekiIndex === 0)).toBe(true);
   });
 });
+
+/** 出区(○)を持つ 1 列車の最小セット。enableOperation を有効にする。 */
+function outSetup(): {
+  rosen: RosenFileData['rosen'];
+  kudari: NonNullable<RosenFileData['rosen']['diaCont'][number]>['ressyaCont'][number];
+  ekiLayouts: ReturnType<typeof buildDiaLayoutFrame>['ekiLayouts'];
+} {
+  const data = rosenOccupancy();
+  data.rosen.enableOperation = 2;
+  const dia = data.rosen.diaCont[0];
+  if (dia === undefined) throw new Error('dia');
+  const slot = dia.ressyaCont[0][0]?.ekiJikokuCont[0];
+  if (slot === undefined) throw new Error('slot');
+  slot.beforeOperationCont = [
+    {
+      kind: 'out',
+      outJikoku: asSeconds(6 * 3600 + 3000),
+      inOutLinkCode: '',
+      operationNumbers: ['M01'],
+    },
+  ];
+  const frame = buildDiaLayoutFrame(data.rosen, dia.ressyaCont[0], dia.ressyaCont[1]);
+  return { rosen: data.rosen, kudari: dia.ressyaCont[0], ekiLayouts: frame.ekiLayouts };
+}
+
+/** 前列車接続を持つ 1 列車の最小セット。 */
+function junctionSetup(): ReturnType<typeof outSetup> {
+  const out = outSetup();
+  const slot = out.kudari[0]?.ekiJikokuCont[0];
+  if (slot === undefined) throw new Error('slot');
+  slot.beforeOperationCont = [
+    { kind: 'junction', kitenJikoku: asSeconds(6 * 3600 + 3000), kariOperationNumbers: [] },
+  ];
+  return out;
+}
+
+describe('deriveOccupancy(運用探索の結果を反映する)', () => {
+  it('★○ の運番は探索が割り付けた #2/#3 を優先する(渡さなければ永続 #1)', () => {
+    const { rosen, kudari, ekiLayouts } = outSetup();
+    const bare = deriveOccupancy(rosen, kudari, [], ekiLayouts);
+    expect(bare.kudari[0]?.trackLines[0]?.operationNumber).toBe('M01');
+
+    const assigned = new Map<string, readonly string[]>([['0:0:0:before:0', ['A9']]]);
+    const withSearch = deriveOccupancy(rosen, kudari, [], ekiLayouts, undefined, {
+      assignedNumbers: assigned,
+    });
+    expect(withSearch.kudari[0]?.trackLines[0]?.operationNumber).toBe('A9');
+  });
+
+  it('★前列車接続の前列車方向は探索結果から引く(未解決は 0)', () => {
+    const { rosen, kudari, ekiLayouts } = junctionSetup();
+    const bare = deriveOccupancy(rosen, kudari, [], ekiLayouts);
+    expect(bare.kudari[0]?.trackLines[0]?.prevRessyahoukou).toBe(0);
+
+    // junctionResult は**前列車の後作業**キー。nextTrain が当該列車の前作業を指す。
+    const junctionResult = new Map([
+      [
+        'prev-after-key',
+        {
+          junctionSucceed: true,
+          beforeAfterType: 'unrelated' as const,
+          nextTrain: {
+            houkou: 0 as const,
+            ressyaIndex: 0,
+            ekiOrder: 0,
+            opKind: 'before' as const,
+            iLevel: [0],
+          },
+          junctionJikoku: null,
+          prevRessyahoukou: -1,
+          ressyajouhouOmit: false,
+        },
+      ],
+    ]);
+    const withSearch = deriveOccupancy(rosen, kudari, [], ekiLayouts, undefined, {
+      junctionResult,
+    });
+    expect(withSearch.kudari[0]?.trackLines[0]?.prevRessyahoukou).toBe(-1);
+  });
+
+  it('★列車 index は元の配列の位置(isNull を落とす前)で数える', () => {
+    const { rosen, kudari, ekiLayouts } = outSetup();
+    // 先頭に null 列車を挟む → 実列車の index は 1 になる。
+    const withNull = [{ ...kudari[0], isNull: true }, ...kudari] as typeof kudari;
+    const assigned = new Map<string, readonly string[]>([['0:1:0:before:0', ['B7']]]);
+    const r = deriveOccupancy(rosen, withNull, [], ekiLayouts, undefined, {
+      assignedNumbers: assigned,
+    });
+    expect(r.kudari[0]?.trackLines[0]?.operationNumber).toBe('B7');
+  });
+});
+
+describe('deriveOccupancy(入換で Zaisen が増える)', () => {
+  /** A 駅で 3番線(index 2)に着き、1番線(index 0)へ入換してから発車する列車。 */
+  function shuntSetup(): ReturnType<typeof outSetup> {
+    const out = outSetup();
+    const slot = out.kudari[0]?.ekiJikokuCont[0];
+    if (slot === undefined) throw new Error('slot');
+    slot.beforeOperationCont = [];
+    slot.afterOperationCont = [
+      {
+        kind: 'shunt',
+        shuntTrackIndex: 0,
+        shuntHatsuJikoku: asSeconds(7 * 3600 + 30),
+        shuntChakuJikoku: asSeconds(7 * 3600 + 60),
+        displayJikoku: false,
+      },
+    ];
+    return out;
+  }
+
+  it('★後作業の入換で番線が変わると Zaisen が 2 個になる', () => {
+    const { rosen, kudari, ekiLayouts } = shuntSetup();
+    const lines = deriveOccupancy(rosen, kudari, [], ekiLayouts).kudari[0]?.trackLines ?? [];
+    const z = lines[0]?.zaisenCont ?? [];
+    expect(z).toHaveLength(2);
+    // 1 個目 = 発着番線(3番線)を 7:00 着 〜 入換発 7:00:30 まで。
+    expect(z[0]).toEqual({ trackIndex: 2, dgrXChaku: 7 * 3600, dgrXHatsu: 7 * 3600 + 30 });
+    // 2 個目 = 入換先(1番線)を 入換着 7:01 〜 当駅発 7:02 まで。
+    expect(z[1]).toEqual({ trackIndex: 0, dgrXChaku: 7 * 3600 + 60, dgrXHatsu: 7 * 3600 + 120 });
+  });
+
+  it('★入換先が現在の番線と同じなら何も増えない', () => {
+    const { rosen, kudari, ekiLayouts } = shuntSetup();
+    const slot = kudari[0]?.ekiJikokuCont[0];
+    const op = slot?.afterOperationCont[0];
+    if (op === undefined || op.kind !== 'shunt') throw new Error('op');
+    op.shuntTrackIndex = 2; // 着番線と同じ
+    const lines = deriveOccupancy(rosen, kudari, [], ekiLayouts).kudari[0]?.trackLines ?? [];
+    expect(lines[0]?.zaisenCont).toHaveLength(1);
+  });
+
+  it('★日跨ぎ: 発 X は着 X より必ず後ろへ送る(原典 shiftDgrXPos)', () => {
+    const { rosen, kudari, ekiLayouts } = outSetup();
+    const slot = kudari[0]?.ekiJikokuCont[0];
+    if (slot === undefined) throw new Error('slot');
+    slot.beforeOperationCont = [];
+    slot.chakuJikoku = asSeconds(23 * 3600 + 3000); // 23:50
+    slot.hatsuJikoku = asSeconds(600); // 0:10
+    const lines = deriveOccupancy(rosen, kudari, [], ekiLayouts).kudari[0]?.trackLines ?? [];
+    const z = lines[0]?.zaisenCont[0];
+    expect(z?.dgrXChaku).toBe(23 * 3600 + 3000);
+    expect(z?.dgrXHatsu).toBe(600 + 86400);
+  });
+});

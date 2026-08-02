@@ -352,6 +352,39 @@ function reduceToKeiyunasi(cont: DgrEkiJikoku[], kiten: number, syuuten: number)
   return beforeK;
 }
 
+/**
+ * (07) 在線表表示駅で切る(原典 _07_reduceToTrackDisplay、CentDedDgrRessya.cpp:5116-5166)。
+ *
+ * 列車線の途中に**在線表表示駅**があれば、そこで列車線を打ち切る。列車がその駅に居る間は
+ * 在線表の横線で表現されるので、斜線は駅まででいったん止めて次の区間として引き直す。
+ * ★見つけるのは **最初の 1 駅**(原典も `iEkiOrderTrackDisplay == INT_MIN` を継続条件にする)。
+ * ★その駅の着発 X は**列車線の補間値**へ置き換える(:5145-5152)。
+ * ★探索範囲は `起点 + 1 <= i < 終点`。終点そのものは対象外。
+ *
+ * 戻り値: 新しい終点駅Order(打ち切りなしなら null)。
+ */
+function reduceToTrackDisplay(
+  cont: DgrEkiJikoku[],
+  frame: DiaLayoutFrame,
+  houkou: Ressyahoukou,
+  kiten: number,
+  syuuten: number,
+): number | null {
+  const n = frame.ekiLayouts.length;
+  for (let i = kiten + 1; i < syuuten; i++) {
+    const ekiIndex = houkou === 0 ? i : n - 1 - i;
+    // trackLanes が付くのは diagramTrackDisplayMode > 0 の駅だけ(ekiLayout.ts:153)。
+    if (frame.ekiLayouts[ekiIndex]?.trackLanes === undefined) continue;
+    const ej = cont[i];
+    if (ej !== undefined && ej.ressyasenX !== null) {
+      ej.chakuX = ej.ressyasenX;
+      ej.hatsuX = ej.ressyasenX;
+    }
+    return i;
+  }
+  return null;
+}
+
 /** (08) 列車線分割(原典 _08_updateRessyasenCont)。 */
 export function buildRessyasenCont(
   cont: DgrEkiJikoku[],
@@ -387,6 +420,11 @@ export function buildRessyasenCont(
       }
       break;
     }
+
+    // (07) 在線表表示駅で打ち切る。★原典もリトライループの**外**で 1 回だけ回す
+    // (CentDedDgrRessya.cpp:1338-1348)。(05) をやり直さない。
+    const s7 = reduceToTrackDisplay(cont, frame, houkou, kiten, syuuten);
+    if (s7 !== null) syuuten = s7;
 
     const kb = cont[kiten];
     const ke = cont[syuuten];

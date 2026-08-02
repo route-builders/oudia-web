@@ -116,3 +116,59 @@ describe('findEkikanSaisyouSec', () => {
     expect(findEkikanSaisyouSec([none], 0)).toBe(0);
   });
 });
+
+describe('(07) 在線表表示駅で列車線を打ち切る', () => {
+  /** 4 駅を通過で貫く列車(停車による分割が起きないので (07) の効果だけが出る)。 */
+  function passThroughData(): RosenFileData {
+    return makeSyntheticRosen(4, [
+      kudariTrain([
+        ej('teisya', null, 8 * 3600),
+        // ★時刻なしの通過駅。時刻があると calcSyuuten がそこで区間を切ってしまう。
+        ej('tsuuka', null, null),
+        ej('tsuuka', null, null),
+        ej('teisya', 8 * 3600 + 1800, null),
+      ]),
+    ]);
+  }
+  const bounds = (data: RosenFileData) =>
+    layoutOfTrain(data).ressyasenCont.map((r) => [r.kitenEkiOrder, r.syuutenEkiOrder]);
+
+  it('★途中に在線表表示駅があると、そこで列車線が 2 本に分かれる', () => {
+    const data = passThroughData();
+    expect(bounds(data)).toEqual([[0, 3]]);
+
+    const b = data.rosen.ekiCont[1];
+    if (b === undefined) throw new Error('no eki');
+    b.diagramTrackDisplay = true;
+    b.ekikibo = 'syuyou';
+    expect(bounds(data)).toEqual([
+      [0, 1],
+      [1, 3],
+    ]);
+  });
+
+  it('★見つけるのは最初の 1 駅だけ(2 駅目は次の区間で改めて打ち切られる)', () => {
+    const data = passThroughData();
+    for (const i of [1, 2]) {
+      const e = data.rosen.ekiCont[i];
+      if (e === undefined) throw new Error('no eki');
+      e.diagramTrackDisplay = true;
+      e.ekikibo = 'syuyou';
+    }
+    expect(bounds(data)).toEqual([
+      [0, 1],
+      [1, 2],
+      [2, 3],
+    ]);
+  });
+
+  it('★終点そのものが在線表表示駅でも打ち切らない(探索範囲は 起点+1 <= i < 終点)', () => {
+    const data = passThroughData();
+    const before = bounds(data);
+    const last = data.rosen.ekiCont[3];
+    if (last === undefined) throw new Error('no eki');
+    last.diagramTrackDisplay = true;
+    last.ekikibo = 'syuyou';
+    expect(bounds(data)).toEqual(before);
+  });
+});
