@@ -50,6 +50,26 @@ export function findChainIndex(
 }
 
 /**
+ * 列車 index を含む列を探す(★**最後の一致**を返す)。
+ *
+ * 原典 :8436-8451 / :8969-8984 の探索は break せず全列・全要素を舐めて index を上書きし続ける。
+ * 同じ列車が複数の列に現れうる(併合編成)ため、先頭一致とは結果が変わる。
+ * move-list の適用((1)(4))はこちらを使う。
+ */
+export function findChainIndexLast(
+  chains: readonly CustomizeChainColumn[],
+  ressyaIndex: number,
+): number {
+  let found = -1;
+  for (let idx = 0; idx < chains.length; idx++) {
+    const col = chains[idx];
+    if (col === undefined) continue;
+    if (col.ressyaIndexCont.includes(ressyaIndex)) found = idx;
+  }
+  return found;
+}
+
+/**
  * 指定列車 index を含む列を除去する(原典 :698-762 の erase)。isCanceled / 発着駅無効列車用。
  * 破壊的に chains を更新する。
  */
@@ -117,12 +137,16 @@ export function applyConnectMoveList(
     const entries = moveList.get(ekiOrder);
     if (entries === undefined) continue;
     for (const [first, second] of entries) {
-      const idxMove = findChainIndex(chains, second); // 移動する側(前列車)
-      const idxTarget = findChainIndex(chains, first); // 併合先(次列車)
-      if (idxMove === -1 || idxTarget === -1 || idxMove === idxTarget) continue;
+      const idxMove = findChainIndexLast(chains, second); // 移動する側(前列車)
+      const idxTarget = findChainIndexLast(chains, first); // 併合先(次列車)
+      if (idxMove === -1 || idxTarget === -1) continue;
       const moved = chains[idxMove];
       if (moved === undefined) continue;
+      // ★connectEkiOrder は**両方見つかれば必ず書く**(原典 :8455)。同じ列に居る
+      // (= 既に併合済み)ときは移動だけしない。ここを continue にすると
+      // 併合駅の「↳」「路線外始発相当」が出なくなる。
       moved.connectEkiOrder = ekiOrder;
+      if (idxMove === idxTarget) continue;
       // moved を idxTarget の位置(左)へ移す。
       chains.splice(idxMove, 1);
       const insertAt = idxMove < idxTarget ? idxTarget - 1 : idxTarget;
@@ -144,12 +168,14 @@ export function applyReleaseMoveList(
     const entries = moveList.get(ekiOrder);
     if (entries === undefined) continue;
     for (const [first, second] of entries) {
-      const idxTarget = findChainIndex(chains, first); // 分割元(前列車)
-      const idxMove = findChainIndex(chains, second); // 分割列車(移動する側)
-      if (idxMove === -1 || idxTarget === -1 || idxMove === idxTarget) continue;
+      const idxTarget = findChainIndexLast(chains, first); // 分割元(前列車)
+      const idxMove = findChainIndexLast(chains, second); // 分割列車(移動する側)
+      if (idxMove === -1 || idxTarget === -1) continue;
       const moved = chains[idxMove];
       if (moved === undefined) continue;
+      // ★releaseEkiOrder も両方見つかれば必ず書く(原典 :8990)。
       moved.releaseEkiOrder = ekiOrder;
+      if (idxMove === idxTarget) continue;
       // moved を分割元の直後(idxTarget+1)へ移す。
       chains.splice(idxMove, 1);
       const insertAt = idxMove < idxTarget ? idxTarget : idxTarget + 1;
