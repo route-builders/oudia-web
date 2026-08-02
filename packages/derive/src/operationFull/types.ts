@@ -103,14 +103,9 @@ export type OperationNumberMap = Map<string, OperationNumberSlots>;
  * 次列車接続の分類(原典 EBeforeAfterType 全 7 値、CentDedDia.h:154-191)。
  * Light の 4 値(unrelated/classChange/propertyChange/propertySame)+ 出入区・路線外・運番変更。
  */
-export type BeforeAfterTypeFull =
-  | 'unrelated'
-  | 'classChange'
-  | 'propertyChange'
-  | 'propertySame'
-  | 'outIn'
-  | 'outer'
-  | 'numberChange';
+export type { BeforeAfterTypeFull } from '../operationLight/types.js';
+
+import type { BeforeAfterTypeFull } from '../operationLight/types.js';
 
 /** 列車プロパティ参照(原典 CdDedRessyaProperty。方向 + 列車 index + 出区/始発着時刻)。 */
 export interface RessyaPropertyRef {

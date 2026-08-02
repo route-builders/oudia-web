@@ -95,6 +95,15 @@ export interface OperationElementLight {
  */
 export type BeforeAfterType = 'unrelated' | 'classChange' | 'propertyChange' | 'propertySame';
 
+/**
+ * 次列車接続の分類(原典 EBeforeAfterType 全 7 値、CentDedDia.h:154-191)。
+ * Light の 4 値 + 出入区・路線外・運番変更。★カスタマイズ時刻表の列
+ * (CustomizeChainColumn)の beforeType / afterType には **'outer' が入りうる**
+ * (原典 CDedOperationConnecter.cpp:5198 / :7145 の ☆1〜☆3 挿入列)ので、
+ * 列側は必ずこちらの型を使う。junctionResult は 4 値のまま。
+ */
+export type BeforeAfterTypeFull = BeforeAfterType | 'outIn' | 'outer' | 'numberChange';
+
 /** junction 解決結果(原典 Light が次列車の BeforeJunction へ書き込む派生スロット群)。 */
 export interface JunctionResolution {
   /** 次列車が見つかって接続成立したか(原典 setJunctionSucceed)。 */
@@ -173,7 +182,7 @@ export interface CustomizeChainColumn {
   operationNumber: string[];
   ekiatsukai: Ekiatsukai;
   ressyaTrackIndex: number;
-  afterType: BeforeAfterType;
+  afterType: BeforeAfterTypeFull;
 
   // ---- Prev 系(併合される前 = 左側の列車情報)----
   prevRessyasyubetsuIndex: number;
@@ -183,7 +192,7 @@ export interface CustomizeChainColumn {
   prevOperationNumber: string[];
   prevEkiatsukai: Ekiatsukai;
   prevRessyaTrackIndex: number;
-  beforeType: BeforeAfterType;
+  beforeType: BeforeAfterTypeFull;
 
   /** パターンダイヤプレビューの秒シフト(元列車との差)。既定 0。 */
   shiftSecond: number;

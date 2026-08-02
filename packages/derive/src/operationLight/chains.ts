@@ -134,24 +134,35 @@ export function applyConnectMoveList(
   ekiCount: number,
 ): void {
   for (let ekiOrder = ekiCount - 1; ekiOrder >= 0; ekiOrder--) {
-    const entries = moveList.get(ekiOrder);
-    if (entries === undefined) continue;
-    for (const [first, second] of entries) {
-      const idxMove = findChainIndexLast(chains, second); // 移動する側(前列車)
-      const idxTarget = findChainIndexLast(chains, first); // 併合先(次列車)
-      if (idxMove === -1 || idxTarget === -1) continue;
-      const moved = chains[idxMove];
-      if (moved === undefined) continue;
-      // ★connectEkiOrder は**両方見つかれば必ず書く**(原典 :8455)。同じ列に居る
-      // (= 既に併合済み)ときは移動だけしない。ここを continue にすると
-      // 併合駅の「↳」「路線外始発相当」が出なくなる。
-      moved.connectEkiOrder = ekiOrder;
-      if (idxMove === idxTarget) continue;
-      // moved を idxTarget の位置(左)へ移す。
-      chains.splice(idxMove, 1);
-      const insertAt = idxMove < idxTarget ? idxTarget - 1 : idxTarget;
-      chains.splice(insertAt, 0, moved);
-    }
+    applyConnectMoveAt(chains, ekiOrder, moveList.get(ekiOrder) ?? []);
+  }
+}
+
+/**
+ * 1 駅ぶんの増結 move-list を適用する。
+ * ★原典は駅Order 降順ループの中で (1)→(2)→(3) を続けて回すので、
+ * ブロック(3)(路線外始発列の差し込み)と交互に呼べるよう駅単位で切り出してある。
+ */
+export function applyConnectMoveAt(
+  chains: CustomizeChainColumn[],
+  ekiOrder: number,
+  entries: readonly MoveEntry[],
+): void {
+  for (const [first, second] of entries) {
+    const idxMove = findChainIndexLast(chains, second); // 移動する側(前列車)
+    const idxTarget = findChainIndexLast(chains, first); // 併合先(次列車)
+    if (idxMove === -1 || idxTarget === -1) continue;
+    const moved = chains[idxMove];
+    if (moved === undefined) continue;
+    // ★connectEkiOrder は**両方見つかれば必ず書く**(原典 :8455)。同じ列に居る
+    // (= 既に併合済み)ときは移動だけしない。ここを continue にすると
+    // 併合駅の「↳」「路線外始発相当」が出なくなる。
+    moved.connectEkiOrder = ekiOrder;
+    if (idxMove === idxTarget) continue;
+    // moved を idxTarget の位置(左)へ移す。
+    chains.splice(idxMove, 1);
+    const insertAt = idxMove < idxTarget ? idxTarget - 1 : idxTarget;
+    chains.splice(insertAt, 0, moved);
   }
 }
 
@@ -165,22 +176,29 @@ export function applyReleaseMoveList(
   ekiCount: number,
 ): void {
   for (let ekiOrder = 0; ekiOrder < ekiCount; ekiOrder++) {
-    const entries = moveList.get(ekiOrder);
-    if (entries === undefined) continue;
-    for (const [first, second] of entries) {
-      const idxTarget = findChainIndexLast(chains, first); // 分割元(前列車)
-      const idxMove = findChainIndexLast(chains, second); // 分割列車(移動する側)
-      if (idxMove === -1 || idxTarget === -1) continue;
-      const moved = chains[idxMove];
-      if (moved === undefined) continue;
-      // ★releaseEkiOrder も両方見つかれば必ず書く(原典 :8990)。
-      moved.releaseEkiOrder = ekiOrder;
-      if (idxMove === idxTarget) continue;
-      // moved を分割元の直後(idxTarget+1)へ移す。
-      chains.splice(idxMove, 1);
-      const insertAt = idxMove < idxTarget ? idxTarget : idxTarget + 1;
-      chains.splice(insertAt, 0, moved);
-    }
+    applyReleaseMoveAt(chains, ekiOrder, moveList.get(ekiOrder) ?? []);
+  }
+}
+
+/** 1 駅ぶんの解結 move-list を適用する(ブロック(6)と交互に回すため)。 */
+export function applyReleaseMoveAt(
+  chains: CustomizeChainColumn[],
+  ekiOrder: number,
+  entries: readonly MoveEntry[],
+): void {
+  for (const [first, second] of entries) {
+    const idxTarget = findChainIndexLast(chains, first); // 分割元(前列車)
+    const idxMove = findChainIndexLast(chains, second); // 分割列車(移動する側)
+    if (idxMove === -1 || idxTarget === -1) continue;
+    const moved = chains[idxMove];
+    if (moved === undefined) continue;
+    // ★releaseEkiOrder も両方見つかれば必ず書く(原典 :8990)。
+    moved.releaseEkiOrder = ekiOrder;
+    if (idxMove === idxTarget) continue;
+    // moved を分割元の直後(idxTarget+1)へ移す。
+    chains.splice(idxMove, 1);
+    const insertAt = idxMove < idxTarget ? idxTarget : idxTarget + 1;
+    chains.splice(insertAt, 0, moved);
   }
 }
 

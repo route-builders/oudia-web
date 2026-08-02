@@ -12,7 +12,7 @@ import { asSeconds } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
 import { buildOccupancy } from '../operationLight/deriveOperationLight.js';
 import type { RessyaElement } from '../operationLight/types.js';
-import { buildFullState } from './deriveOperationFull.js';
+import { buildFullState, deriveOperationFull } from './deriveOperationFull.js';
 
 const J = (h: number, m = 0) => asSeconds(h * 3600 + m * 60);
 
@@ -137,5 +137,112 @@ describe('buildFullState(seed 収集)', () => {
 
     const full = buildFullState(dia, ekiCont, OPTS);
     expect(full.numberChangeSeeds).toHaveLength(1);
+  });
+});
+
+describe('☆1 路線外始発の増結編成 → 疑似列が列の左に入る', () => {
+  it('★増結の入れ子(iLevel の深さ 2)かつ元運番が非空のときだけ列が生まれる', () => {
+    const ekiCont = makeEkiCont();
+    // 主編成 A: E0 発 → E2 着。E0 で増結編成を connect し、その編成は路線外始発。
+    const a = createNullRessya(3, 0);
+    a.isNull = false;
+    a.ressyabangou = '1M';
+    const a0 = a.ekiJikokuCont[0];
+    const a1 = a.ekiJikokuCont[1];
+    const a2 = a.ekiJikokuCont[2];
+    if (a0) {
+      a0.ekiatsukai = 'teisya';
+      a0.hatsuJikoku = J(8);
+      a0.beforeOperationCont = [
+        // 主編成自身の先頭作業(出区)。★増結は index 1 以降でないと展開されない。
+        { kind: 'out', outJikoku: J(7, 40), inOutLinkCode: '', operationNumbers: ['M01'] },
+        {
+          kind: 'connect',
+          connectToFront: false,
+          connectJikoku: J(7, 55),
+          formationBeforeOperationCont: [
+            {
+              kind: 'outer',
+              outerTerminalIndex: 0,
+              outerHatsuJikoku: J(7, 30),
+              chakuJikoku: J(7, 50),
+              inOutLinkCode: '',
+              operationNumbers: ['A01'],
+            },
+          ],
+        },
+      ];
+    }
+    if (a1) {
+      a1.ekiatsukai = 'teisya';
+      a1.chakuJikoku = J(8, 20);
+      a1.hatsuJikoku = J(8, 22);
+    }
+    if (a2) {
+      a2.ekiatsukai = 'teisya';
+      a2.chakuJikoku = J(8, 40);
+      a2.afterOperationCont = [{ kind: 'in', inJikoku: J(8, 45), inOutLinkCode: '' }];
+    }
+    const dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a);
+
+    const full = deriveOperationFull(dia, ekiCont, OPTS);
+    const chains = full.customizeRessyaIndexChains.kudari;
+    // 疑似列(列車 index を持たない)が主編成の左に入る。
+    expect(chains.map((c) => [...c.ressyaIndexCont])).toEqual([[], [0]]);
+    const pseudo = chains[0];
+    expect(pseudo?.connectEkiOrder).toBe(0);
+    expect(pseudo?.sihatsuEkiOrder).toBe(0);
+    expect(pseudo?.beforeType).toBe('outer');
+    expect(pseudo?.prevOperationNumber).toEqual(['A01']);
+    expect(pseudo?.prevRessyabangou).toBe('1M');
+  });
+
+  it('★元運番が空なら疑似列は生まれない(原典の分岐)', () => {
+    const ekiCont = makeEkiCont();
+    const a = createNullRessya(3, 0);
+    a.isNull = false;
+    const a0 = a.ekiJikokuCont[0];
+    const a2 = a.ekiJikokuCont[2];
+    if (a0) {
+      a0.ekiatsukai = 'teisya';
+      a0.hatsuJikoku = J(8);
+      a0.beforeOperationCont = [
+        // 主編成自身の先頭作業(出区)。★増結は index 1 以降でないと展開されない。
+        { kind: 'out', outJikoku: J(7, 40), inOutLinkCode: '', operationNumbers: ['M01'] },
+        {
+          kind: 'connect',
+          connectToFront: false,
+          connectJikoku: J(7, 55),
+          formationBeforeOperationCont: [
+            {
+              kind: 'outer',
+              outerTerminalIndex: 0,
+              outerHatsuJikoku: J(7, 30),
+              chakuJikoku: J(7, 50),
+              inOutLinkCode: '',
+              operationNumbers: [],
+            },
+          ],
+        },
+      ];
+    }
+    const a1 = a.ekiJikokuCont[1];
+    if (a1) {
+      a1.ekiatsukai = 'teisya';
+      a1.chakuJikoku = J(8, 20);
+      a1.hatsuJikoku = J(8, 22);
+    }
+    if (a2) {
+      a2.ekiatsukai = 'teisya';
+      a2.chakuJikoku = J(8, 40);
+    }
+    const dia = createDefaultDia('D');
+    dia.ressyaCont[0].push(a);
+
+    const full = deriveOperationFull(dia, ekiCont, OPTS);
+    expect(full.customizeRessyaIndexChains.kudari.map((c) => [...c.ressyaIndexCont])).toEqual([
+      [0],
+    ]);
   });
 });

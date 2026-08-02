@@ -33,6 +33,17 @@ import type {
   OpRef,
 } from '../operationLight/types.js';
 import { opRefKey } from '../operationLight/types.js';
+
+export { resolveOperation } from './operationRef.js';
+
+import type { OuterInsertList } from './customizeInserts.js';
+import {
+  addOuterInsert,
+  createOuterConnectColumn,
+  createOuterReleaseColumn,
+  isConnectValid,
+  isReleaseValid,
+} from './customizeInserts.js';
 import {
   emptySlots,
   isEmptyOrBlank,
@@ -44,6 +55,7 @@ import {
   setOperationNumberSub,
   trimSuffixOperationNumber,
 } from './operationNumber.js';
+import { resolveOperation } from './operationRef.js';
 import type { OperationTableContext } from './operationTable.js';
 import { addOperationTableContent, insertOperationTableContentToBuffer } from './operationTable.js';
 import type {
@@ -76,40 +88,14 @@ export interface AssignContext {
   readonly chains: { kudari: CustomizeChainColumn[]; nobori: CustomizeChainColumn[] };
   readonly connectMoves: { kudari: MoveList; nobori: MoveList };
   readonly releaseMoves: { kudari: MoveList; nobori: MoveList };
+  /**
+   * 路線外始発/終着だけの疑似列の差し込み待ち
+   * (原典 m_contOuterConnectInsertList / m_contOuterReleaseInsertList。☆1〜☆4)。
+   */
+  readonly outerConnectInserts: OuterInsertList;
+  readonly outerReleaseInserts: OuterInsertList;
   /** 再帰の暴走ガード(実測用。原典にはない安全弁。閾値超過で打ち切り)。 */
   readonly guard: { count: number; readonly limit: number };
-}
-
-/** OpRef が指す union 作業を辿る(iLevel パス。before/after 両対応)。 */
-export function resolveOperation(
-  dia: Dia,
-  ref: OpRef,
-): BeforeOperation | AfterOperation | undefined {
-  const ressya = dia.ressyaCont[ref.houkou][ref.ressyaIndex];
-  const slot = ressya?.ekiJikokuCont[ref.ekiOrder];
-  if (slot === undefined) return undefined;
-  // iLevel[0] はトップ Cont index。以降は connect/release の子。
-  let beforeCont: readonly BeforeOperation[] = slot.beforeOperationCont;
-  let afterCont: readonly AfterOperation[] = slot.afterOperationCont;
-  let inBefore = ref.opKind === 'before';
-  for (let d = 0; d < ref.iLevel.length; d++) {
-    const idx = ref.iLevel[d] ?? 0;
-    const cont = inBefore ? beforeCont : afterCont;
-    const op = cont[idx];
-    if (op === undefined) return undefined;
-    if (d === ref.iLevel.length - 1) return op;
-    // 子へ潜る: connect の子は前作業列、release の子は後作業列。
-    if (op.kind === 'connect') {
-      beforeCont = op.formationBeforeOperationCont;
-      inBefore = true;
-    } else if (op.kind === 'release') {
-      afterCont = op.formationAfterOperationCont;
-      inBefore = false;
-    } else {
-      return undefined;
-    }
-  }
-  return undefined;
 }
 
 /** ツリーから treeLevel 完全一致のノードを線形探索する(原典 :6480 の iLevel 一致)。 */
@@ -311,6 +297,12 @@ function handleTerminalOrJunction(
       const temp = [...operationNumber];
       addTable(ctx, ressyaProperty, temp, node.el.ekiOrder, afterOp, ref, 'outer');
       slots.n1 = temp;
+      // ☆3: 主編成から解結された編成なら、列車の右側に路線外終着相当 + ↴ の疑似列を足す
+      // (原典 :7088-7148)。★判定は**探索用 iLevel**(iLevelSearch)で行う。
+      const tree = treeOf(ctx, ressyaProperty.houkou, ressyaProperty.ressyaIndex);
+      if (tree !== undefined && isReleaseValid(ctx.dia, tree, iLevelSearch)) {
+        pushOuterReleaseInsert(ctx, ressyaProperty, node, afterOp, temp);
+      }
       // 入出区連携コード(原典 :7191-7385)。In と同じ処理。
       hopByInOutLink(ctx, ressyaProperty, afterOp.inOutLinkCode, ref, temp);
       return;
@@ -362,6 +354,12 @@ function hopByInOutLink(
 
   // setOperationNumberAssignedByLinkCode = #2(原典 :6903 / :7236)。
   nextSlots.n2 = [...carried];
+
+  // ☆2 / ☆4: 引継ぎ先が路線外始発の増結編成なら、疑似列を左へ差し込む
+  // (原典 :6905-6975 / :7238-7305)。★引き継いだ運番(置換後)を使う。
+  if (nextOpIsOuter(ctx, nextRef) && isConnectValid(ctx.dia, nextTree, nextNode.treeLevel)) {
+    pushOuterConnectInsert(ctx, nextProp.houkou, nextProp.ressyaIndex, nextNode, nextRef, carried);
+  }
 
   // 次エントリを開始する。検索キーに入区/路線外終着を渡して運用表の並びを定める(原典 :7020)。
   const nextOp = resolveOperation(ctx.dia, nextRef) as BeforeOperation | undefined;
@@ -530,4 +528,60 @@ function classifyWithHidden(
   const ha = ctx.hidden[a.syubetsuIndex] ?? false;
   const hb = ctx.hidden[b.syubetsuIndex] ?? false;
   return ha === hb ? base : 'unrelated';
+}
+
+// ---- ☆1〜☆4: 路線外始発 / 終着だけの疑似列の生成(原典 :5136-5200 / :6905-6975 /
+// :7088-7148 / :7238-7305)。差し込みは completeCustomizeJikokuhyouContent 相当 ----
+
+/** その OpRef が路線外始発(前作業 outer)か。 */
+function nextOpIsOuter(ctx: AssignContext, ref: OpRef): boolean {
+  return resolveOperation(ctx.dia, ref)?.kind === 'outer' && ref.opKind === 'before';
+}
+
+/** 路線外始発の増結疑似列を差し込み待ちへ積む。 */
+function pushOuterConnectInsert(
+  ctx: AssignContext,
+  houkou: Houkou,
+  ressyaIndex: number,
+  node: TreeNode,
+  ref: OpRef,
+  operationNumbers: readonly string[],
+): void {
+  if (ref.opKind !== 'before') return;
+  const op = resolveOperation(ctx.dia, ref) as BeforeOperation | undefined;
+  if (op === undefined || op.kind !== 'outer') return;
+  const ressya = ctx.dia.ressyaCont[houkou][ressyaIndex];
+  if (ressya === undefined) return;
+  addOuterInsert(ctx.outerConnectInserts, houkou, node.el.ekiOrder, {
+    ressyaIndex,
+    column: createOuterConnectColumn(
+      ressya,
+      node.el.ekiOrder,
+      op,
+      ressya.ekiJikokuCont[node.el.ekiOrder],
+      operationNumbers,
+    ),
+  });
+}
+
+/** 路線外終着の解結疑似列を差し込み待ちへ積む(☆3)。 */
+function pushOuterReleaseInsert(
+  ctx: AssignContext,
+  ressyaProperty: RessyaPropertyRef,
+  node: TreeNode,
+  op: AfterOperation & { kind: 'outer' },
+  operationNumbers: readonly string[],
+): void {
+  const ressya = ctx.dia.ressyaCont[ressyaProperty.houkou][ressyaProperty.ressyaIndex];
+  if (ressya === undefined) return;
+  addOuterInsert(ctx.outerReleaseInserts, ressyaProperty.houkou, node.el.ekiOrder, {
+    ressyaIndex: ressyaProperty.ressyaIndex,
+    column: createOuterReleaseColumn(
+      ressya,
+      node.el.ekiOrder,
+      op,
+      ressya.ekiJikokuCont[node.el.ekiOrder],
+      operationNumbers,
+    ),
+  });
 }
