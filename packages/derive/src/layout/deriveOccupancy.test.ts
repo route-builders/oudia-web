@@ -389,3 +389,57 @@ describe('deriveOccupancy(運用探索の結果を反映する)', () => {
     expect(r.kudari[0]?.trackLines[0]?.operationNumber).toBe('B7');
   });
 });
+
+describe('deriveOccupancy(入換で Zaisen が増える)', () => {
+  /** A 駅で 3番線(index 2)に着き、1番線(index 0)へ入換してから発車する列車。 */
+  function shuntSetup(): ReturnType<typeof outSetup> {
+    const out = outSetup();
+    const slot = out.kudari[0]?.ekiJikokuCont[0];
+    if (slot === undefined) throw new Error('slot');
+    slot.beforeOperationCont = [];
+    slot.afterOperationCont = [
+      {
+        kind: 'shunt',
+        shuntTrackIndex: 0,
+        shuntHatsuJikoku: asSeconds(7 * 3600 + 30),
+        shuntChakuJikoku: asSeconds(7 * 3600 + 60),
+        displayJikoku: false,
+      },
+    ];
+    return out;
+  }
+
+  it('★後作業の入換で番線が変わると Zaisen が 2 個になる', () => {
+    const { rosen, kudari, ekiLayouts } = shuntSetup();
+    const lines = deriveOccupancy(rosen, kudari, [], ekiLayouts).kudari[0]?.trackLines ?? [];
+    const z = lines[0]?.zaisenCont ?? [];
+    expect(z).toHaveLength(2);
+    // 1 個目 = 発着番線(3番線)を 7:00 着 〜 入換発 7:00:30 まで。
+    expect(z[0]).toEqual({ trackIndex: 2, dgrXChaku: 7 * 3600, dgrXHatsu: 7 * 3600 + 30 });
+    // 2 個目 = 入換先(1番線)を 入換着 7:01 〜 当駅発 7:02 まで。
+    expect(z[1]).toEqual({ trackIndex: 0, dgrXChaku: 7 * 3600 + 60, dgrXHatsu: 7 * 3600 + 120 });
+  });
+
+  it('★入換先が現在の番線と同じなら何も増えない', () => {
+    const { rosen, kudari, ekiLayouts } = shuntSetup();
+    const slot = kudari[0]?.ekiJikokuCont[0];
+    const op = slot?.afterOperationCont[0];
+    if (op === undefined || op.kind !== 'shunt') throw new Error('op');
+    op.shuntTrackIndex = 2; // 着番線と同じ
+    const lines = deriveOccupancy(rosen, kudari, [], ekiLayouts).kudari[0]?.trackLines ?? [];
+    expect(lines[0]?.zaisenCont).toHaveLength(1);
+  });
+
+  it('★日跨ぎ: 発 X は着 X より必ず後ろへ送る(原典 shiftDgrXPos)', () => {
+    const { rosen, kudari, ekiLayouts } = outSetup();
+    const slot = kudari[0]?.ekiJikokuCont[0];
+    if (slot === undefined) throw new Error('slot');
+    slot.beforeOperationCont = [];
+    slot.chakuJikoku = asSeconds(23 * 3600 + 3000); // 23:50
+    slot.hatsuJikoku = asSeconds(600); // 0:10
+    const lines = deriveOccupancy(rosen, kudari, [], ekiLayouts).kudari[0]?.trackLines ?? [];
+    const z = lines[0]?.zaisenCont[0];
+    expect(z?.dgrXChaku).toBe(23 * 3600 + 3000);
+    expect(z?.dgrXHatsu).toBe(600 + 86400);
+  });
+});

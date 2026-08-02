@@ -26,7 +26,7 @@ import {
   getValidSihatsuEki,
   getValidSyuuchakuEki,
 } from '@oudia-web/domain';
-import type { Ressya, Rosen } from '@oudia-web/format';
+import type { EkiJikoku, Ressya, Rosen } from '@oudia-web/format';
 import type { JunctionResolution } from '../operationLight/types.js';
 import type { ChakuOperationCode, HatsuOperationCode } from './operationMark.js';
 import { brunchOppositeOperationCode } from './trackDisplayMode.js';
@@ -178,6 +178,7 @@ function deriveRessyaTrackLines(
     const chaku = ej.chakuJikoku ?? ej.hatsuJikoku;
     const hatsu = ej.hatsuJikoku ?? ej.chakuJikoku;
     if (chaku === null || hatsu === null) continue;
+    const zaisenCont = buildZaisenCont(ej, track, chaku, hatsu, kitenJikoku);
     const op = operationCodesOf(
       ressya,
       ekiOrder,
@@ -188,14 +189,6 @@ function deriveRessyaTrackLines(
       houkou,
       ressyaIndex,
     );
-    const zaisenCont = [
-      {
-        trackIndex: track,
-        dgrXChaku: toDgrX(chaku, kitenJikoku),
-        dgrXHatsu: toDgrX(hatsu, kitenJikoku),
-      },
-    ];
-
     // ---- 分岐環状の駅群へ複製する(原典 CentDedDgrRessya.cpp:1788-2078 ほか)----
     // ★駅群で在線表を共有するのではなく、**同じ Zaisen を各駅へ複製して別々の行**を作る。
     // 違うのは (駅Order, chakuOperation, hatsuOperation, isTrackDisplay) だけ。
@@ -256,6 +249,82 @@ function deriveRessyaTrackLines(
     emit(group.terminalSide, 'brunch');
   }
   return lines;
+}
+
+/**
+ * 基準 X 以降になるよう 1 日ぶんずつ送る(原典 shiftDgrXPos(x, base, false)、
+ * CentDedDgrRessya.cpp:5680-5712)。★これが無いと 23:50 着 → 00:10 発の駅で
+ * 発 X が着 X より手前に来る。
+ */
+function shiftForward(seconds: number, baseX: number): number {
+  let x = seconds;
+  while (x < baseX) x += 86400;
+  while (x >= baseX + 86400) x -= 86400;
+  return x;
+}
+
+/**
+ * 1 駅ぶんの Zaisen 列を作る(原典 CentDedDgrRessya.cpp:2140-2295 中間駅 /
+ * :1440-1560 始発駅)。
+ *
+ * ★**入換(shunt)で番線が変わるたびに Zaisen が 1 個増える**。入換は
+ * 「`shuntTrackIndex`(元番線)を `shuntHatsuJikoku` に出て、現在の番線へ
+ * `shuntChakuJikoku` に着く」という向きで読む。
+ * - 後作業は**先頭から**。番線が変わる入換のたびに、直前の番線の占有を確定する。
+ *   最初の 1 個だけは「発着番線を離れる時刻」を決めるだけで Zaisen を積まない。
+ * - 前作業は**末尾から**。現在の番線を「入換で着いた時刻 〜 そこを離れる時刻」で
+ *   先頭へ積み、1 つ前の番線へ遡る。
+ * ★入換先番線が現在の番線と**同じ**なら何もしない(走査は続ける)。
+ * ★時刻は当駅着 X を基準に、後作業側は**前方**・前作業側は**後方**へ日跨ぎを寄せる
+ *   (原典 shiftDgrXPos の第 3 引数。始発駅経路は前作業に true を渡す。:1526-1528)。
+ *
+ * ★**前作業側の入換展開は未実装**。原典の前作業走査は「発着番線は入換着 〜 当駅発、
+ * 一つ前の番線は当駅着 〜 入換発」という向きで積むため、先頭作業(出区・路線外始発・
+ * 前列車接続)が Zaisen の起点を決めることが前提になっている(:1526-1560)。
+ * その先頭作業ぶんの Zaisen 生成が入るまで、前作業側は 1 本のままにしておく。
+ * ★未対応: 増結 / 解結(原典 :2186-2207 は相手編成ぶんの RessyaTrackLine を再帰生成する)。
+ */
+function buildZaisenCont(
+  slot: EkiJikoku,
+  baseTrack: number,
+  chaku: number,
+  hatsu: number,
+  kitenJikoku: number,
+): Zaisen[] {
+  const baseX = toDgrX(chaku, kitenJikoku);
+  const x = (sec: number): number => shiftForward(sec, baseX);
+  const out: Zaisen[] = [];
+
+  // ---- 後作業(先頭から)----
+  let track = baseTrack;
+  /** 発着番線を離れる時刻。 */
+  let leaveHatsu: number | null = null;
+  /** 次に積む Zaisen の着時刻(= その番線へ入換で着いた時刻)。 */
+  let pendingChaku: number | null = null;
+  for (const op of slot.afterOperationCont) {
+    if (op.kind !== 'shunt') continue;
+    if (op.shuntTrackIndex === track) continue;
+    const shuntChaku = op.shuntChakuJikoku ?? op.shuntHatsuJikoku;
+    if (op.shuntHatsuJikoku === null || shuntChaku === null) continue;
+    if (leaveHatsu === null) {
+      leaveHatsu = op.shuntHatsuJikoku;
+    } else if (pendingChaku !== null) {
+      out.push({
+        trackIndex: track,
+        dgrXChaku: x(pendingChaku),
+        dgrXHatsu: x(op.shuntHatsuJikoku),
+      });
+    }
+    pendingChaku = shuntChaku;
+    track = op.shuntTrackIndex;
+  }
+  if (pendingChaku !== null) {
+    out.push({ trackIndex: track, dgrXChaku: x(pendingChaku), dgrXHatsu: x(hatsu) });
+  }
+  if (leaveHatsu === null) leaveHatsu = hatsu;
+
+  out.unshift({ trackIndex: baseTrack, dgrXChaku: baseX, dgrXHatsu: x(leaveHatsu) });
+  return out;
 }
 
 /**
