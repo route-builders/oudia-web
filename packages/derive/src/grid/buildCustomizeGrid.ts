@@ -65,6 +65,25 @@ export interface CustomizeGridOptions {
    * ★原典は **!displayTsuukaEkiJikoku のときだけ** " ﾚ" にする(表示 ON なら実時刻を出す)。
    */
   readonly displayTsuukaEkiJikoku?: boolean;
+  /**
+   * [親種別を有効にする](原典 m_bDisplayParentSyubetsu)。既定 false。
+   * ★真のとき種別の略称は**親種別に 1 段だけ**置換して取る(再帰しない。
+   * 原典 CCellBuilderCustomize.cpp:6266-6278 / 6437-6449)。
+   */
+  readonly displayParentSyubetsu?: boolean;
+}
+
+/**
+ * 種別の略称(原典 getRyakusyou)。★親種別表示が有効なら 1 段だけ親へ置換する。
+ * 置換は再帰しない(原典どおり)。
+ */
+function syubetsuRyakusyou(rosen: Rosen, index: number, opts: CustomizeGridOptions): string {
+  const parent = rosen.ressyasyubetsuCont[index]?.parentSyubetsuIndex;
+  const i =
+    opts.displayParentSyubetsu === true && parent !== null && parent !== undefined && parent >= 0
+      ? parent
+      : index;
+  return rosen.ressyasyubetsuCont[i]?.ryakusyou ?? '';
 }
 
 /**
@@ -225,13 +244,24 @@ export function fillCustomizeColumn(
 
   const outerIndex = buildOuterDisplayIndex(rosen.ekiCont, houkou);
   /** 駅ごとの運番段数(原典 getJikokuhyouOperationNumberDisplayRows)。 */
-  const opNumberRowsAt = (r: Rosen, h: Ressyahoukou, ekiOrder: number | null): number => {
+  const opNumberRowsAt = (
+    r: Rosen,
+    h: Ressyahoukou,
+    ekiOrder: number | null,
+    type: CustomizeRowSpec['type'],
+  ): number => {
     if (ekiOrder === null) return 1;
     const n = r.ekiCont.length;
     const eki = r.ekiCont[h === 0 ? ekiOrder : n - 1 - ekiOrder];
     if (eki === undefined) return 1;
-    const d =
-      h === 1
+    // ★前列車欄は**前列車側の段数設定**(getJikokuhyouPrevOperationNumberDisplayRows)。
+    // 行スペック(customizeColSpec.ts:184)も同じ設定で段数ぶん行を作っている。
+    const isPrev = type.startsWith('ekiPrev');
+    const d = isPrev
+      ? h === 1
+        ? eki.jikokuhyouPrevSyubetsuChangeDisplayNobori
+        : eki.jikokuhyouPrevSyubetsuChangeDisplayKudari
+      : h === 1
         ? eki.jikokuhyouSyubetsuChangeDisplayNobori
         : eki.jikokuhyouSyubetsuChangeDisplayKudari;
     return d.operationNumberRows;
@@ -267,7 +297,7 @@ export function fillCustomizeColumn(
         y,
         outerIndex,
         list,
-        opNumberRows: opNumberRowsAt(rosen, houkou, row.ekiOrder),
+        opNumberRows: opNumberRowsAt(rosen, houkou, row.ekiOrder, row.type),
       }),
     );
   }
@@ -324,7 +354,7 @@ function fillRow(row: CustomizeRowSpec, ctx: FillCtx): CellSpec {
     case 'ressyasyubetsu':
       // ★種別欄は**略称**(原典 getRyakusyou。列ヘッダ :5062 / 駅別 :9858)。
       return textCell(
-        head === undefined ? '' : (rosen.ressyasyubetsuCont[head.syubetsuIndex]?.ryakusyou ?? ''),
+        head === undefined ? '' : syubetsuRyakusyou(rosen, head.syubetsuIndex, ctx.opts),
         'text',
         headSyubetsu,
       );
@@ -353,18 +383,34 @@ function fillRow(row: CustomizeRowSpec, ctx: FillCtx): CellSpec {
   }
 
   const e = row.ekiOrder;
-  if (e === null || ressya === undefined) return EMPTY_CELL;
+  if (e === null) return EMPTY_CELL;
   const ekiIndex = houkou === 0 ? e : ekiCount - 1 - e;
   const eki = rosen.ekiCont[ekiIndex];
-  const syubetsuIndex = ressya.syubetsuIndex;
-  const sihatsu = getValidSihatsuEki(ressya);
-  const syuuchaku = getValidSyuuchakuEki(ressya);
 
+  // ★列車 NULL(ressyaIndexCont が空の路線外表示専用列)でも描く行を先に処理する。
+  // 原典は着/発と EkiPrev* に専用経路を持つ(:7238-7315 / :5697 ほか)。
   switch (row.type) {
     case 'chaku':
       return jikokuCell(row, ctx, e, true);
     case 'hatsu':
       return jikokuCell(row, ctx, e, false);
+    case 'ekiPrevRessyabangou':
+    case 'ekiPrevOperationNumber':
+    case 'ekiPrevRessyasyubetsu':
+    case 'ekiPrevRessyamei':
+    case 'ekiPrevGousuu':
+    case 'ekiPrevGou':
+      return ekiPrevCell(row, ctx, e, eki);
+    default:
+      break;
+  }
+
+  if (ressya === undefined) return EMPTY_CELL;
+  const syubetsuIndex = ressya.syubetsuIndex;
+  const sihatsu = getValidSihatsuEki(ressya);
+  const syuuchaku = getValidSyuuchakuEki(ressya);
+
+  switch (row.type) {
     case 'track': {
       if (e < sihatsu || e > syuuchaku) {
         return placeholder(eki, e, ekiCount, houkou, syubetsuIndex);
@@ -392,6 +438,193 @@ function fillRow(row: CustomizeRowSpec, ctx: FillCtx): CellSpec {
       // EkiPrev* / EkiOuter* / 入線 は後続。
       return EMPTY_CELL;
   }
+}
+
+/** 駅の「前列車情報欄」の表示設定(原典 getJikokuhyouPrev*Display)。 */
+function prevDisplayValue(
+  eki: Eki | undefined,
+  houkou: Ressyahoukou,
+  type: CustomizeRowSpec['type'],
+): number {
+  if (eki === undefined) return 0;
+  const d =
+    houkou === 1
+      ? eki.jikokuhyouPrevSyubetsuChangeDisplayNobori
+      : eki.jikokuhyouPrevSyubetsuChangeDisplayKudari;
+  switch (type) {
+    case 'ekiPrevRessyabangou':
+      return d.ressyabangou;
+    case 'ekiPrevOperationNumber':
+      return d.operationNumber;
+    case 'ekiPrevRessyasyubetsu':
+      return d.syubetsu;
+    case 'ekiPrevRessyamei':
+    case 'ekiPrevGousuu':
+    case 'ekiPrevGou':
+      return d.ressyamei;
+    default:
+      return 0;
+  }
+}
+
+/**
+ * EkiPrev*(その駅に到着してくる前列車の情報)のセル(原典 :5697-6600)。
+ *
+ * ★値は必ず**列レベルの content.prev\* から**引く(列車オブジェクトからは引かない)。
+ * ★**列車 NULL の疑似列でも「||」「↳」を出す**(自列車情報欄と違う)。
+ * ★**「↓」「↴」は到達不能な死コード**(iDisplayType には 0/1/2/5 しか代入されない)。
+ * ★列車名だけ分岐が違い、「||」を一切出さない。しかも始発駅ちょうどの枝に
+ * prevTerm >= 0 のガードが無いので、前列車終着と当列車始発の間に隙間があっても前列車名を出す。
+ * ★運用番号の Display==1(運番が変化したときのみ)は else-if 連鎖を**食い切る**。
+ * 運番が一致していれば beforeType が classChange でも表示しない(:5976-5981)。
+ */
+function ekiPrevCell(
+  row: CustomizeRowSpec,
+  ctx: FillCtx,
+  e: number,
+  eki: Eki | undefined,
+): CellSpec {
+  const { rosen, houkou, ressya, prevTerm, column, outerIndex, rows, y } = ctx;
+  const type = row.type;
+  const isOpNum = type === 'ekiPrevOperationNumber';
+  const isMei = type === 'ekiPrevRessyamei' || type === 'ekiPrevGousuu' || type === 'ekiPrevGou';
+  const d = prevDisplayValue(eki, houkou, type);
+  let sIdx =
+    ressya?.syubetsuIndex ??
+    (column.connectEkiOrder >= 0 ? column.prevRessyasyubetsuIndex : column.ressyasyubetsuIndex);
+
+  const mark = (m: MarkKind): CellSpec => {
+    // ★「↳」は列車名セル(cell1)にだけ書かれる。号数・号は空のまま(原典 :6828-6853)。
+    if (m === 'connect' && (type === 'ekiPrevGousuu' || type === 'ekiPrevGou')) return EMPTY_CELL;
+    return isOpNum ? operationNumberMarkCell(m, row.operationIndex, ctx, sIdx) : markCell(m, sIdx);
+  };
+  /** 直上行がひとつ手前の駅の行か(原典は iYColumnNumber-1 の spec を引く)。 */
+  const isTopOfBlock = (): boolean => y > 0 && rows[y - 1]?.ekiOrder === e - 1;
+  /** 前駅が「着のみ表示」か。 */
+  const prevChakuOnly = (): boolean => {
+    const p = ekiAtOrder(rosen, houkou, e - 1);
+    return chakuDisp(p, houkou) && !hatsuDisp(p, houkou);
+  };
+
+  /** 前列車の値を出す(show)。どの枝にも当たらなければ空。 */
+  const show = (): CellSpec => {
+    if (isOpNum) {
+      // ★Display==1 はここで打ち切る(classChange を後から見ない)。
+      if (d === 4)
+        return operationNumberCell(column.prevOperationNumber, row.operationIndex, ctx, sIdx);
+      if (d === 1) {
+        const now = ressya === undefined ? [] : getOperationNumberAt(ressya, e);
+        return column.prevOperationNumber.join('\u0001') !== now.join('\u0001')
+          ? operationNumberCell(column.prevOperationNumber, row.operationIndex, ctx, sIdx)
+          : EMPTY_CELL;
+      }
+      if (
+        column.beforeType === 'classChange' ||
+        (column.beforeType === 'propertyChange' && d === 3)
+      ) {
+        return operationNumberCell(column.prevOperationNumber, row.operationIndex, ctx, sIdx);
+      }
+      return EMPTY_CELL;
+    }
+    const ok =
+      d === 3 ||
+      column.beforeType === 'classChange' ||
+      (column.beforeType === 'propertyChange' && d === 2);
+    if (!ok) return EMPTY_CELL;
+    switch (type) {
+      case 'ekiPrevRessyabangou':
+        return textCell(column.prevRessyabangou, 'text', sIdx);
+      case 'ekiPrevRessyasyubetsu':
+        // ★略称。親種別表示のときは 1 段置換する。
+        return textCell(
+          syubetsuRyakusyou(rosen, column.prevRessyasyubetsuIndex, ctx.opts),
+          'text',
+          sIdx,
+        );
+      case 'ekiPrevRessyamei':
+        return textCell(column.prevRessyamei, 'text', sIdx);
+      case 'ekiPrevGousuu':
+        return textCell(column.prevGousuu, 'text', sIdx);
+      default:
+        return textCell(column.prevGousuu === '' ? '' : '号', 'text', sIdx);
+    }
+  };
+
+  let out: CellSpec = EMPTY_CELL;
+
+  if (ressya === undefined) {
+    // ---- 列車 NULL の疑似列 ----
+    if (column.releaseEkiOrder >= 0) {
+      const rel = column.releaseEkiOrder;
+      if (!isMei && e > rel && e <= (outerIndex.terminal[rel] ?? -1)) out = mark('keiyunasi');
+    } else if (
+      column.connectEkiOrder >= 0 &&
+      e - 1 === column.connectEkiOrder &&
+      prevChakuOnly() &&
+      isTopOfBlock()
+    ) {
+      out = mark('connect');
+    }
+    return out;
+  }
+
+  const S = getValidSihatsuEki(ressya);
+  const T = getValidSyuuchakuEki(ressya);
+  const osdS = outerIndex.origin[S] ?? -1;
+  const osdE = outerIndex.terminal[T] ?? -1;
+  const afterCont = ressya.ekiJikokuCont[T]?.afterOperationCont ?? [];
+  const lastOuter = afterCont[afterCont.length - 1]?.kind === 'outer';
+
+  if (S === -1 || T === -1) {
+    out = EMPTY_CELL;
+  } else if (e < S) {
+    if (isMei) {
+      // ★列車名は「||」を出さない。
+      if (prevTerm < 0 && column.sihatsuEkiOrder >= -2 && osdS >= 0 && osdS === e) {
+        sIdx = column.prevRessyasyubetsuIndex;
+        out = show();
+      }
+    } else if (prevTerm >= 0) {
+      out = mark('keiyunasi');
+    } else if (column.sihatsuEkiOrder >= -2 && osdS >= 0 && osdS === e) {
+      sIdx = column.prevRessyasyubetsuIndex;
+      out = show();
+    } else if (column.releaseEkiOrder >= 0 && column.releaseEkiOrder < e) {
+      out = mark('keiyunasi');
+    }
+  } else if (e === S) {
+    // ★列車名にだけ prevTerm ガードが無い(原典 :6765)。
+    if (!isMei && prevTerm >= 0 && prevTerm < e) {
+      out = mark('keiyunasi');
+    } else if (column.sihatsuEkiOrder >= -2) {
+      sIdx = column.prevRessyasyubetsuIndex;
+      out = show();
+    }
+  } else if (e < T) {
+    if (!isMei && !isRunBetweenNextEki(ressya, e - 1)) out = mark('keiyunasi');
+  } else if (e > T && !isMei) {
+    if (lastOuter && osdE >= 0 && osdE >= e) {
+      out = mark('keiyunasi');
+    } else if (column.syuuchakuEkiOrder >= -2 && osdE >= 0 && osdE >= e) {
+      // ★列車番号だけ書式差し替えが後段の無条件代入に潰される(原典 :5786 vs :5824)。
+      if (type !== 'ekiPrevRessyabangou') sIdx = column.ressyasyubetsuIndex;
+      out = mark('keiyunasi');
+    } else if (column.connectEkiOrder >= 0 && column.connectEkiOrder >= e) {
+      out = mark('keiyunasi');
+    }
+  }
+
+  // ★全 field 共通の上書き。
+  if (
+    e - 1 === T &&
+    T !== -1 &&
+    e - 1 === column.connectEkiOrder &&
+    prevChakuOnly() &&
+    isTopOfBlock()
+  ) {
+    out = mark('connect');
+  }
+  return out;
 }
 
 /** 駅の「自列車情報欄」の表示設定(原典 getJikokuhyou*Display)。 */
@@ -462,7 +695,7 @@ function ekiInfoCell(
       case 'ekiOperationNumber':
         return operationNumberCell(getOperationNumberAt(ressya, e), row.operationIndex, ctx, sIdx);
       case 'ekiRessyasyubetsu':
-        return textCell(rosen.ressyasyubetsuCont[sIdx]?.ryakusyou ?? '', 'text', sIdx);
+        return textCell(syubetsuRyakusyou(rosen, sIdx, ctx.opts), 'text', sIdx);
       default:
         return textCell(ressya.ressyamei, 'text', sIdx);
     }

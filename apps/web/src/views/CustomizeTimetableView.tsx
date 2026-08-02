@@ -26,6 +26,7 @@ import type { RosenFileData } from '@oudia-web/format';
 import { useMemo, useState } from 'react';
 import { downloadCsv } from '../file/saveFile.js';
 import { useOperationSearch } from '../hooks/useOperationSearch.js';
+import { useSettingsStore } from '../store/settingsStore.js';
 import {
   OperationSearchControls,
   operationRefreshKeyProps,
@@ -78,8 +79,10 @@ export function CustomizeTimetableView(props: {
   const [paused, setPaused] = useState(false);
   const [manualKey, setManualKey] = useState(0);
   const [displayEkimei, setDisplayEkimei] = useState(true);
-  // [通過駅の駅時刻を表示する]。OFF のとき通過駅は " ﾚ"(原典の全分岐で同じガード)。
-  const [displayTsuuka, setDisplayTsuuka] = useState(false);
+  // ★表示トグルは通常時刻表と**同じ設定**(原典も 1 つのグローバル設定)。
+  // [通過駅の駅時刻を表示する] が OFF のとき通過駅は " ﾚ"(原典の全分岐で同じガード)。
+  const displayToggles = useSettingsStore((s) => s.jikokuhyou);
+  const setSetting = useSettingsStore((s) => s.setJikokuhyouSetting);
 
   const search = useOperationSearch(data, diaIndex, paused, manualKey);
   const dia = data.rosen.diaCont[diaIndex];
@@ -115,15 +118,16 @@ export function CustomizeTimetableView(props: {
   const gridOptions = useMemo(
     () => ({
       conv: {
-        noColon: false,
-        outputSecond: false,
+        noColon: !displayToggles.displayColonEkiJikoku,
+        outputSecond: displayToggles.displaySecondEkiJikoku,
         secondRoundChaku: data.dispProp.secondRoundChaku,
         secondRoundHatsu: data.dispProp.secondRoundHatsu,
         display2400: data.dispProp.display2400,
       },
-      displayTsuukaEkiJikoku: displayTsuuka,
+      displayTsuukaEkiJikoku: displayToggles.displayTsuukaEkiJikoku,
+      displayParentSyubetsu: displayToggles.displayParentSyubetsu,
     }),
-    [data.dispProp, displayTsuuka],
+    [data.dispProp, displayToggles],
   );
 
   const columns = useMemo(() => {
@@ -169,9 +173,9 @@ export function CustomizeTimetableView(props: {
         <label>
           <input
             type="checkbox"
-            checked={displayTsuuka}
+            checked={displayToggles.displayTsuukaEkiJikoku}
             onChange={(e) => {
-              setDisplayTsuuka(e.target.checked);
+              setSetting('displayTsuukaEkiJikoku', e.target.checked);
             }}
           />
           通過駅の時刻を表示

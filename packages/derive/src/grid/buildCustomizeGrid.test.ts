@@ -15,6 +15,7 @@ import {
 import type { Dia, Eki, Ressya, Rosen } from '@oudia-web/format';
 import { asSeconds } from '@oudia-web/format';
 import { describe, expect, it } from 'vitest';
+import type { CustomizeChainColumn } from '../operationLight/types.js';
 import { createCustomizeChainColumn } from '../operationLight/types.js';
 import { buildCustomizeGrid } from './buildCustomizeGrid.js';
 import type { CustomizeRowOptions } from './customizeColSpec.js';
@@ -280,5 +281,256 @@ describe('buildCustomizeGrid', () => {
     dia.ressyaCont[0].push(train('1M', 0, 3, 8));
     const { rows, cells } = cellsOf(dia, rosen, [0]);
     expect(at(rows, cells, 'ekiRessyamei', 1)).toBe('');
+  });
+});
+
+/** 前列車情報欄を全部出す行オプション(★enableOperation > 1 が前提)。 */
+const PREV_OPTS: CustomizeRowOptions = {
+  displayRessyamei: false,
+  enableOperation: 2,
+  operationNumberRows: 1,
+  displayShihatsuShuchakuEkimei: false,
+};
+
+/** 全駅の前列車情報欄を Display 値 v で有効にする。 */
+function enablePrev(rosen: Rosen, v: 1 | 2 | 3, opRows: 1 | 2 | 3 | 4 | 5 = 1): void {
+  for (const e of rosen.ekiCont) {
+    e.jikokuhyouPrevSyubetsuChangeDisplayKudari = {
+      ressyabangou: v,
+      operationNumber: v,
+      syubetsu: v,
+      ressyamei: v,
+      operationNumberRows: opRows,
+    };
+  }
+}
+
+function prevCellsOf(
+  dia: Dia,
+  rosen: Rosen,
+  chain: number[],
+  over: Partial<CustomizeChainColumn> = {},
+  opts: CustomizeRowOptions = PREV_OPTS,
+): { rows: ReturnType<typeof buildCustomizeRowSpec>; cells: readonly { text: string }[] } {
+  const rows = buildCustomizeRowSpec(rosen.ekiCont, 0, opts);
+  const col = { ...createCustomizeChainColumn(chain), ...over };
+  const cols = buildCustomizeGrid(dia, rosen, 0, [col], rows, { conv: CONV });
+  return { rows, cells: cols[0]?.cells ?? [] };
+}
+
+describe('buildCustomizeGrid — EkiPrev*(前列車情報欄)', () => {
+  it('★中間駅は経由なし区間だけ「||」。前列車情報は一切出ない', () => {
+    // 5 駅にして真ん中(駅2)だけ経由なしにする。始発 0 / 終着 4 は保つ。
+    const rosen = createNewRosen().rosen;
+    rosen.ekiCont = [0, 1, 2, 3, 4].map((i) => {
+      const e = createDefaultEki(i, `E${String(i)}`);
+      e.jikokuhyouJikokuDisplayKudari = { chaku: true, hatsu: true };
+      return e;
+    });
+    const dia = createDefaultDia('D');
+    rosen.diaCont = [dia];
+    enablePrev(rosen, 3);
+    const r = createNullRessya(5, 0);
+    r.isNull = false;
+    r.ressyabangou = '1M';
+    for (let o = 0; o < 5; o++) {
+      const s = r.ekiJikokuCont[o];
+      if (s === undefined) continue;
+      // ★駅扱 'none' = 経由なし(原典 Ekiatsukai_None)。
+      s.ekiatsukai = o === 2 ? 'none' : 'teisya';
+      s.chakuJikoku = J(8, o * 10);
+      s.hatsuJikoku = J(8, o * 10 + 2);
+    }
+    dia.ressyaCont[0].push(r);
+    const { rows, cells } = prevCellsOf(dia, rosen, [0], { beforeType: 'classChange' });
+    // Display=3(常に表示)でも中間駅では前列車情報を出さない。
+    expect(at(rows, cells, 'ekiPrevRessyabangou', 1)).toBe('');
+    // 駅1→駅2 が経由なし = 駅2 の前列車欄は「||」。
+    expect(at(rows, cells, 'ekiPrevRessyabangou', 2)).toBe('||');
+    expect(at(rows, cells, 'ekiPrevRessyabangou', 3)).toBe('||');
+  });
+
+  it('始発駅ちょうどでは 路線外始発相当(sihatsuEkiOrder >= -2)のときだけ前列車情報が出る', () => {
+    const { dia, rosen } = setup();
+    enablePrev(rosen, 3);
+    dia.ressyaCont[0].push(train('1M', 0, 3, 8));
+    const none = prevCellsOf(dia, rosen, [0], { prevRessyabangou: '9M' });
+    expect(at(none.rows, none.cells, 'ekiPrevRessyabangou', 0)).toBe('');
+    const outer = prevCellsOf(dia, rosen, [0], {
+      prevRessyabangou: '9M',
+      sihatsuEkiOrder: -1,
+    });
+    expect(at(outer.rows, outer.cells, 'ekiPrevRessyabangou', 0)).toBe('9M');
+  });
+
+  it('★列車名だけ「||」を出さず、2 列車目の始発駅でも前列車名を出す(原典 :6765 のガード欠落)', () => {
+    const { dia, rosen } = setup();
+    enablePrev(rosen, 3);
+    // 1M: 駅0→1、3M: 駅2→3。間(駅1→2)に隙間がある = prevTerm(1) < 始発(2)。
+    dia.ressyaCont[0].push(train('1M', 0, 1, 8), train('3M', 2, 3, 9));
+    const { rows, cells } = prevCellsOf(
+      dia,
+      rosen,
+      [0, 1],
+      { prevRessyabangou: '9M', prevRessyamei: 'あさ', sihatsuEkiOrder: -1 },
+      { ...PREV_OPTS, displayRessyamei: true },
+    );
+    // 駅2 は 2 列車目の始発。番号/種別は「||」。
+    expect(at(rows, cells, 'ekiPrevRessyabangou', 2)).toBe('||');
+    // ★列車名だけは前列車名が出る。
+    expect(at(rows, cells, 'ekiPrevRessyamei', 2)).toBe('あさ');
+  });
+
+  it('終着より後は「||」。列車名は空のまま', () => {
+    const { dia, rosen } = setup();
+    enablePrev(rosen, 3);
+    // ★路線外終着欄は**終着より後**の駅に置く。terminal[T] はその駅Order を返し、
+    // 「||」は T+1 .. terminal[T] の範囲だけに出る。
+    const e2 = rosen.ekiCont[2];
+    if (e2 === undefined) throw new Error('no eki');
+    e2.jikokuhyouOuterDisplayKudari = { origin: false, terminal: true };
+    dia.ressyaCont[0].push(train('1M', 0, 1, 8));
+    const { rows, cells } = prevCellsOf(
+      dia,
+      rosen,
+      [0],
+      { syuuchakuEkiOrder: -1, prevRessyamei: 'あさ' },
+      { ...PREV_OPTS, displayRessyamei: true },
+    );
+    expect(at(rows, cells, 'ekiPrevRessyabangou', 2)).toBe('||');
+    expect(at(rows, cells, 'ekiPrevRessyamei', 2)).toBe('');
+  });
+
+  it('★運用番号の Display=1 は else-if 連鎖を食い切る(運番一致なら classChange でも出さない)', () => {
+    const { dia, rosen } = setup();
+    enablePrev(rosen, 1);
+    const r = train('1M', 0, 3, 8);
+    const s = r.ekiJikokuCont[0];
+    if (s === undefined) throw new Error('no slot');
+    // 自列車の運番は永続の numberChange から引かれる(getOperationNumberAt)。
+    s.afterOperationCont = [{ kind: 'numberChange', operationNumbers: ['A01'] }];
+    dia.ressyaCont[0].push(r);
+    const same = prevCellsOf(dia, rosen, [0], {
+      beforeType: 'classChange',
+      prevOperationNumber: ['A01'],
+      sihatsuEkiOrder: -1,
+    });
+    expect(at(same.rows, same.cells, 'ekiPrevOperationNumber', 0)).toBe('');
+    const diff = prevCellsOf(dia, rosen, [0], {
+      beforeType: 'classChange',
+      prevOperationNumber: ['B02'],
+      sihatsuEkiOrder: -1,
+    });
+    expect(at(diff.rows, diff.cells, 'ekiPrevOperationNumber', 0)).toBe('B02');
+  });
+
+  it('★列車 NULL の疑似列でも「||」を出す(切り離し区間)', () => {
+    const { dia, rosen } = setup();
+    enablePrev(rosen, 3);
+    // 切り離し駅(0)より後 〜 路線外終着欄のある駅(2)までが「||」。
+    const e2 = rosen.ekiCont[2];
+    if (e2 === undefined) throw new Error('no eki');
+    e2.jikokuhyouOuterDisplayKudari = { origin: false, terminal: true };
+    const { rows, cells } = prevCellsOf(
+      dia,
+      rosen,
+      [],
+      { releaseEkiOrder: 0, prevRessyamei: 'あさ' },
+      { ...PREV_OPTS, displayRessyamei: true },
+    );
+    expect(at(rows, cells, 'ekiPrevRessyabangou', 1)).toBe('||');
+    // ★列車名だけは (a) の枝が無いので空(原典 :6690-6716)。
+    expect(at(rows, cells, 'ekiPrevRessyamei', 1)).toBe('');
+  });
+
+  it('★連結駅の次駅ブロック先頭は「↳」で上書き。号数・号は空のまま', () => {
+    const { dia, rosen } = setup();
+    enablePrev(rosen, 3);
+    // 駅1 を「着のみ表示」にする(↳ の条件 3)。
+    const e1 = rosen.ekiCont[1];
+    if (e1 === undefined) throw new Error('no eki');
+    e1.jikokuhyouJikokuDisplayKudari = { chaku: true, hatsu: false };
+    dia.ressyaCont[0].push(train('1M', 0, 1, 8));
+    const { rows, cells } = prevCellsOf(
+      dia,
+      rosen,
+      [0],
+      { connectEkiOrder: 1, prevGousuu: '3', prevRessyamei: 'あさ' },
+      { ...PREV_OPTS, displayRessyamei: true },
+    );
+    // 駅2 の前列車欄先頭(列車番号)に ↳。
+    expect(at(rows, cells, 'ekiPrevRessyabangou', 2)).toBe('↳');
+    // ★↳ は「直上行が前の駅の行」= 駅ブロックの**最上段**にしか出ない(原典の条件 4)。
+    // 列車番号行があるので列車名行には出ない。
+    expect(at(rows, cells, 'ekiPrevRessyamei', 2)).toBe('');
+  });
+
+  it('★列車名行が駅ブロック最上段なら ↳ はそこに出る。号数・号は空のまま', () => {
+    const { dia, rosen } = setup();
+    // 前列車欄は列車名だけ有効にする。
+    for (const e of rosen.ekiCont) {
+      e.jikokuhyouPrevSyubetsuChangeDisplayKudari = {
+        ressyabangou: 0,
+        operationNumber: 0,
+        syubetsu: 0,
+        ressyamei: 3,
+        operationNumberRows: 1,
+      };
+    }
+    const e1 = rosen.ekiCont[1];
+    if (e1 === undefined) throw new Error('no eki');
+    e1.jikokuhyouJikokuDisplayKudari = { chaku: true, hatsu: false };
+    dia.ressyaCont[0].push(train('1M', 0, 1, 8));
+    const { rows, cells } = prevCellsOf(
+      dia,
+      rosen,
+      [0],
+      { connectEkiOrder: 1, prevGousuu: '3', prevRessyamei: 'あさ' },
+      { ...PREV_OPTS, displayRessyamei: true },
+    );
+    // ★列車名セルは ↳、号数・号は空(原典 :6828-6853)。
+    expect(at(rows, cells, 'ekiPrevRessyamei', 2)).toBe('↳');
+    expect(at(rows, cells, 'ekiPrevGousuu', 2)).toBe('');
+    expect(at(rows, cells, 'ekiPrevGou', 2)).toBe('');
+  });
+
+  it('★「↓」「↴」は EkiPrev* には絶対に出ない(原典の死にコード)', () => {
+    const { dia, rosen } = setup();
+    enablePrev(rosen, 2);
+    dia.ressyaCont[0].push(train('1M', 0, 3, 8));
+    const { rows, cells } = prevCellsOf(dia, rosen, [0], { beforeType: 'propertyChange' });
+    for (const [i, row] of rows.entries()) {
+      if (!row.type.startsWith('ekiPrev')) continue;
+      expect(cells[i]?.text).not.toBe('↓');
+      expect(cells[i]?.text).not.toBe('↴');
+    }
+  });
+
+  it('前列車の種別欄は略称。親種別が有効なら 1 段だけ親に置換する', () => {
+    const { dia, rosen } = setup();
+    enablePrev(rosen, 3);
+    const sy = rosen.ressyasyubetsuCont[0];
+    if (sy === undefined) throw new Error('no syubetsu');
+    sy.ryakusyou = '快';
+    rosen.ressyasyubetsuCont.push({
+      ...sy,
+      syubetsumei: '準急',
+      ryakusyou: '準',
+      parentSyubetsuIndex: 0,
+    });
+    dia.ressyaCont[0].push(train('1M', 0, 3, 8));
+    const rows = buildCustomizeRowSpec(rosen.ekiCont, 0, PREV_OPTS);
+    const col = {
+      ...createCustomizeChainColumn([0]),
+      sihatsuEkiOrder: -1,
+      prevRessyasyubetsuIndex: 1,
+    };
+    const plain = buildCustomizeGrid(dia, rosen, 0, [col], rows, { conv: CONV });
+    expect(at(rows, plain[0]?.cells ?? [], 'ekiPrevRessyasyubetsu', 0)).toBe('準');
+    const parent = buildCustomizeGrid(dia, rosen, 0, [col], rows, {
+      conv: CONV,
+      displayParentSyubetsu: true,
+    });
+    expect(at(rows, parent[0]?.cells ?? [], 'ekiPrevRessyasyubetsu', 0)).toBe('快');
   });
 });
