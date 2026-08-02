@@ -68,6 +68,12 @@ export type {
   EkiJikokuhyouViewModel,
 } from './ekiJikokuhyou/deriveEkiJikokuhyou.js';
 export { deriveEkiJikokuhyou } from './ekiJikokuhyou/deriveEkiJikokuhyou.js';
+// ---- カスタマイズ時刻表のセル充填(follow-up #11)----
+export type {
+  CustomizeGridColumn,
+  CustomizeGridOptions,
+} from './grid/buildCustomizeGrid.js';
+export { buildCustomizeGrid, fillCustomizeColumn } from './grid/buildCustomizeGrid.js';
 export type {
   BuildTimetableGridOptions,
   BuildTimetableGridResult,
@@ -77,6 +83,14 @@ export { buildTimetableGrid, defaultTimetableGridOptions } from './grid/buildTim
 export { chakuCell, getKyoukaisen, hatsuCell, trackCell } from './grid/cellSpec.js';
 export type { JikokuhyouRowSpec, JikokuhyouRowType } from './grid/colSpec.js';
 export { buildJikokuhyouRowSpec } from './grid/colSpec.js';
+// ---- カスタマイズ時刻表の行スペック(follow-up #11)----
+export type {
+  CustomizeRowOptions,
+  CustomizeRowSide,
+  CustomizeRowSpec,
+  CustomizeRowType,
+} from './grid/customizeColSpec.js';
+export { buildCustomizeRowSpec } from './grid/customizeColSpec.js';
 export type {
   CellKind,
   CellSpec,
@@ -224,7 +238,12 @@ export type {
   OpRef,
   RessyaElement,
 } from './operationLight/types.js';
-export { opRefEquals, opRefKey } from './operationLight/types.js';
+export {
+  CUSTOMIZE_EKI_ORDER_NORMAL,
+  createCustomizeChainColumn,
+  opRefEquals,
+  opRefKey,
+} from './operationLight/types.js';
 // ---- 運用一覧図(図本体の幾何。M7e)----
 export type {
   AllOperationDiagramOptions,
