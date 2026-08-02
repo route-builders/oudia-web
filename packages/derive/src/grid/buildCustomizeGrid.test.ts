@@ -130,12 +130,36 @@ describe('buildCustomizeGrid', () => {
       solo.cells[solo.rows.findIndex((r) => r.type === 'chaku' && r.ekiOrder === 0)]?.text,
     ).toBe('・・');
 
-    // 前列車(駅0→1)とチェーンを組むと、3M の担当外の駅は「||」になる。
+    // ★切替駅の発は、原典では「当列車の**有効始発スロット**の発時刻」を出す
+    // (原典 :11302。切替駅 e と有効始発が一致するとは限らない = 間に経由なし区間がある前提)。
     const { dia: d2, rosen: r2 } = setup();
     d2.ressyaCont[0].push(train('1M', 0, 1, 8), train('3M', 2, 3, 9));
     const chained = cellsOf(d2, r2, [0, 1]);
-    // 駅2 は 3M の始発。駅1 の発は…前列車 1M の終着駅なので切替済み → 3M の範囲外 → 「||」。
-    expect(at(chained.rows, chained.cells, 'hatsu', 1)).toBe('||');
+    // 駅1 は 1M の終着 = 切替駅。発行は 3M 担当で、3M の有効始発(駅2)の発時刻が出る。
+    expect(at(chained.rows, chained.cells, 'hatsu', 1)).toBe(' 9:22');
+    // 駅1 の着は前列車 1M のもの。
+    expect(at(chained.rows, chained.cells, 'chaku', 1)).toBe(' 8:10');
+  });
+
+  it('★通過駅の " ﾚ" は [通過駅時刻を表示] が OFF のときだけ(原典の全分岐で同じガード)', () => {
+    const { dia, rosen } = setup();
+    const r = train('1M', 0, 3, 8);
+    const slot = r.ekiJikokuCont[1];
+    if (slot === undefined) throw new Error('no slot');
+    slot.ekiatsukai = 'tsuuka';
+    dia.ressyaCont[0].push(r);
+    const rows = buildCustomizeRowSpec(rosen.ekiCont, 0, ROW_OPTS);
+    const off = buildCustomizeGrid(dia, rosen, 0, [createCustomizeChainColumn([0])], rows, {
+      conv: CONV,
+    });
+    const on = buildCustomizeGrid(dia, rosen, 0, [createCustomizeChainColumn([0])], rows, {
+      conv: CONV,
+      displayTsuukaEkiJikoku: true,
+    });
+    const i = rows.findIndex((x) => x.type === 'chaku' && x.ekiOrder === 1);
+    expect(off[0]?.cells[i]?.text).toBe(' ﾚ');
+    // ON なら実時刻が出る。
+    expect(on[0]?.cells[i]?.text).toBe(' 8:10');
   });
 
   it('主要駅かつ着発どちらか非表示なら運行なしが「----」になる', () => {

@@ -78,6 +78,8 @@ export function CustomizeTimetableView(props: {
   const [paused, setPaused] = useState(false);
   const [manualKey, setManualKey] = useState(0);
   const [displayEkimei, setDisplayEkimei] = useState(true);
+  // [通過駅の駅時刻を表示する]。OFF のとき通過駅は " ﾚ"(原典の全分岐で同じガード)。
+  const [displayTsuuka, setDisplayTsuuka] = useState(false);
 
   const search = useOperationSearch(data, diaIndex, paused, manualKey);
   const dia = data.rosen.diaCont[diaIndex];
@@ -119,8 +121,9 @@ export function CustomizeTimetableView(props: {
         secondRoundHatsu: data.dispProp.secondRoundHatsu,
         display2400: data.dispProp.display2400,
       },
+      displayTsuukaEkiJikoku: displayTsuuka,
     }),
-    [data.dispProp],
+    [data.dispProp, displayTsuuka],
   );
 
   const columns = useMemo(() => {
@@ -162,6 +165,16 @@ export function CustomizeTimetableView(props: {
             }}
           />
           始発・終着駅名を表示
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={displayTsuuka}
+            onChange={(e) => {
+              setDisplayTsuuka(e.target.checked);
+            }}
+          />
+          通過駅の時刻を表示
         </label>
         {enableOperation > 0 && (
           <OperationSearchControls

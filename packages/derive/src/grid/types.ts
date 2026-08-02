@@ -31,7 +31,12 @@ export type MarkKind =
   | 'keiyunasi' // "||"
   | 'unkounasiIppan' // "・・"
   | 'unkounasiSyuyou' // "----"
-  | 'teisyaMaru'; // "○"
+  | 'teisyaMaru' // "○"
+  // ---- カスタマイズ時刻表で使うマーク(follow-up #11)----
+  | 'syuuchaku' // "====" 終着(原典 IDS_WORD_JIKOKUHYOU_SYUUCHAKU)
+  | 'connect' // "↳" 増結(併合)
+  | 'release' // "↴" 解結(分割)
+  | 'kudari'; // "↓" 次列車へ継続
 
 /** マーク種 → glyph(原典 STRINGTABLE 3366-3373 で照合済み)。 */
 export const MARK_GLYPH: Record<MarkKind, string> = {
@@ -40,6 +45,10 @@ export const MARK_GLYPH: Record<MarkKind, string> = {
   unkounasiIppan: '・・',
   unkounasiSyuyou: '----',
   teisyaMaru: '○',
+  syuuchaku: '====',
+  connect: '↳',
+  release: '↴',
+  kudari: '↓',
 };
 
 /** スタイルヒント。ピクセルではなく index/色/フラグ。 */
